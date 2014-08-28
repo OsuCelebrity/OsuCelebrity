@@ -21,6 +21,7 @@ public class OsuCelebrity
 	{
 		try
 		{
+			//Create a Twitch bot
 			_ircBot = new IRCBot(Settings.IRC_CHANNEL, Settings.IRC_USERNAME,
 					"oauth:"+Settings.TWITCH_TOKEN);
 			_ircBot.Start();

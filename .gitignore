@@ -24,3 +24,5 @@ local.properties
 # Mac
 .DS_Store
 lib/pircbot-1.5.0/javadocs/
+src/me/reddev/OsuCelebrity/Constants/Constants.java
+src/me/reddev/OsuCelebrity/Constants/Settings.java

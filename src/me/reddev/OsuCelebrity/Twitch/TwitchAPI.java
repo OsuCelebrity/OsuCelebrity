@@ -13,14 +13,22 @@ import me.reddev.OsuCelebrity.Logging.Logger;
 
 public class TwitchAPI
 {
+	/**
+	 * Sends a request to the Twitch API server with POST queries
+	 * @param uri The URL, relative to the API base
+	 * @param queries The POST queries
+	 * @return A JSON response by the server
+	 */
 	private static String postRequest(String uri, String... queries)
 	{
 		try
 		{
+			//Connects queries into POST string
 			String urlParameters = join(queries, "&");
 			URL url = new URL(Constants.TWITCH_API_ROOT+uri);
 			URLConnection conn = url.openConnection();
 	
+			//Add API headers
 			conn.setRequestProperty("Client-ID", 
 					Constants.TWITCH_CLIENT_ID);
 			conn.setRequestProperty("Accept", 
@@ -40,6 +48,7 @@ public class TwitchAPI
 					new InputStreamReader(conn.getInputStream()));
 	
 			while ((line = reader.readLine()) != null) {
+				//Concatenate read lines
 			    output += line;
 			}
 			writer.close();
