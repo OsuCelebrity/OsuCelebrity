@@ -9,13 +9,21 @@ import java.util.regex.Pattern;
 import me.reddev.OsuCelebrity.Constants.Constants;
 import me.reddev.OsuCelebrity.Logging.Logger;
 
-import org.jibble.pircbot.IrcException;
-import org.jibble.pircbot.PircBot;
+import org.pircbotx.Configuration;
+import org.pircbotx.PircBotX;
+import org.pircbotx.exception.IrcException;
+import org.pircbotx.hooks.ListenerAdapter;
+import org.pircbotx.hooks.events.JoinEvent;
+import org.pircbotx.hooks.events.MessageEvent;
+import org.pircbotx.hooks.events.PrivateMessageEvent;
+import org.pircbotx.hooks.types.GenericChannelEvent;
 
-public class TwitchIRCBot extends PircBot
+public class TwitchIRCBot extends ListenerAdapter implements Runnable
 {
+	private PircBotX _bot;
+	
 	private String _channel, _username, _password;
-	private List<String> _moderators, _subscribers, _users;
+	private List<String> _subscribers;
 	
 	/**
 	 * Constructs a new Twitch IRC bot
@@ -30,25 +38,39 @@ public class TwitchIRCBot extends PircBot
 		_password = password;
 		
 		//Reset user lists
-		_moderators = new ArrayList<String>();
 		_subscribers = new ArrayList<String>();
-		_users = new ArrayList<String>();
+		
+		//Reset bot
+		Configuration config = new Configuration.Builder()
+			.setName(_username)
+			.setLogin(_username)
+			.addListener(this)
+			.setServer(Constants.IRC_HOST, Constants.IRC_PORT, _password)
+			.setAutoReconnect(true)
+			.addAutoJoinChannel(getChannel())
+			.buildConfiguration();
+		_bot = new PircBotX(config);
 	}
 
 	/**
 	 * Connects to IRC and sets up listeners
-	 * @throws IOException Issues connecting to the server
-	 * @throws IrcException Issues connecting within IRC
 	 */
-	public void Start() throws IOException, IrcException
+	public void Start()
 	{
-		setName(_username);
-		setLogin(_username);
-
-		this.setVerbose(Constants.DEBUGGING);
-		this.connect(Constants.IRC_HOST, Constants.IRC_PORT, _password);
-		
-		this.joinChannel(getChannel());
+		Thread botThread = new Thread(this);
+		botThread.setName("TwitchIRCBot");
+		(botThread).start();
+	}
+	
+	public void run()
+	{
+		try {
+			_bot.startBot();
+		} catch (IOException e) {
+			Logger.Fatal("TwitchIRCBot IOException: "+ e.getMessage());
+		} catch (IrcException e) {
+			Logger.Fatal("TwitchIRCBot IrcException: "+ e.getMessage());
+		}
 	}
 
 	/**
@@ -56,92 +78,62 @@ public class TwitchIRCBot extends PircBot
 	 */
 	public void Stop()
 	{
-		if (isConnected())
-			disconnect();
+		if (_bot.isConnected())
+			_bot.stopBotReconnect();
 	}
 
 	/**
 	 * Sends a message to the current IRC channel
 	 * @param message The message to send to the channel
 	 */
-	public void SendMessage(String message)
+	public void SendMessage(GenericChannelEvent event, String message)
 	{
-		sendMessage(getChannel(), message);
+		event.getBot().sendIRC().message(getChannel(), message);
 	}
 
 	// Listeners
+	// http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
 	
 	@Override
-	protected void onMessage(String channel, String sender,
-			String login, String hostname, String message)
+	public void onMessage(MessageEvent event)
 	{
+		String message = event.getMessage();
 		//Search through for command calls
 		if(message.startsWith(String.valueOf(Constants.IRC_COMMAND)))
 		{
-			
+			SendMessage(event, "Hello");
 		}
 	}
 	
 	@Override
-	protected void onUserMode(String targetNick, String sourceNick,
-			String sourceLogin, String sourceHostname, String mode)
+	public void onPrivateMessage(PrivateMessageEvent event)
 	{
-		if(mode.equalsIgnoreCase("-o") && 
-				_moderators.contains(targetNick.toLowerCase()))
-			_moderators.remove(targetNick.toLowerCase());
-		else if(mode.equalsIgnoreCase("+o"))
-			_moderators.add(targetNick.toLowerCase());
-	}
-	
-	@Override
-	protected void onPrivateMessage(String sender, String login, 
-			String hostname, String message)
-	{
+		String message = event.getMessage();
 		Pattern specialUserRegex = 
-				Pattern.compile("SPECIALUSER [^ ]+ (subscriber|turbo)");
+				Pattern.compile("SPECIALUSER ([^ ]+) (subscriber|turbo)");
 		Matcher matches = specialUserRegex.matcher(message);
 		
 		//Nothing important - no special messages
 		if(!matches.matches()) return;
 		
-		if(matches.group(1).equalsIgnoreCase("subscriber"))
-			_subscribers.add(sender);
+		if(matches.group(2).equalsIgnoreCase("subscriber"))
+			_subscribers.add(matches.group(1).toLowerCase());
 		else
 		{
 			//TODO: Add a special case for turbo users
 		}
-		
-		Logger.Info(message);
-	}
-
-	@Override
-	protected void onPart(String channel, String sender, String login,
-			String hostname)
-	{
-		if(_users.contains(sender))
-			_users.remove(sender);
 	}
 	
 	@Override
-	protected void onJoin(String channel, String sender, String login,
-			String hostname)
+	public void onJoin(JoinEvent event)
 	{
 		//Ask for subscription and admin information
-		this.sendRawLine("TWITCHCLIENT 3");
-		if(sender.equalsIgnoreCase(_username))
-			Logger.Info(String.format("Joined %s", channel));
-		_users.add(sender);
+		event.getBot().sendRaw().rawLine("TWITCHCLIENT 3");
+		if(event.getUser().getLogin().equalsIgnoreCase(_username))
+			Logger.Info(String.format("Joined %s", event.getChannel().getName()));
 	}
 	
 	// End Listeners
-	
-	/**
-	 * @return The list of moderators in the IRC channel
-	 */
-	public List<String> getModerators()
-	{
-		return _moderators;
-	}
 
 	/**
 	 * @return The list of subscribers in the IRC channel
@@ -149,14 +141,6 @@ public class TwitchIRCBot extends PircBot
 	public List<String> getSubscribers()
 	{
 		return _subscribers;
-	}
-
-	/**
-	 * @return The list of users in the IRC channel
-	 */
-	public List<String> getUsers()
-	{
-		return _users;
 	}
 	
 	/**
@@ -166,13 +150,5 @@ public class TwitchIRCBot extends PircBot
 	public String getChannel()
 	{
 		return String.format("#%s", _channel.toLowerCase());
-	}
-	
-	/**
-	 * @return The number of users connected to the IRC channel
-	 */
-	public int getUserCount()
-	{
-		return (_users != null ? _users.size() : 0);
 	}
 }
