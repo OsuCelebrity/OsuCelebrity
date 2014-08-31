@@ -8,6 +8,8 @@ import java.util.regex.Pattern;
 
 import me.reddev.OsuCelebrity.Constants.Constants;
 import me.reddev.OsuCelebrity.Logging.Logger;
+import me.reddev.OsuCelebrity.Osu.OsuAPI;
+import me.reddev.OsuCelebrity.Osu.OsuBeatmap;
 
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -101,7 +103,7 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 		//Search through for command calls
 		if(message.startsWith(String.valueOf(Constants.IRC_COMMAND)))
 		{
-			SendMessage(event, "Hello");
+			OsuBeatmap selectedMap = OsuAPI.GetBeatmap(323875);
 		}
 	}
 	
