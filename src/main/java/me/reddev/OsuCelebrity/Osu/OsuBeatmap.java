@@ -1,12 +1,11 @@
 package me.reddev.OsuCelebrity.Osu;
 
-import java.util.Date;
-
 public class OsuBeatmap
 {
 	public int approved;
-	public Date approved_date;
-	public Date last_update;
+	//TODO: Give some way for GSON to decode approved_date and last_update into date
+	public String approved_date;
+	public String last_update;
 	public String artist;
 	public int beatmap_id;
 	public int beatmapset_id;
