@@ -3,11 +3,14 @@ package me.reddev.OsuCelebrity.Osu;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Collection;
 import java.util.List;
 
-import org.json.JSONArray;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import me.reddev.OsuCelebrity.Constants.Constants;
 import me.reddev.OsuCelebrity.Constants.Settings;
@@ -26,15 +29,24 @@ public class OsuAPI
 		if(requestResponse.isEmpty())
 			return null;
 		
-		JSONArray array = new JSONArray(requestResponse);
-		
-		
-		return new OsuBeatmap();
+		Type listType = new TypeToken<Collection<OsuBeatmap>>(){}.getType();
+		List<OsuBeatmap> listedMaps = (new Gson()).fromJson(requestResponse, listType);
+		return (listedMaps.size() >= 1 ? listedMaps.get(0) : null);
 	}
 	
+	/**
+	 * Gets an Osu! beatmap set using a specified ID
+	 * @param beatmapsetID The beatmap set ID
+	 * @return A list of assosciated beatmap objects, or list of null if none found
+	 */
 	public static List<OsuBeatmap> GetBeatmapSet(int beatmapsetID)
 	{
-		return null;
+		String requestResponse = postRequest(String.format("/get_beatmaps?s=%s", beatmapsetID));
+		if(requestResponse.isEmpty())
+			return null;
+		
+		Type listType = new TypeToken<Collection<OsuBeatmap>>(){}.getType();
+		return (new Gson()).fromJson(requestResponse, listType);
 	}
 	
 	/**

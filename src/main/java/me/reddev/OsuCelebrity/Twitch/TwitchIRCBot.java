@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.reddev.OsuCelebrity.Constants.Constants;
+import me.reddev.OsuCelebrity.Constants.Responses;
 import me.reddev.OsuCelebrity.Logging.Logger;
 import me.reddev.OsuCelebrity.Osu.OsuAPI;
 import me.reddev.OsuCelebrity.Osu.OsuBeatmap;
@@ -92,6 +93,36 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 	{
 		event.getBot().sendIRC().message(getChannel(), message);
 	}
+	
+	private void CommandResponder(MessageEvent event, String message)
+	{
+		String[] messageSplit = message.substring(1).split(" ");
+		String commandName = messageSplit[0];
+		
+		if(commandName.equalsIgnoreCase("request"))
+		{
+			OsuBeatmap selectedBeatmap = OsuAPI.GetBeatmap(Integer.parseInt(messageSplit[1]));
+			if(selectedBeatmap == null)
+			{
+				SendMessage(event, String.format(Responses.INVALID_BEATMAP, messageSplit[1]));
+				return;
+			}
+			
+			TwitchManager.getRequests().AddRequest(selectedBeatmap);
+			SendMessage(event, String.format(Responses.ADDED_TO_QUEUE, selectedBeatmap.toString()));
+			SendMessage(event, String.format(Responses.CURRENT_QUEUE, TwitchManager.getRequests().getRequestCount()));
+		}
+		else if(commandName.equalsIgnoreCase("queue"))
+		{
+			TwitchRequest requests = TwitchManager.getRequests();
+			SendMessage(event, String.format(Responses.NEXT_IN_QUEUE, requests.getRequestedBeatmaps().peek().toString()));
+		}
+	}
+	
+	private void ModCommandResponder(MessageEvent event, String message)
+	{
+		
+	}
 
 	// Listeners
 	// http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
@@ -103,7 +134,9 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 		//Search through for command calls
 		if(message.startsWith(String.valueOf(Constants.TWITCH_IRC_COMMAND)))
 		{
-			OsuBeatmap selectedMap = OsuAPI.GetBeatmap(323875);
+			if(event.getChannel().isOp(event.getUser()))
+				ModCommandResponder(event, message);
+			CommandResponder(event, message);
 		}
 	}
 	
@@ -129,10 +162,12 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 	@Override
 	public void onJoin(JoinEvent event)
 	{
-		//Ask for subscription and admin information
-		event.getBot().sendRaw().rawLine("TWITCHCLIENT 3");
 		if(event.getUser().getLogin().equalsIgnoreCase(_username))
+		{
+			//Ask for subscription and admin information
+			event.getBot().sendRaw().rawLine("TWITCHCLIENT 3");
 			Logger.Info(String.format("Joined %s", event.getChannel().getName()));
+		}
 	}
 	
 	// End Listeners
