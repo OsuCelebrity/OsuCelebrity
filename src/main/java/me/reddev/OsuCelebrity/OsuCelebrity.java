@@ -1,17 +1,23 @@
 package me.reddev.OsuCelebrity;
 
+import me.reddev.OsuCelebrity.Constants.Settings;
 import me.reddev.OsuCelebrity.Osu.OsuApplication;
 import me.reddev.OsuCelebrity.Twitch.TwitchManager;
 
 public class OsuCelebrity
 {
-	public static OsuApplication Osu;
+	private OsuApplication osu;
+	private TwitchManager twitchManager;
+	
 	public void run()
 	{
-		TwitchManager.run();
+		Settings settings = new Settings();
 		
-		Osu = new OsuApplication();
-		Osu.Start();
+		twitchManager = new TwitchManager(settings);
+		twitchManager.start();
+		
+		osu = new OsuApplication(settings);
+		osu.start();
 	}
 	
 	/**

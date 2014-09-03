@@ -6,11 +6,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import lombok.extern.slf4j.Slf4j;
 import me.reddev.OsuCelebrity.Constants.Constants;
 import me.reddev.OsuCelebrity.Constants.Responses;
-import me.reddev.OsuCelebrity.Logging.Logger;
-import me.reddev.OsuCelebrity.Osu.OsuAPI;
-import me.reddev.OsuCelebrity.Osu.OsuBeatmap;
 
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -20,13 +18,26 @@ import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.types.GenericChannelEvent;
+import org.tillerino.osuApiModel.Downloader;
+import org.tillerino.osuApiModel.OsuApiBeatmap;
 
-public class TwitchIRCBot extends ListenerAdapter implements Runnable
+@Slf4j
+public class TwitchIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 {
+	public interface TwitchIrcSettings {
+		String getTwitchIrcChannel();
+		String getTwitchIrcUsername();
+		String getTwitchToken();
+	}
+	
 	private PircBotX _bot;
 	
-	private String _channel, _username, _password;
+	private String _channel, _username;
 	private List<String> _subscribers;
+
+	private TwitchManager _twitchManager;
+
+	private Downloader _downloader;
 	
 	/**
 	 * Constructs a new Twitch IRC bot
@@ -34,31 +45,33 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 	 * @param username The username of the Twitch IRC bot
 	 * @param password The IRC password of the Twitch IRC bot
 	 */
-	public TwitchIRCBot(String channel, String username, String password)
+	public TwitchIRCBot(TwitchIrcSettings settings, TwitchManager twitchManager, Downloader downloader)
 	{
-		_channel = channel;
-		_username = username;
-		_password = password;
+		_channel = settings.getTwitchIrcChannel();
+		_username = settings.getTwitchIrcUsername();
 		
 		//Reset user lists
 		_subscribers = new ArrayList<String>();
 		
 		//Reset bot
-		Configuration config = new Configuration.Builder()
+		Configuration<PircBotX> config = new Configuration.Builder<PircBotX>()
 			.setName(_username)
 			.setLogin(_username)
 			.addListener(this)
-			.setServer(Constants.TWITCH_IRC_HOST, Constants.TWITCH_IRC_PORT, _password)
+			.setServer(Constants.TWITCH_IRC_HOST, Constants.TWITCH_IRC_PORT, settings.getTwitchToken())
 			.setAutoReconnect(true)
 			.addAutoJoinChannel(getChannel())
 			.buildConfiguration();
 		_bot = new PircBotX(config);
+		
+		this._twitchManager = twitchManager;
+		this._downloader = downloader;
 	}
 
 	/**
 	 * Connects to IRC and sets up listeners
 	 */
-	public void Start()
+	public void start()
 	{
 		Thread botThread = new Thread(this);
 		botThread.setName("TwitchIRCBot");
@@ -70,9 +83,9 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 		try {
 			_bot.startBot();
 		} catch (IOException e) {
-			Logger.Fatal("TwitchIRCBot IOException: "+ e.getMessage());
+			log.error("TwitchIRCBot IOException: "+ e.getMessage());
 		} catch (IrcException e) {
-			Logger.Fatal("TwitchIRCBot IrcException: "+ e.getMessage());
+			log.error("TwitchIRCBot IrcException: "+ e.getMessage());
 		}
 	}
 
@@ -89,37 +102,45 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 	 * Sends a message to the current IRC channel
 	 * @param message The message to send to the channel
 	 */
-	public void SendMessage(GenericChannelEvent event, String message)
+	public void sendMessage(GenericChannelEvent<PircBotX> event, String message)
 	{
 		event.getBot().sendIRC().message(getChannel(), message);
 	}
 	
-	private void CommandResponder(MessageEvent event, String message)
+	private void CommandResponder(MessageEvent<PircBotX> event, String message)
 	{
 		String[] messageSplit = message.substring(1).split(" ");
 		String commandName = messageSplit[0];
 		
 		if(commandName.equalsIgnoreCase("request"))
 		{
-			OsuBeatmap selectedBeatmap = OsuAPI.GetBeatmap(Integer.parseInt(messageSplit[1]));
+			OsuApiBeatmap selectedBeatmap;
+			try {
+				selectedBeatmap = _downloader.getBeatmap(Integer.parseInt(messageSplit[1]), OsuApiBeatmap.class);
+			} catch (IOException e) {
+				// I don't know what the plan should be in this case, but I didn't want the error to be unhandled --Tillerino
+				
+				log.warn("error downloading beatmap", e);
+				selectedBeatmap = null;
+			}
 			if(selectedBeatmap == null)
 			{
-				SendMessage(event, String.format(Responses.INVALID_BEATMAP, messageSplit[1]));
+				sendMessage(event, String.format(Responses.INVALID_BEATMAP, messageSplit[1]));
 				return;
 			}
 			
-			TwitchManager.getRequests().AddRequest(selectedBeatmap);
-			SendMessage(event, String.format(Responses.ADDED_TO_QUEUE, selectedBeatmap.toString()));
-			SendMessage(event, String.format(Responses.CURRENT_QUEUE, TwitchManager.getRequests().getRequestCount()));
+			_twitchManager.getRequests().AddRequest(selectedBeatmap);
+			sendMessage(event, String.format(Responses.ADDED_TO_QUEUE, selectedBeatmap.toString()));
+			sendMessage(event, String.format(Responses.CURRENT_QUEUE, _twitchManager.getRequests().getRequestCount()));
 		}
 		else if(commandName.equalsIgnoreCase("queue"))
 		{
-			TwitchRequest requests = TwitchManager.getRequests();
-			SendMessage(event, String.format(Responses.NEXT_IN_QUEUE, requests.getRequestedBeatmaps().peek().toString()));
+			TwitchRequest requests = _twitchManager.getRequests();
+			sendMessage(event, String.format(Responses.NEXT_IN_QUEUE, requests.getRequestedBeatmaps().peek().toString()));
 		}
 	}
 	
-	private void ModCommandResponder(MessageEvent event, String message)
+	private void ModCommandResponder(MessageEvent<PircBotX> event, String message)
 	{
 		
 	}
@@ -128,7 +149,7 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 	// http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
 	
 	@Override
-	public void onMessage(MessageEvent event)
+	public void onMessage(MessageEvent<PircBotX> event)
 	{
 		String message = event.getMessage();
 		//Search through for command calls
@@ -141,7 +162,7 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 	}
 	
 	@Override
-	public void onPrivateMessage(PrivateMessageEvent event)
+	public void onPrivateMessage(PrivateMessageEvent<PircBotX> event)
 	{
 		String message = event.getMessage();
 		Pattern specialUserRegex = 
@@ -160,13 +181,13 @@ public class TwitchIRCBot extends ListenerAdapter implements Runnable
 	}
 	
 	@Override
-	public void onJoin(JoinEvent event)
+	public void onJoin(JoinEvent<PircBotX> event)
 	{
 		if(event.getUser().getLogin().equalsIgnoreCase(_username))
 		{
 			//Ask for subscription and admin information
 			event.getBot().sendRaw().rawLine("TWITCHCLIENT 3");
-			Logger.Info(String.format("Joined %s", event.getChannel().getName()));
+			log.info(String.format("Joined %s", event.getChannel().getName()));
 		}
 	}
 	

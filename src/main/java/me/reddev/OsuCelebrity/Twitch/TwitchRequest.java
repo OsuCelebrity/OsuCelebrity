@@ -3,17 +3,17 @@ package me.reddev.OsuCelebrity.Twitch;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import me.reddev.OsuCelebrity.Osu.OsuBeatmap;
+import org.tillerino.osuApiModel.OsuApiBeatmap;
 
 public class TwitchRequest
 {
-	Queue<OsuBeatmap> _requestedBeatmaps = new LinkedList<OsuBeatmap>();
+	private Queue<OsuApiBeatmap> _requestedBeatmaps = new LinkedList<OsuApiBeatmap>();
 	
 	/**
 	 * Adds a new beatmap to the request queue. If exists, adds to the end
 	 * @param beatmap The beatmap object to request
 	 */
-	public void AddRequest(OsuBeatmap beatmap)
+	public void AddRequest(OsuApiBeatmap beatmap)
 	{
 		if(_requestedBeatmaps.contains(beatmap))
 			_requestedBeatmaps.remove(beatmap);
@@ -23,7 +23,7 @@ public class TwitchRequest
 	/**
 	 * Deletes all pending requests
 	 */
-	public void ClearRequests()
+	public void clearRequests()
 	{
 		_requestedBeatmaps.clear();
 	}
@@ -36,7 +36,7 @@ public class TwitchRequest
 		return _requestedBeatmaps.size();
 	}
 	
-	public Queue<OsuBeatmap> getRequestedBeatmaps()
+	public Queue<OsuApiBeatmap> getRequestedBeatmaps()
 	{
 		return _requestedBeatmaps;
 	}

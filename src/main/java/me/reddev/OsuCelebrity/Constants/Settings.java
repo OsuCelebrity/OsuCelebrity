@@ -1,16 +1,81 @@
 package me.reddev.OsuCelebrity.Constants;
 
-public class Settings
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
+import lombok.Data;
+import me.reddev.OsuCelebrity.Osu.OsuIRCBot.OsuIRCBotSettings;
+import me.reddev.OsuCelebrity.Twitch.TwitchAPI.TwitchApiSettings;
+import me.reddev.OsuCelebrity.Twitch.TwitchIRCBot.TwitchIrcSettings;
+
+@Data
+public class Settings implements OsuIRCBotSettings, TwitchIrcSettings, TwitchApiSettings
 {
 	//Twitch IRC settings
-	public static String TWITCH_IRC_CHANNEL = "OsuCelebrity";
-	public static String TWITCH_IRC_USERNAME = "OsuCelebrity";
-	public static String TWITCH_TOKEN = "i4ixqqu7pheo2ggmr7wgf6xlrqo979e";
-	
+	private final String twitchIrcChannel;
+	private final String twitchIrcUsername;
+	private final String twitchToken;
+
 	//Osu! API settings
-	public static String OSU_KEY = "378965a078e0a0a9d0bdd4632139ce42ac35d9e2";
-	
+	private final String osuApiKey;
+
 	//Osu! Account Settings
-	public static String OSU_IRC_USERNAME = "OsuCelebrity";
-	public static String OSU_IRC_PASSWORD = "ZJxIBZQpfnzKTCVcLpH9";
+	private final String osuIrcUsername;
+	private final String osuIrcPassword;
+	private final String twitchClientId;
+	private final String twitchClientSecret;
+
+	public Settings(Properties properties) {
+		if((twitchIrcChannel = properties.getProperty("twitchIrcChannel")) == null) {
+			throw new RuntimeException("please supply the parameter twitchIrcChannel");
+		}
+		if((twitchIrcUsername = properties.getProperty("twitchIrcUsername")) == null) {
+			throw new RuntimeException("please supply the parameter twitchIrcUsername");
+		}
+		if((twitchToken = properties.getProperty("twitchToken")) == null) {
+			throw new RuntimeException("please supply the parameter twitchToken");
+		}
+		if((osuApiKey = properties.getProperty("osuApiKey")) == null) {
+			throw new RuntimeException("please supply the parameter osuApiKey");
+		}
+		if((osuIrcUsername = properties.getProperty("osuIrcUsername")) == null) {
+			throw new RuntimeException("please supply the parameter osuIrcUsername");
+		}
+		if((osuIrcPassword = properties.getProperty("osuIrcPassword")) == null) {
+			throw new RuntimeException("please supply the parameter osuIrcPassword");
+		}
+		if((twitchClientId = properties.getProperty("twitchClientId")) == null) {
+			throw new RuntimeException("please supply the parameter twitchClientId");
+		}
+		if((twitchClientSecret = properties.getProperty("twitchClientSecret")) == null) {
+			throw new RuntimeException("please supply the parameter twitchClientSecret");
+		}
+	}
+
+	public Settings() {
+		this(getProperties("osuCelebrity.properties"));
+	}
+
+	public static Properties getProperties(String resourceName) {
+		InputStream is = Settings.class.getClassLoader().getResourceAsStream(resourceName);
+		if(is == null) {
+			throw new RuntimeException("resource " + resourceName + " not found");
+		}
+
+		Properties properties = new Properties();
+		try {
+			properties.load(is);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} finally {
+			try {
+				is.close();
+			} catch (IOException e) {
+				// suppress this
+				e.printStackTrace();
+			}
+		}
+		return properties;
+	}
 }

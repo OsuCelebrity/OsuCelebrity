@@ -7,19 +7,31 @@ import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.net.URLConnection;
 
+import lombok.extern.slf4j.Slf4j;
 import me.reddev.OsuCelebrity.Constants.Constants;
-import me.reddev.OsuCelebrity.Constants.Settings;
-import me.reddev.OsuCelebrity.Logging.Logger;
 
+@Slf4j
 public class TwitchAPI
 {
+	public interface TwitchApiSettings {
+		String getTwitchClientId();
+		String getTwitchToken();
+	}
+	
+	private TwitchApiSettings _settings;
+	
+	private TwitchAPI(TwitchApiSettings settings) {
+		super();
+		this._settings = settings;
+	}
+
 	/**
 	 * Sends a request to the Twitch API server with POST queries
 	 * @param uri The URL, relative to the API base
 	 * @param queries The POST queries
 	 * @return A JSON response by the server
 	 */
-	private static String postRequest(String uri, String... queries)
+	private String postRequest(String uri, String... queries)
 	{
 		try
 		{
@@ -30,11 +42,11 @@ public class TwitchAPI
 	
 			//Add API headers
 			conn.setRequestProperty("Client-ID", 
-					Constants.TWITCH_CLIENT_ID);
+					_settings.getTwitchClientId());
 			conn.setRequestProperty("Accept", 
 					"application/vnd.twitchtv.v2+json");
 			conn.setRequestProperty("Authorization", 
-					"OAuth: "+Settings.TWITCH_TOKEN);
+					"OAuth: "+_settings.getTwitchToken());
 			conn.setDoOutput(true);
 	
 			OutputStreamWriter writer = new OutputStreamWriter(
@@ -58,7 +70,7 @@ public class TwitchAPI
 		}
 		catch (IOException ex)
 		{
-			Logger.Error(String.format("Twitch API raised %s", ex.getMessage()));
+			log.error(String.format("Twitch API raised %s", ex.getMessage()));
 			return "";
 		}
 	}
