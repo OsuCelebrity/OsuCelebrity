@@ -24,7 +24,7 @@ public class Constants
 	public static String OSU_COMMAND_USER = "BanchoBot";
 	
 	//Osu! IRC Commands properties
-	public static String OSU_COMMAND_SPECTATE = "/spectate %s";
+	public static String OSU_COMMAND_SPECTATE = "osu://spectate/%s";
 	
 	public static Boolean DEBUGGING = true;
 }

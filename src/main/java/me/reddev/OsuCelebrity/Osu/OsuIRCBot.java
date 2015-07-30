@@ -11,6 +11,7 @@ import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.MessageEvent;
+import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.types.GenericChannelEvent;
 
 @Slf4j
@@ -19,8 +20,11 @@ public class OsuIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 	public interface OsuIRCBotSettings {
 		String getOsuIrcUsername();
 		String getOsuIrcPassword();
+		String getOsuPath();
 	}
 
+	private OsuApplication _application;
+	
 	private PircBotX _bot;
 	
 	private String _username;
@@ -30,8 +34,9 @@ public class OsuIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 	 * @param username The username of the Osu! IRC bot
 	 * @param password The IRC password of the Osu! IRC bot
 	 */
-	public OsuIRCBot(OsuIRCBotSettings settings)
+	public OsuIRCBot(OsuApplication application, OsuIRCBotSettings settings)
 	{
+		_application = application;
 		_username = settings.getOsuIrcUsername();
 		
 		//Reset bot
@@ -93,7 +98,7 @@ public class OsuIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 	// http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
 	
 	@Override
-	public void onMessage(MessageEvent<PircBotX> event)
+	public void onPrivateMessage(PrivateMessageEvent<PircBotX> event)
 	{
 		String message = event.getMessage();
 		//TODO: Accept in-game requests

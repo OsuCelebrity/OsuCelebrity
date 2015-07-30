@@ -25,6 +25,9 @@ public class Settings implements OsuIRCBotSettings, TwitchIrcSettings, TwitchApi
 	private final String osuIrcPassword;
 	private final String twitchClientId;
 	private final String twitchClientSecret;
+	
+	//Osu! Location Settings
+	private final String osuPath;
 
 	public Settings(Properties properties) {
 		if((twitchIrcChannel = properties.getProperty("twitchIrcChannel")) == null) {
@@ -50,6 +53,9 @@ public class Settings implements OsuIRCBotSettings, TwitchIrcSettings, TwitchApi
 		}
 		if((twitchClientSecret = properties.getProperty("twitchClientSecret")) == null) {
 			throw new RuntimeException("please supply the parameter twitchClientSecret");
+		}
+		if((osuPath = properties.getProperty("osuPath")) == null) {
+			throw new RuntimeException("please supply the parameter osuPath");
 		}
 	}
 

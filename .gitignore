@@ -28,3 +28,4 @@ src/me/reddev/OsuCelebrity/Constants/Constants.java
 src/me/reddev/OsuCelebrity/Constants/Settings.java
 lib/
 /target/
+src/main/resources/
