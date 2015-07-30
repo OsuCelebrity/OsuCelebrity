@@ -19,7 +19,8 @@ import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.types.GenericChannelEvent;
 import org.tillerino.osuApiModel.Downloader;
-import org.tillerino.osuApiModel.OsuApiBeatmap;
+import org.tillerino.osuApiModel.GameModes;
+import org.tillerino.osuApiModel.OsuApiUser;
 
 @Slf4j
 public class TwitchIRCBot extends ListenerAdapter<PircBotX> implements Runnable
@@ -114,29 +115,29 @@ public class TwitchIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 		
 		if(commandName.equalsIgnoreCase("request"))
 		{
-			OsuApiBeatmap selectedBeatmap;
+			OsuApiUser selectedUser;
 			try {
-				selectedBeatmap = _downloader.getBeatmap(Integer.parseInt(messageSplit[1]), OsuApiBeatmap.class);
+				selectedUser = _downloader.getUser(messageSplit[1], GameModes.OSU, OsuApiUser.class);
 			} catch (IOException e) {
 				// I don't know what the plan should be in this case, but I didn't want the error to be unhandled --Tillerino
 				
-				log.warn("error downloading beatmap", e);
-				selectedBeatmap = null;
+				log.warn("error getting user", e);
+				selectedUser = null;
 			}
-			if(selectedBeatmap == null)
+			if(selectedUser == null)
 			{
-				sendMessage(event, String.format(Responses.INVALID_BEATMAP, messageSplit[1]));
+				sendMessage(event, String.format(Responses.INVALID_USER, messageSplit[1]));
 				return;
 			}
 			
-			_twitchManager.getRequests().AddRequest(selectedBeatmap);
-			sendMessage(event, String.format(Responses.ADDED_TO_QUEUE, selectedBeatmap.toString()));
+			_twitchManager.getRequests().AddRequest(selectedUser);
+			sendMessage(event, String.format(Responses.ADDED_TO_QUEUE, selectedUser.toString()));
 			sendMessage(event, String.format(Responses.CURRENT_QUEUE, _twitchManager.getRequests().getRequestCount()));
 		}
 		else if(commandName.equalsIgnoreCase("queue"))
 		{
 			TwitchRequest requests = _twitchManager.getRequests();
-			sendMessage(event, String.format(Responses.NEXT_IN_QUEUE, requests.getRequestedBeatmaps().peek().toString()));
+			sendMessage(event, String.format(Responses.NEXT_IN_QUEUE, requests.getRequestedUsers().peek().toString()));
 		}
 	}
 	

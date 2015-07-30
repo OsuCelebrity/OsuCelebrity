@@ -5,12 +5,14 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import lombok.Data;
-import me.reddev.OsuCelebrity.Osu.OsuIRCBot.OsuIRCBotSettings;
+import me.reddev.OsuCelebrity.Osu.OsuApplication.OsuApplicationSettings;
+import me.reddev.OsuCelebrity.Osu.OsuIRCBot.OsuIRCSettings;
+import me.reddev.OsuCelebrity.Output.StreamOutput.StreamOutputSettings;
 import me.reddev.OsuCelebrity.Twitch.TwitchAPI.TwitchApiSettings;
 import me.reddev.OsuCelebrity.Twitch.TwitchIRCBot.TwitchIrcSettings;
 
 @Data
-public class Settings implements OsuIRCBotSettings, TwitchIrcSettings, TwitchApiSettings
+public class Settings implements OsuIRCSettings, TwitchIrcSettings, TwitchApiSettings, StreamOutputSettings, OsuApplicationSettings
 {
 	//Twitch IRC settings
 	private final String twitchIrcChannel;
@@ -28,6 +30,12 @@ public class Settings implements OsuIRCBotSettings, TwitchIrcSettings, TwitchApi
 	
 	//Osu! Location Settings
 	private final String osuPath;
+	
+	//Stream Output Settings
+	private final String streamOutputPath;
+	
+	//Application Settings
+	private final int spectateDuration;
 
 	public Settings(Properties properties) {
 		if((twitchIrcChannel = properties.getProperty("twitchIrcChannel")) == null) {
@@ -57,6 +65,12 @@ public class Settings implements OsuIRCBotSettings, TwitchIrcSettings, TwitchApi
 		if((osuPath = properties.getProperty("osuPath")) == null) {
 			throw new RuntimeException("please supply the parameter osuPath");
 		}
+		if((streamOutputPath = properties.getProperty("streamOutputPath")) == null) {
+			throw new RuntimeException("please supply the parameter streamOutputPath");
+		}
+		if((spectateDuration = tryParse(properties.getProperty("spectateDuration"))) == 0) {
+			throw new RuntimeException("please supply the parameter spectateDuration");
+		}
 	}
 
 	public Settings() {
@@ -83,5 +97,15 @@ public class Settings implements OsuIRCBotSettings, TwitchIrcSettings, TwitchApi
 			}
 		}
 		return properties;
+	}
+	
+	public Integer tryParse(String obj) {
+		Integer retVal;
+		try {
+			retVal = Integer.parseInt(obj);
+		} catch (NumberFormatException nfe) {
+			retVal = 0; // or null if that is your preference
+		}
+		return retVal;
 	}
 }

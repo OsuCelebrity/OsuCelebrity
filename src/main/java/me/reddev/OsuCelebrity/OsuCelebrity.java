@@ -16,7 +16,7 @@ public class OsuCelebrity
 		twitchManager = new TwitchManager(settings);
 		//twitchManager.start();
 		
-		osu = new OsuApplication(settings);
+		osu = new OsuApplication(settings, twitchManager);
 		osu.start();
 	}
 	

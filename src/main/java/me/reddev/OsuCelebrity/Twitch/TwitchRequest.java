@@ -3,21 +3,21 @@ package me.reddev.OsuCelebrity.Twitch;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.tillerino.osuApiModel.OsuApiBeatmap;
+import org.tillerino.osuApiModel.OsuApiUser;
 
 public class TwitchRequest
 {
-	private Queue<OsuApiBeatmap> _requestedBeatmaps = new LinkedList<OsuApiBeatmap>();
+	private Queue<OsuApiUser> _requestedUsers = new LinkedList<OsuApiUser>();
 	
 	/**
-	 * Adds a new beatmap to the request queue. If exists, adds to the end
-	 * @param beatmap The beatmap object to request
+	 * Adds a new user to the request queue. If exists, adds to the end
+	 * @param user The user object to request
 	 */
-	public void AddRequest(OsuApiBeatmap beatmap)
+	public void AddRequest(OsuApiUser user)
 	{
-		if(_requestedBeatmaps.contains(beatmap))
-			_requestedBeatmaps.remove(beatmap);
-		_requestedBeatmaps.add(beatmap);
+		if(_requestedUsers.contains(user))
+			_requestedUsers.remove(user);
+		_requestedUsers.add(user);
 	}
 	
 	/**
@@ -25,19 +25,19 @@ public class TwitchRequest
 	 */
 	public void clearRequests()
 	{
-		_requestedBeatmaps.clear();
+		_requestedUsers.clear();
 	}
 	
 	/**
-	 * @return The amount of requested beatmaps in the queue
+	 * @return The amount of requested users in the queue
 	 */
 	public int getRequestCount()
 	{
-		return _requestedBeatmaps.size();
+		return _requestedUsers.size();
 	}
 	
-	public Queue<OsuApiBeatmap> getRequestedBeatmaps()
+	public Queue<OsuApiUser> getRequestedUsers()
 	{
-		return _requestedBeatmaps;
+		return _requestedUsers;
 	}
 }

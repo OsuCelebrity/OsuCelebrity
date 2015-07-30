@@ -4,6 +4,9 @@ import java.io.IOException;
 
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.OsuCelebrity.Constants.Constants;
+import me.reddev.OsuCelebrity.Constants.Responses;
+import me.reddev.OsuCelebrity.Constants.Settings;
+import me.reddev.OsuCelebrity.Twitch.TwitchManager;
 
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -13,31 +16,37 @@ import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.types.GenericChannelEvent;
+import org.tillerino.osuApiModel.Downloader;
+import org.tillerino.osuApiModel.GameModes;
+import org.tillerino.osuApiModel.OsuApiUser;
 
 @Slf4j
 public class OsuIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 {
-	public interface OsuIRCBotSettings {
+	public interface OsuIRCSettings {
 		String getOsuIrcUsername();
 		String getOsuIrcPassword();
 		String getOsuPath();
 	}
-
-	private OsuApplication _application;
 	
 	private PircBotX _bot;
 	
 	private String _username;
 	
+	private TwitchManager _manager;
+	private Downloader _downloader;
+	
 	/**
 	 * Constructs a new Osu! IRC bot
+	 * @param _manager The associated Twitch manager
 	 * @param username The username of the Osu! IRC bot
 	 * @param password The IRC password of the Osu! IRC bot
 	 */
-	public OsuIRCBot(OsuApplication application, OsuIRCBotSettings settings)
+	public OsuIRCBot(Settings settings, TwitchManager manager)
 	{
-		_application = application;
 		_username = settings.getOsuIrcUsername();
+		_manager = manager;
+		_downloader = new Downloader(settings.getOsuApiKey());
 		
 		//Reset bot
 		Configuration<PircBotX> config = new Configuration.Builder<PircBotX>()
@@ -102,6 +111,26 @@ public class OsuIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 	{
 		String message = event.getMessage();
 		//TODO: Accept in-game requests
+		
+		if(event.getUser().getNick().equalsIgnoreCase("Redback"))
+		{
+			OsuApiUser selectedUser;
+			try {
+				selectedUser = _downloader.getUser(event.getMessage(), GameModes.OSU, OsuApiUser.class);
+			} catch (IOException e) {
+				// I don't know what the plan should be in this case, but I didn't want the error to be unhandled --Tillerino
+				
+				log.warn("error getting user", e);
+				selectedUser = null;
+			}
+			if(selectedUser == null)
+			{
+				event.getUser().send().message(String.format(Responses.INVALID_USER, event.getMessage()));
+				return;
+			}
+			
+			_manager.getRequests().AddRequest(selectedUser);
+		}
 	}
 	
 	@Override
