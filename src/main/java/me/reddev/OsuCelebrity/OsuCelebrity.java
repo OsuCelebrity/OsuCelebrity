@@ -14,7 +14,7 @@ public class OsuCelebrity
 		Settings settings = new Settings();
 		
 		twitchManager = new TwitchManager(settings);
-		//twitchManager.start();
+		twitchManager.start();
 		
 		osu = new OsuApplication(settings, twitchManager);
 		osu.start();
@@ -28,5 +28,4 @@ public class OsuCelebrity
 		OsuCelebrity mainBot = new OsuCelebrity();
 		mainBot.run();
 	}
-
 }

@@ -1,7 +1,9 @@
 package me.reddev.OsuCelebrity.Twitch;
 
 import org.tillerino.osuApiModel.Downloader;
+import org.tillerino.osuApiModel.OsuApiUser;
 
+import me.reddev.OsuCelebrity.Constants.Responses;
 import me.reddev.OsuCelebrity.Constants.Settings;
 
 public class TwitchManager 
@@ -22,6 +24,26 @@ public class TwitchManager
 		//Create a Twitch bot
 		_ircBot = new TwitchIRCBot(_settings, this, new Downloader(_settings.getOsuApiKey()));
 		_ircBot.start();
+	}
+	
+	/**
+	 * Adds a new user to the request list
+	 * @param user The user to request
+	 */
+	public void addRequest(OsuApiUser user)
+	{
+		getRequests().AddRequest(user);
+		_ircBot.sendMessage(String.format(Responses.ADDED_TO_QUEUE, user.getUserName()));
+		_ircBot.sendMessage(String.format(Responses.CURRENT_QUEUE, getRequests().getRequestCount()));
+	}
+	
+	/**
+	 * Notifies the stream about who the current player is
+	 * @param user The username of the player being spectated
+	 */
+	public void notifySpectate(String user)
+	{
+		_ircBot.sendMessage(String.format(Responses.CURRENT_PLAYER, user));
 	}
 	
 	/**

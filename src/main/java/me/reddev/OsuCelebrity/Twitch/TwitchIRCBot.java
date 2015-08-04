@@ -103,9 +103,9 @@ public class TwitchIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 	 * Sends a message to the current IRC channel
 	 * @param message The message to send to the channel
 	 */
-	public void sendMessage(GenericChannelEvent<PircBotX> event, String message)
+	public void sendMessage(String message)
 	{
-		event.getBot().sendIRC().message(getChannel(), message);
+		_bot.sendIRC().message(getChannel(), message);
 	}
 	
 	private void CommandResponder(MessageEvent<PircBotX> event, String message)
@@ -113,8 +113,15 @@ public class TwitchIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 		String[] messageSplit = message.substring(1).split(" ");
 		String commandName = messageSplit[0];
 		
-		if(commandName.equalsIgnoreCase("request"))
+		if(commandName.equalsIgnoreCase("queue"))
 		{
+			//Missing supporting arguments
+			if(messageSplit.length < 2)
+			{
+				sendMessage(Responses.INVALID_FORMAT_QUEUE);
+				return;
+			}
+			
 			OsuApiUser selectedUser;
 			try {
 				selectedUser = _downloader.getUser(messageSplit[1], GameModes.OSU, OsuApiUser.class);
@@ -126,18 +133,16 @@ public class TwitchIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 			}
 			if(selectedUser == null)
 			{
-				sendMessage(event, String.format(Responses.INVALID_USER, messageSplit[1]));
+				sendMessage(String.format(Responses.INVALID_USER, messageSplit[1]));
 				return;
 			}
 			
-			_twitchManager.getRequests().AddRequest(selectedUser);
-			sendMessage(event, String.format(Responses.ADDED_TO_QUEUE, selectedUser.toString()));
-			sendMessage(event, String.format(Responses.CURRENT_QUEUE, _twitchManager.getRequests().getRequestCount()));
+			_twitchManager.addRequest(selectedUser);
 		}
-		else if(commandName.equalsIgnoreCase("queue"))
+		else if(commandName.equalsIgnoreCase("next"))
 		{
 			TwitchRequest requests = _twitchManager.getRequests();
-			sendMessage(event, String.format(Responses.NEXT_IN_QUEUE, requests.getRequestedUsers().peek().toString()));
+			sendMessage(String.format(Responses.NEXT_IN_QUEUE, requests.getRequestedUsers().peek().toString()));
 		}
 	}
 	

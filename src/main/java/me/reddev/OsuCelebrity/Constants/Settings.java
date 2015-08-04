@@ -7,12 +7,11 @@ import java.util.Properties;
 import lombok.Data;
 import me.reddev.OsuCelebrity.Osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.OsuCelebrity.Osu.OsuIRCBot.OsuIRCSettings;
-import me.reddev.OsuCelebrity.Output.StreamOutput.StreamOutputSettings;
 import me.reddev.OsuCelebrity.Twitch.TwitchAPI.TwitchApiSettings;
 import me.reddev.OsuCelebrity.Twitch.TwitchIRCBot.TwitchIrcSettings;
 
 @Data
-public class Settings implements OsuIRCSettings, TwitchIrcSettings, TwitchApiSettings, StreamOutputSettings, OsuApplicationSettings
+public class Settings implements OsuIRCSettings, TwitchIrcSettings, TwitchApiSettings, OsuApplicationSettings
 {
 	//Twitch IRC settings
 	private final String twitchIrcChannel;

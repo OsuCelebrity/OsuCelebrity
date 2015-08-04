@@ -103,20 +103,30 @@ public class OsuIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 		_bot.sendIRC().message(Constants.OSU_COMMAND_USER, message);
 	}
 	
+	/**
+	 * Notify the next player their turn will be up soon
+	 * @param user The username of the next player
+	 */
+	public void notifyNextPlayer(String user)
+	{
+		_bot.sendIRC().message(user.toLowerCase(), Responses.UPCOMING_SESSION);
+	}
+	
 	// Listeners
 	// http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
 	
 	@Override
 	public void onPrivateMessage(PrivateMessageEvent<PircBotX> event)
 	{
-		String message = event.getMessage();
+		String[] messageSplit = event.getMessage().substring(1).split(" ");
+		String commandName = messageSplit[0];
 		//TODO: Accept in-game requests
 		
-		if(event.getUser().getNick().equalsIgnoreCase("Redback"))
+		if(commandName.equalsIgnoreCase("queue"))
 		{
 			OsuApiUser selectedUser;
 			try {
-				selectedUser = _downloader.getUser(event.getMessage(), GameModes.OSU, OsuApiUser.class);
+				selectedUser = _downloader.getUser(event.getUser().getNick(), GameModes.OSU, OsuApiUser.class);
 			} catch (IOException e) {
 				// I don't know what the plan should be in this case, but I didn't want the error to be unhandled --Tillerino
 				
@@ -129,7 +139,7 @@ public class OsuIRCBot extends ListenerAdapter<PircBotX> implements Runnable
 				return;
 			}
 			
-			_manager.getRequests().AddRequest(selectedUser);
+			_manager.addRequest(selectedUser);
 		}
 	}
 	
