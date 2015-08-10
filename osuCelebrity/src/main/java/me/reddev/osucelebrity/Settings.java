@@ -11,33 +11,47 @@ import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.InputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Properties;
 
 @Data
 public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSettings,
     OsuApplicationSettings, OsuApiSettings, CoreSettings {
   // Twitch IRC settings
-  private final String twitchIrcChannel;
-  private final String twitchIrcUsername;
-  private final String twitchToken;
+  private String twitchIrcChannel;
+  private String twitchIrcUsername;
+  private String twitchToken;
+  
+  private String twitchIrcHost;
+  private int twitchIrcPort;
+  
+  private String twitchIrcCommand;
 
+  // Twitch API settings
+  private String twitchApiRoot;
+  
+  // Osu! IRC settings
+  private String osuIrcHost;
+  private int osuIrcPort;
+  private String osuCommandUser;
+  
   // Osu! API settings
-  private final String osuApiKey;
+  private String osuApiKey;
 
   // Osu! Account Settings
-  private final String osuIrcUsername;
-  private final String osuIrcPassword;
-  private final String twitchClientId;
-  private final String twitchClientSecret;
+  private String osuIrcUsername;
+  private String osuIrcPassword;
+  private String twitchClientId;
+  private String twitchClientSecret;
 
   // Osu! Location Settings
-  private final String osuPath;
+  private String osuPath;
 
   // Stream Output Settings
-  private final String streamOutputPath;
+  private String streamOutputPath;
 
   // Application Settings
-  private final int spectateDuration;
+  private long defaultSpecDuration;
 
   /**
    * Creates a new settings object using a given property list.
@@ -45,39 +59,34 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
    * @throws RuntimeException if an input parameter is not found 
    */
   public Settings(Properties properties) {
-    if ((twitchIrcChannel = properties.getProperty("twitchIrcChannel")) == null) {
-      throw new RuntimeException("please supply the parameter twitchIrcChannel");
-    }
-    if ((twitchIrcUsername = properties.getProperty("twitchIrcUsername")) == null) {
-      throw new RuntimeException("please supply the parameter twitchIrcUsername");
-    }
-    if ((twitchToken = properties.getProperty("twitchToken")) == null) {
-      throw new RuntimeException("please supply the parameter twitchToken");
-    }
-    if ((osuApiKey = properties.getProperty("osuApiKey")) == null) {
-      throw new RuntimeException("please supply the parameter osuApiKey");
-    }
-    if ((osuIrcUsername = properties.getProperty("osuIrcUsername")) == null) {
-      throw new RuntimeException("please supply the parameter osuIrcUsername");
-    }
-    if ((osuIrcPassword = properties.getProperty("osuIrcPassword")) == null) {
-      throw new RuntimeException("please supply the parameter osuIrcPassword");
-    }
-    if ((twitchClientId = properties.getProperty("twitchClientId")) == null) {
-      throw new RuntimeException("please supply the parameter twitchClientId");
-    }
-    if ((twitchClientSecret = properties.getProperty("twitchClientSecret")) == null) {
-      throw new RuntimeException("please supply the parameter twitchClientSecret");
-    }
-    if ((osuPath = properties.getProperty("osuPath")) == null) {
-      throw new RuntimeException("please supply the parameter osuPath");
-    }
-    if ((streamOutputPath = properties.getProperty("streamOutputPath")) == null) {
-      throw new RuntimeException("please supply the parameter streamOutputPath");
-    }
-    if ((spectateDuration = NumberUtils.toInt(
-        properties.getProperty("spectateDuration"), 0)) == 0) {
-      throw new RuntimeException("please supply the parameter spectateDuration");
+    Field[] fields = Settings.class.getDeclaredFields();
+    for (Field f : fields) {
+      Class<?> fieldClass = f.getType();
+      String property = properties.getProperty(f.getName());
+      
+      if (property == null) {
+        throw new RuntimeException("please supply the paramater " + f.getName());
+      }
+      
+      try {
+        if (fieldClass == String.class) {
+          f.set(this, property);
+        } else if (fieldClass == int.class) {
+          try {
+            f.set(this, NumberUtils.toInt(property));
+          } catch (NumberFormatException e) {
+            throw new NumberFormatException(f.getName() + " must be an integer");
+          }
+        } else if (fieldClass == long.class) {
+          try {
+            f.set(this, NumberUtils.toLong(property));
+          } catch (NumberFormatException e) {
+            throw new NumberFormatException(f.getName() + " must be a long");
+          }
+        }
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 

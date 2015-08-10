@@ -21,8 +21,6 @@ import java.text.DecimalFormat;
 @RequiredArgsConstructor
 public class OsuApplication {
   public interface OsuApplicationSettings {
-    int getSpectateDuration();
-
     String getStreamOutputPath();
 
     Object getOsuPath();
