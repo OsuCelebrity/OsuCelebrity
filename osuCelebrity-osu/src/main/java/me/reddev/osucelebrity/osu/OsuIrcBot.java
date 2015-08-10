@@ -1,7 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.osuapi.OsuApiSettings;
-
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.UserException;
@@ -15,11 +15,11 @@ import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.types.GenericChannelEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
-import org.tillerino.osuApiModel.Downloader;
 import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.OsuApiUser;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +30,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   private String username;
 
   private final Osu osu;
-  private final Downloader downloader;
+  private final OsuApi osuApi;
 
   private final OsuIrcSettings ircSettings;
 
@@ -39,10 +39,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   /**
    * Constructs a new Osu! IRC bot.
    */
-  public OsuIrcBot(OsuIrcSettings ircSettings, OsuApiSettings apiSettings, Osu osu) {
+  public OsuIrcBot(OsuIrcSettings ircSettings, OsuApi osuApi, Osu osu) {
     this.username = ircSettings.getOsuIrcUsername();
     this.osu = osu;
-    this.downloader = new Downloader(apiSettings.getOsuApiKey());
+    this.osuApi = osuApi;
     this.ircSettings = ircSettings;
 
     // Reset bot
@@ -117,19 +117,15 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       handleException(e, event.getUser());
     }
   }
-  
-  OsuApiUser getOsuUser(GenericMessageEvent<PircBotX> event) {
-    try {
-      return downloader.getUser(event.getUser().getNick(), GameModes.OSU, OsuApiUser.class);
-    } catch (IOException e) {
-      // I don't know what the plan should be in this case, but I didn't want the error to be
-      // unhandled --Tillerino
 
-      log.warn("error getting user", e);
-      event.getUser().send().message(String.format(Responses.INVALID_USER, 
-          event.getUser().getNick()));
-      return null;
+  OsuApiUser getOsuUser(GenericMessageEvent<PircBotX> event) throws SQLException, IOException,
+      UserException {
+    final OsuApiUser user =
+        osuApi.getUser(event.getUser().getNick(), GameModes.OSU, 60 * 60 * 1000);
+    if (user == null) {
+      throw new UserException(String.format(Responses.INVALID_USER, event.getUser().getNick()));
     }
+    return user;
   }
 
   void dispatchCommand(OsuCommand command) throws Exception {

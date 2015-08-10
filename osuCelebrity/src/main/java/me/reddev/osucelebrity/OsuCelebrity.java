@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity;
 
+import me.reddev.osucelebrity.osuapi.MockOsuApi;
+import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.core.Core;
 import me.reddev.osucelebrity.osu.OsuImpl;
 import me.reddev.osucelebrity.twitch.Twitch;
@@ -15,9 +17,11 @@ public class OsuCelebrity implements Runnable {
   public void run() {
     ExecutorService exec = Executors.newCachedThreadPool();
     
-    Settings settings = new Settings();
+    OsuApi osuApi = new MockOsuApi();
 
-    OsuImpl osu = new OsuImpl(settings, settings);
+    Settings settings = new Settings();
+    
+    OsuImpl osu = new OsuImpl(osuApi, settings);
     Twitch twitch = null;
     Core core = new Core(osu, twitch, settings);
     

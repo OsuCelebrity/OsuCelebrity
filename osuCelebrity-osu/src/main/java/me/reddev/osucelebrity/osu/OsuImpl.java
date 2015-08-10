@@ -1,21 +1,22 @@
 package me.reddev.osucelebrity.osu;
 
-import me.reddev.osucelebrity.osuapi.OsuApiSettings;
+import me.reddev.osucelebrity.osuapi.OsuApi;
 
+import me.reddev.osucelebrity.osuapi.OsuApiSettings;
 import org.tillerino.osuApiModel.OsuApiUser;
 
 import javax.annotation.CheckForNull;
 
 public class OsuImpl implements Osu {
-  final OsuApiSettings apiSettings;
+  final OsuApi osuApi;
   final OsuIrcSettings ircSettings;
   
   /**
    * constructs a new Osu instance.
    */
-  public OsuImpl(OsuApiSettings apiSettings, OsuIrcSettings ircSettings) {
+  public OsuImpl(OsuApi osuApi, OsuIrcSettings ircSettings) {
     super();
-    this.apiSettings = apiSettings;
+    this.osuApi = osuApi;
     this.ircSettings = ircSettings;
   }
 
@@ -28,7 +29,7 @@ public class OsuImpl implements Osu {
    */
   public OsuIrcBot getBot() {
     if (bot == null) {
-      bot = new OsuIrcBot(ircSettings, apiSettings, this);
+      bot = new OsuIrcBot(ircSettings, osuApi, this);
     }
     return bot;
   }
