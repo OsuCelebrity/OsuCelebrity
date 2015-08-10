@@ -1,8 +1,9 @@
 package me.reddev.osucelebrity.twitch;
 
+import me.reddev.osucelebrity.osuapi.OsuApiSettings;
+
 import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.Responses;
-import me.reddev.osucelebrity.osu.OsuApiSettings;
 import org.tillerino.osuApiModel.Downloader;
 import org.tillerino.osuApiModel.OsuApiUser;
 

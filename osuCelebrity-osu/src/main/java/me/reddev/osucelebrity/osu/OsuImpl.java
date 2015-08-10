@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.osuapi.OsuApiSettings;
+
 import org.tillerino.osuApiModel.OsuApiUser;
 
 import javax.annotation.CheckForNull;

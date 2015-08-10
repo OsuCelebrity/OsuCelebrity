@@ -1,8 +1,9 @@
 package me.reddev.osucelebrity;
 
+import me.reddev.osucelebrity.osuapi.OsuApiSettings;
+
 import lombok.Data;
 import me.reddev.osucelebrity.core.CoreSettings;
-import me.reddev.osucelebrity.osu.OsuApiSettings;
 import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.osucelebrity.osu.OsuIrcSettings;
 import me.reddev.osucelebrity.twitch.TwitchApiSettings;

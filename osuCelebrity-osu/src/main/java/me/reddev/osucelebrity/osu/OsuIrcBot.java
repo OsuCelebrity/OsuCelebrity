@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.osuapi.OsuApiSettings;
+
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.UserException;
