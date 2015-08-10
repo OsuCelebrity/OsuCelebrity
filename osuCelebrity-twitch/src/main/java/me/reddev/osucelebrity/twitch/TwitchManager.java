@@ -1,61 +1,65 @@
 package me.reddev.osucelebrity.twitch;
 
-import org.tillerino.osuApiModel.Downloader;
-import org.tillerino.osuApiModel.OsuApiUser;
-
 import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.osu.OsuApiSettings;
+import org.tillerino.osuApiModel.Downloader;
+import org.tillerino.osuApiModel.OsuApiUser;
 
 @RequiredArgsConstructor
 public class TwitchManager {
-  private TwitchIrcBot _ircBot;
-  private TwitchRequest _requests;
+  private TwitchIrcBot ircBot;
+  private TwitchRequest requests;
 
-  private final TwitchIrcSettings _ircSettings;
-  private final OsuApiSettings _osuApiSettings;
+  private final TwitchIrcSettings ircSettings;
+  private final OsuApiSettings osuApiSettings;
 
+  /**
+   * Starts the twitch manager.
+   */
   public void start() {
-    _requests = new TwitchRequest();
+    this.requests = new TwitchRequest();
     // Create a Twitch bot
-    _ircBot = new TwitchIrcBot(_ircSettings, this, new Downloader(_osuApiSettings.getOsuApiKey()));
-    _ircBot.start();
+    this.ircBot = new TwitchIrcBot(ircSettings, this, 
+        new Downloader(osuApiSettings.getOsuApiKey()));
+    this.ircBot.start();
   }
 
   /**
-   * Adds a new user to the request list
+   * Adds a new user to the request list.
    * 
    * @param user The user to request
    */
   public void addRequest(OsuApiUser user) {
-    getRequests().AddRequest(user);
-    _ircBot.sendMessage(String.format(Responses.ADDED_TO_QUEUE, user.getUserName()));
-    _ircBot.sendMessage(String.format(Responses.CURRENT_QUEUE, getRequests().getRequestCount()));
+    getRequests().addRequest(user);
+    ircBot.sendMessage(String.format(Responses.ADDED_TO_QUEUE, user.getUserName()));
+    ircBot.sendMessage(String.format(Responses.CURRENT_QUEUE, getRequests().getRequestCount()));
   }
 
   /**
-   * Notifies the stream about who the current player is
+   * Notifies the stream about who the current player is.
    * 
    * @param user The username of the player being spectated
    */
   public void notifySpectate(String user) {
-    _ircBot.sendMessage(String.format(Responses.CURRENT_PLAYER, user));
+    ircBot.sendMessage(String.format(Responses.CURRENT_PLAYER, user));
   }
 
   /**
-   * @return The request object connected to the Twitch chat
+   * @return The request object connected to the Twitch chat.
    */
   public TwitchRequest getRequests() {
-    if (_requests == null)
-      return (_requests = new TwitchRequest());
-    else
-      return _requests;
+    if (requests == null) {
+      return (requests = new TwitchRequest());
+    } else {
+      return requests;
+    }
   }
 
   /**
-   * @return The Twitch IRC bot connected to the Twitch chat
+   * @return The Twitch IRC bot connected to the Twitch chat.
    */
-  public TwitchIrcBot getIRCBot() {
-    return _ircBot;
+  public TwitchIrcBot getIrcBot() {
+    return ircBot;
   }
 }

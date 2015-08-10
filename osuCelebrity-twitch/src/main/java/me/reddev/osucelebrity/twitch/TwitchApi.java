@@ -1,22 +1,22 @@
 package me.reddev.osucelebrity.twitch;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.net.URLConnection;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 @RequiredArgsConstructor
 public class TwitchApi {
-  private final TwitchApiSettings _settings;
+  private final TwitchApiSettings settings;
 
   /**
-   * Sends a request to the Twitch API server with POST queries
+   * Sends a request to the Twitch API server with POST queries.
    * 
    * @param uri The URL, relative to the API base
    * @param queries The POST queries
@@ -25,27 +25,30 @@ public class TwitchApi {
   private String postRequest(String uri, String... queries) {
     try {
       // Connects queries into POST string
-      String urlParameters = join(queries, "&");
-      URL url = new URL(_settings.getTwitchApiRoot() + uri);
+      URL url = new URL(settings.getTwitchApiRoot() + uri);
       URLConnection conn = url.openConnection();
 
       // Add API headers
-      conn.setRequestProperty("Client-ID", _settings.getTwitchClientId());
+      conn.setRequestProperty("Client-ID", settings.getTwitchClientId());
       conn.setRequestProperty("Accept", "application/vnd.twitchtv.v2+json");
-      conn.setRequestProperty("Authorization", "OAuth: " + _settings.getTwitchToken());
+      conn.setRequestProperty("Authorization", "OAuth: " + settings.getTwitchToken());
       conn.setDoOutput(true);
 
-      OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream());
+      OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
 
+      String urlParameters = join(queries, "&");
+      
       writer.write(urlParameters);
       writer.flush();
 
-      String line, output = "";
-      BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+      String line;
+      String output = "";
+      BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), 
+          "UTF-8"));
 
       while ((line = reader.readLine()) != null) {
         // Concatenate read lines
-        output += line;
+        output = output.concat(line);
       }
       writer.close();
       reader.close();
@@ -57,13 +60,14 @@ public class TwitchApi {
     }
   }
 
-  private static String join(String r[], String d) {
-    if (r.length == 0)
+  private static String join(String[] input, String deliminator) {
+    if (input.length == 0) {
       return "";
+    }
     StringBuilder sb = new StringBuilder();
-    int i;
-    for (i = 0; i < r.length - 1; i++)
-      sb.append(r[i] + d);
-    return sb.toString() + r[i];
+    for (int i = 0; i < input.length - 1; i++) {
+      sb.append(input[i]).append(deliminator);
+    }
+    return sb.toString() + input[input.length - 1];
   }
 }

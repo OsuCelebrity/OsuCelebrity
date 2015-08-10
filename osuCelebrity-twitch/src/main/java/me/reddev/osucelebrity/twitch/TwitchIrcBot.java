@@ -1,14 +1,7 @@
 package me.reddev.osucelebrity.twitch;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.Responses;
-
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.exception.IrcException;
@@ -20,52 +13,60 @@ import org.tillerino.osuApiModel.Downloader;
 import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.OsuApiUser;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @Slf4j
 public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
-  private PircBotX _bot;
+  private PircBotX bot;
 
-  private String _channel, _username;
-  private List<String> _subscribers;
+  private String channel;
+  private String username;
+  private List<String> subscribers;
 
-  private TwitchManager _twitchManager;
+  private TwitchManager twitchManager;
 
-  private Downloader _downloader;
+  private Downloader downloader;
 
-  private final TwitchIrcSettings _settings;
+  private final TwitchIrcSettings settings;
 
   /**
-   * Constructs a new Twitch IRC bot
+   * Constructs a new Twitch IRC bot.
    * 
-   * @param channel The username of the Twitch channel to connect to
-   * @param username The username of the Twitch IRC bot
-   * @param password The IRC password of the Twitch IRC bot
+   * @param settings The Twitch Irc settings for the program
+   * @param twitchManager The active TwitchManager
+   * @param downloader The generated downloader
    */
-  public TwitchIrcBot(TwitchIrcSettings settings, TwitchManager twitchManager, Downloader downloader) {
-    _settings = settings;
+  public TwitchIrcBot(TwitchIrcSettings settings, TwitchManager twitchManager, 
+      Downloader downloader) {
+    this.settings = settings;
 
-    _channel = settings.getTwitchIrcChannel();
-    _username = settings.getTwitchIrcUsername();
+    this.channel = settings.getTwitchIrcChannel();
+    this.username = settings.getTwitchIrcUsername();
 
     // Reset user lists
-    _subscribers = new ArrayList<String>();
+    this.subscribers = new ArrayList<String>();
 
     // Reset bot
     Configuration<PircBotX> config =
         new Configuration.Builder<PircBotX>()
-            .setName(_username)
-            .setLogin(_username)
+            .setName(this.username)
+            .setLogin(this.username)
             .addListener(this)
             .setServer(settings.getTwitchIrcHost(), settings.getTwitchIrcPort(),
                 settings.getTwitchToken()).setAutoReconnect(true).addAutoJoinChannel(getChannel())
             .buildConfiguration();
-    _bot = new PircBotX(config);
+    bot = new PircBotX(config);
 
-    this._twitchManager = twitchManager;
-    this._downloader = downloader;
+    this.twitchManager = twitchManager;
+    this.downloader = downloader;
   }
 
   /**
-   * Connects to IRC and sets up listeners
+   * Connects to IRC and sets up listeners.
    */
   public void start() {
     Thread botThread = new Thread(this);
@@ -73,9 +74,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     (botThread).start();
   }
 
+  @Override
   public void run() {
     try {
-      _bot.startBot();
+      bot.startBot();
     } catch (IOException e) {
       log.error("TwitchIRCBot IOException: " + e.getMessage());
     } catch (IrcException e) {
@@ -84,23 +86,24 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   }
 
   /**
-   * Disconnects from the IRC server
+   * Disconnects from the IRC server.
    */
-  public void Stop() {
-    if (_bot.isConnected())
-      _bot.stopBotReconnect();
+  public void stop() {
+    if (bot.isConnected()) {
+      bot.stopBotReconnect();
+    }
   }
 
   /**
-   * Sends a message to the current IRC channel
+   * Sends a message to the current IRC channel.
    * 
    * @param message The message to send to the channel
    */
   public void sendMessage(String message) {
-    _bot.sendIRC().message(getChannel(), message);
+    bot.sendIRC().message(getChannel(), message);
   }
 
-  private void CommandResponder(MessageEvent<PircBotX> event, String message) {
+  private void commandResponder(MessageEvent<PircBotX> event, String message) {
     String[] messageSplit = message.substring(1).split(" ");
     String commandName = messageSplit[0];
 
@@ -113,7 +116,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
       OsuApiUser selectedUser;
       try {
-        selectedUser = _downloader.getUser(messageSplit[1], GameModes.OSU, OsuApiUser.class);
+        selectedUser = downloader.getUser(messageSplit[1], GameModes.OSU, OsuApiUser.class);
       } catch (IOException e) {
         // I don't know what the plan should be in this case, but I didn't want the error to be
         // unhandled --Tillerino
@@ -122,19 +125,19 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
         selectedUser = null;
       }
       if (selectedUser == null) {
-        sendMessage(String.format(Responses.INVALID_USER/*, messageSplit[1]*/));
+        sendMessage(String.format(Responses.INVALID_USER , messageSplit[1]));
         return;
       }
 
-      _twitchManager.addRequest(selectedUser);
+      twitchManager.addRequest(selectedUser);
     } else if (commandName.equalsIgnoreCase("next")) {
-      TwitchRequest requests = _twitchManager.getRequests();
+      TwitchRequest requests = twitchManager.getRequests();
       sendMessage(String.format(Responses.NEXT_IN_QUEUE, requests.getRequestedUsers().peek()
           .toString()));
     }
   }
 
-  private void ModCommandResponder(MessageEvent<PircBotX> event, String message) {
+  private void modCommandResponder(MessageEvent<PircBotX> event, String message) {
 
   }
 
@@ -145,10 +148,11 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   public void onMessage(MessageEvent<PircBotX> event) {
     String message = event.getMessage();
     // Search through for command calls
-    if (message.startsWith(_settings.getTwitchIrcCommand())) {
-      if (event.getChannel().isOp(event.getUser()))
-        ModCommandResponder(event, message);
-      CommandResponder(event, message);
+    if (message.startsWith(settings.getTwitchIrcCommand())) {
+      if (event.getChannel().isOp(event.getUser())) {
+        modCommandResponder(event, message);
+      }
+      commandResponder(event, message);
     }
   }
 
@@ -159,19 +163,20 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     Matcher matches = specialUserRegex.matcher(message);
 
     // Nothing important - no special messages
-    if (!matches.matches())
+    if (!matches.matches()) {
       return;
+    }
 
-    if (matches.group(2).equalsIgnoreCase("subscriber"))
-      _subscribers.add(matches.group(1).toLowerCase());
-    else {
+    if (matches.group(2).equalsIgnoreCase("subscriber")) {
+      subscribers.add(matches.group(1).toLowerCase());
+    } else {
       // TODO: Add a special case for turbo users
     }
   }
 
   @Override
   public void onJoin(JoinEvent<PircBotX> event) {
-    if (event.getUser().getLogin().equalsIgnoreCase(_username)) {
+    if (event.getUser().getLogin().equalsIgnoreCase(username)) {
       // Ask for subscription and admin information
       event.getBot().sendRaw().rawLine("TWITCHCLIENT 3");
       log.info(String.format("Joined %s", event.getChannel().getName()));
@@ -181,18 +186,18 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   // End Listeners
 
   /**
-   * @return The list of subscribers in the IRC channel
+   * @return The list of subscribers in the IRC channel.
    */
   public List<String> getSubscribers() {
-    return _subscribers;
+    return subscribers;
   }
 
   /**
-   * Gets the IRC channel of the IRC bot
+   * Gets the IRC channel of the IRC bot.
    * 
    * @return The IRC channel with pound symbol
    */
   public String getChannel() {
-    return String.format("#%s", _channel.toLowerCase());
+    return String.format("#%s", channel.toLowerCase());
   }
 }
