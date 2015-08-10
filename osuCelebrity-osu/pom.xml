@@ -13,7 +13,7 @@
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>me.reddev.osuCelebrity</groupId>
+			<groupId>tv.rdbk.osuCelebrity</groupId>
 			<artifactId>osuCelebrity-model</artifactId>
 		</dependency>
 		<dependency>

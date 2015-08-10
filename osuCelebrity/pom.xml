@@ -38,19 +38,19 @@
 	</build>
 	<dependencies>
 		<dependency>
-			<groupId>me.reddev.osuCelebrity</groupId>
+			<groupId>tv.rdbk.osuCelebrity</groupId>
 			<artifactId>osuCelebrity-model</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>me.reddev.osuCelebrity</groupId>
+			<groupId>tv.rdbk.osuCelebrity</groupId>
 			<artifactId>osuCelebrity-osu</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>me.reddev.osuCelebrity</groupId>
+			<groupId>tv.rdbk.osuCelebrity</groupId>
 			<artifactId>osuCelebrity-twitch</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>me.reddev.osuCelebrity</groupId>
+			<groupId>tv.rdbk.osuCelebrity</groupId>
 			<artifactId>osuCelebrity-core</artifactId>
 		</dependency>
 		<dependency>
