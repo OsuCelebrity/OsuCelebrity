@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.core;
 
+import lombok.extern.slf4j.Slf4j;
+
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuCommand;
 import me.reddev.osucelebrity.osu.commands.QueueSelfOsuCommand;
@@ -14,6 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * 
  * @author Tillerino
  */
+@Slf4j
 public class Core implements Runnable {
   final Osu osu;
   final Twitch twitch;
@@ -40,6 +43,7 @@ public class Core implements Runnable {
     if (command instanceof QueueSelfOsuCommand) {
       if (!queue.contains(command.getUser())) {
         queue.add(command.getUser());
+        log.info("Queued " + command.getUser().getUserName());
       }
     }
     return false;
