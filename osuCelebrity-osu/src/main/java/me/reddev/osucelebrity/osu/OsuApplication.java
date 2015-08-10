@@ -48,6 +48,7 @@ public class OsuApplication {
     String command =
         String.format("\"%s\" \"%s\"", settings.getOsuPath(),
             String.format(OSU_COMMAND_SPECTATE, osuUser));
+    log.debug("issued command " + command);
     osuProcess = rt.exec(command);
   }
 

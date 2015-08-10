@@ -21,7 +21,7 @@ public class OsuCelebrity implements Runnable {
 
     Settings settings = new Settings();
     
-    OsuImpl osu = new OsuImpl(osuApi, settings);
+    OsuImpl osu = new OsuImpl(osuApi, settings, settings);
     Twitch twitch = null;
     Core core = new Core(osu, twitch, settings);
     
