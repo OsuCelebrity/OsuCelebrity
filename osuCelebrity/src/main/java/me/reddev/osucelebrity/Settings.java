@@ -83,6 +83,8 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
           } catch (NumberFormatException e) {
             throw new NumberFormatException(f.getName() + " must be a long");
           }
+        } else {
+          throw new UnsupportedOperationException("could not parse object type " + f.getName());
         }
       } catch (IllegalAccessException e) {
         throw new RuntimeException(e);

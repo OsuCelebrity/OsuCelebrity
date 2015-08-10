@@ -12,6 +12,7 @@ import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.types.GenericChannelEvent;
+import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.tillerino.osuApiModel.Downloader;
 import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.OsuApiUser;
@@ -106,25 +107,26 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     String commandName = messageSplit[0];
     // TODO: Accept in-game requests
 
-    final OsuApiUser selectedUser;
     try {
-      selectedUser =
-          downloader.getUser(event.getUser().getNick(), GameModes.OSU, OsuApiUser.class);
+      if (commandName.equalsIgnoreCase("queue")) {
+        dispatchCommand(new QueueSelfOsuCommandImpl(osu, getOsuUser(event)));
+      }
+    } catch (Exception e) {
+      handleException(e, event.getUser());
+    }
+  }
+  
+  OsuApiUser getOsuUser(GenericMessageEvent<PircBotX> event) {
+    try {
+      return downloader.getUser(event.getUser().getNick(), GameModes.OSU, OsuApiUser.class);
     } catch (IOException e) {
       // I don't know what the plan should be in this case, but I didn't want the error to be
       // unhandled --Tillerino
 
       log.warn("error getting user", e);
-      event.getUser().send().message(String.format(Responses.INVALID_USER, event.getMessage()));
-      return;
-    }
-
-    try {
-      if (commandName.equalsIgnoreCase("queue")) {
-        dispatchCommand(new QueueSelfOsuCommandImpl(osu, selectedUser));
-      }
-    } catch (Exception e) {
-      handlException(e, event.getUser());
+      event.getUser().send().message(String.format(Responses.INVALID_USER, 
+          event.getUser().getNick()));
+      return null;
     }
   }
 
@@ -136,7 +138,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     }
   }
 
-  void handlException(Exception ex, User user) {
+  void handleException(Exception ex, User user) {
     try {
       throw ex;
     } catch (UserException e) {
