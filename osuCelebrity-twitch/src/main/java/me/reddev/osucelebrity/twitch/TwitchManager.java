@@ -9,7 +9,7 @@ import me.reddev.osucelebrity.osu.OsuApiSettings;
 
 @RequiredArgsConstructor
 public class TwitchManager {
-  private TwitchIRCBot _ircBot;
+  private TwitchIrcBot _ircBot;
   private TwitchRequest _requests;
 
   private final TwitchIrcSettings _ircSettings;
@@ -18,7 +18,7 @@ public class TwitchManager {
   public void start() {
     _requests = new TwitchRequest();
     // Create a Twitch bot
-    _ircBot = new TwitchIRCBot(_ircSettings, this, new Downloader(_osuApiSettings.getOsuApiKey()));
+    _ircBot = new TwitchIrcBot(_ircSettings, this, new Downloader(_osuApiSettings.getOsuApiKey()));
     _ircBot.start();
   }
 
@@ -55,7 +55,7 @@ public class TwitchManager {
   /**
    * @return The Twitch IRC bot connected to the Twitch chat
    */
-  public TwitchIRCBot getIRCBot() {
+  public TwitchIrcBot getIRCBot() {
     return _ircBot;
   }
 }

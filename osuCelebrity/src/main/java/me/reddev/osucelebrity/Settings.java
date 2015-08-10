@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity;
 
+import me.reddev.osucelebrity.core.CoreSettings;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -13,7 +15,7 @@ import me.reddev.osucelebrity.twitch.TwitchIrcSettings;
 
 @Data
 public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSettings,
-    OsuApplicationSettings, OsuApiSettings {
+    OsuApplicationSettings, OsuApiSettings, CoreSettings {
   // Twitch IRC settings
   private final String twitchIrcChannel;
   private final String twitchIrcUsername;

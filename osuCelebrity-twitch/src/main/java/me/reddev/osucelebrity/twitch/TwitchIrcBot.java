@@ -21,7 +21,7 @@ import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.OsuApiUser;
 
 @Slf4j
-public class TwitchIRCBot extends ListenerAdapter<PircBotX> implements Runnable {
+public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   private PircBotX _bot;
 
   private String _channel, _username;
@@ -40,7 +40,7 @@ public class TwitchIRCBot extends ListenerAdapter<PircBotX> implements Runnable 
    * @param username The username of the Twitch IRC bot
    * @param password The IRC password of the Twitch IRC bot
    */
-  public TwitchIRCBot(TwitchIrcSettings settings, TwitchManager twitchManager, Downloader downloader) {
+  public TwitchIrcBot(TwitchIrcSettings settings, TwitchManager twitchManager, Downloader downloader) {
     _settings = settings;
 
     _channel = settings.getTwitchIrcChannel();

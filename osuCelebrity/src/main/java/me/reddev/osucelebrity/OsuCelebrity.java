@@ -1,20 +1,29 @@
 package me.reddev.osucelebrity;
 
-import me.reddev.osucelebrity.osu.OsuApplication;
-import me.reddev.osucelebrity.twitch.TwitchManager;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import me.reddev.osucelebrity.osu.OsuImpl;
+import me.reddev.osucelebrity.twitch.Twitch;
+import me.reddev.osucelebrity.core.Core;
 
 public class OsuCelebrity {
-  private OsuApplication osu;
-  private TwitchManager twitchManager;
-
   public void run() {
+    ExecutorService exec = Executors.newCachedThreadPool();
+    
     Settings settings = new Settings();
 
-    twitchManager = new TwitchManager(settings, settings);
-    twitchManager.start();
+    OsuImpl osu = new OsuImpl(settings, settings);
+    Twitch twitch = null;
+    Core core = new Core(osu, twitch, settings);
+    
+    List<Future<?>> tasks = new ArrayList<>();
 
-    osu = new OsuApplication(settings, settings, settings, twitchManager);
-    osu.start();
+    tasks.add(exec.submit(core));
+    tasks.add(exec.submit(osu.getBot()));
   }
 
   /**

@@ -11,6 +11,9 @@
 	<packaging>jar</packaging>
 	<name>osuCelebrity</name>
 	<url>https://github.com/RedbackThomson/OsuCelebrity</url>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
 	<build>
 		<plugins>
 			<plugin>
@@ -45,6 +48,10 @@
 		<dependency>
 			<groupId>me.reddev.osuCelebrity</groupId>
 			<artifactId>osuCelebrity-twitch</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>me.reddev.osuCelebrity</groupId>
+			<artifactId>osuCelebrity-core</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>

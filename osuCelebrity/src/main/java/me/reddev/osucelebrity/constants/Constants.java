@@ -21,8 +21,5 @@ public class Constants {
   public static int OSU_IRC_PORT = 6667;
   public static String OSU_COMMAND_USER = "BanchoBot";
 
-  // Osu! IRC Commands properties
-  public static String OSU_COMMAND_SPECTATE = "osu://spectate/%s";
-
   public static Boolean DEBUGGING = true;
 }

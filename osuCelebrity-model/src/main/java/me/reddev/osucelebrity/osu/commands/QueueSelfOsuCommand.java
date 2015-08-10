@@ -5,6 +5,6 @@ import me.reddev.osucelebrity.osu.OsuCommand;
 /**
  * The user issued the command to enter the queue of players to be spectated.
  */
-public interface QueueSelfCommand extends OsuCommand {
+public interface QueueSelfOsuCommand extends OsuCommand {
 
 }

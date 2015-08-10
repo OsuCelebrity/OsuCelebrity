@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
-public class TwitchAPI {
+public class TwitchApi {
   private final TwitchApiSettings _settings;
 
   /**
