@@ -24,3 +24,4 @@ local.properties
 # Mac
 .DS_Store
 */target/
+osuCelebrity/src/main/resources/osuCelebrity.properties

@@ -56,7 +56,7 @@ public class OsuImpl implements Osu {
   @Override
   public void startSpectate(OsuApiUser user) {
     try {
-      app.spectate(user.getUserName());
+      getApp().spectate(user.getUserName());
     } catch (IOException e) {
       log.error("error spectating", e);
     }
