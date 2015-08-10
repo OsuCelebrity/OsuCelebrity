@@ -1,17 +1,17 @@
 package me.reddev.osucelebrity;
 
-import me.reddev.osucelebrity.core.CoreSettings;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
-
 import lombok.Data;
+import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.osu.OsuApiSettings;
 import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.osucelebrity.osu.OsuIrcSettings;
 import me.reddev.osucelebrity.twitch.TwitchApiSettings;
 import me.reddev.osucelebrity.twitch.TwitchIrcSettings;
+import org.apache.commons.lang3.math.NumberUtils;
+
+import java.io.InputStream;
+import java.io.IOException;
+import java.util.Properties;
 
 @Data
 public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSettings,
@@ -39,6 +39,11 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   // Application Settings
   private final int spectateDuration;
 
+  /**
+   * Creates a new settings object using a given property list.
+   * @param properties An imported java property list
+   * @throws RuntimeException if an input parameter is not found 
+   */
   public Settings(Properties properties) {
     if ((twitchIrcChannel = properties.getProperty("twitchIrcChannel")) == null) {
       throw new RuntimeException("please supply the parameter twitchIrcChannel");
@@ -70,7 +75,8 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
     if ((streamOutputPath = properties.getProperty("streamOutputPath")) == null) {
       throw new RuntimeException("please supply the parameter streamOutputPath");
     }
-    if ((spectateDuration = tryParse(properties.getProperty("spectateDuration"))) == 0) {
+    if ((spectateDuration = NumberUtils.toInt(
+        properties.getProperty("spectateDuration"), 0)) == 0) {
       throw new RuntimeException("please supply the parameter spectateDuration");
     }
   }
@@ -78,7 +84,12 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   public Settings() {
     this(getProperties("osuCelebrity.properties"));
   }
-
+  
+  /**
+   * Loads a property from an included resource.
+   * @param resourceName The name of the property resource
+   * @return The property resource as a string
+   */
   public static Properties getProperties(String resourceName) {
     InputStream is = Settings.class.getClassLoader().getResourceAsStream(resourceName);
     if (is == null) {
@@ -99,15 +110,5 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
       }
     }
     return properties;
-  }
-
-  public Integer tryParse(String obj) {
-    Integer retVal;
-    try {
-      retVal = Integer.parseInt(obj);
-    } catch (NumberFormatException nfe) {
-      retVal = 0; // or null if that is your preference
-    }
-    return retVal;
   }
 }

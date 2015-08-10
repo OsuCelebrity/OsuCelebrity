@@ -1,16 +1,17 @@
 package me.reddev.osucelebrity;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
+import me.reddev.osucelebrity.core.Core;
 import me.reddev.osucelebrity.osu.OsuImpl;
 import me.reddev.osucelebrity.twitch.Twitch;
-import me.reddev.osucelebrity.core.Core;
 
-public class OsuCelebrity {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
+public class OsuCelebrity implements Runnable {
+  @Override
   public void run() {
     ExecutorService exec = Executors.newCachedThreadPool();
     
@@ -27,6 +28,7 @@ public class OsuCelebrity {
   }
 
   /**
+   * Starts the osuCelebrity bot.
    * @param args Command line arguments
    */
   public static void main(String[] args) {

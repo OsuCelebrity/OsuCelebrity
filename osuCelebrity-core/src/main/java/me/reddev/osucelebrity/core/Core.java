@@ -1,14 +1,13 @@
 package me.reddev.osucelebrity.core;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import org.tillerino.osuApiModel.OsuApiUser;
-
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuCommand;
 import me.reddev.osucelebrity.osu.commands.QueueSelfOsuCommand;
 import me.reddev.osucelebrity.twitch.Twitch;
+import org.tillerino.osuApiModel.OsuApiUser;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Connects to osu and twitch and manages the queue. Please break up this class as it grows!
@@ -22,6 +21,12 @@ public class Core implements Runnable {
 
   final BlockingQueue<OsuApiUser> queue = new LinkedBlockingQueue<>();
 
+  /**
+   * Creates a osuCelebrity core object.
+   * @param osu A controller for osu! Irc and Application
+   * @param twitch A controller for Twitch Irc
+   * @param settings The settings for the core program
+   */
   public Core(Osu osu, Twitch twitch, CoreSettings settings) {
     super();
     this.osu = osu;
@@ -50,7 +55,7 @@ public class Core implements Runnable {
         return;
       }
       long time = System.currentTimeMillis();
-      while(time < spectatingSince + settings.getDefaultSpecDuration()) {
+      while (time < spectatingSince + settings.getDefaultSpecDuration()) {
         try {
           Thread.sleep(spectatingSince + settings.getDefaultSpecDuration() - time);
         } catch (InterruptedException e) {
