@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>osuCelebrity-twitch</artifactId>
 	<parent>
-		<groupId>me.reddev.osuCelebrity</groupId>
+		<groupId>tv.rdbk.osuCelebrity</groupId>
 		<artifactId>osuCelebrity-parent</artifactId>
 		<version>0.1-SNAPSHOT</version>
 		<relativePath>../osuCelebrity-parent/pom.xml</relativePath>
@@ -13,7 +13,7 @@
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>me.reddev.osuCelebrity</groupId>
+			<groupId>tv.rdbk.osuCelebrity</groupId>
 			<artifactId>osuCelebrity-model</artifactId>
 		</dependency>
 		<dependency>
