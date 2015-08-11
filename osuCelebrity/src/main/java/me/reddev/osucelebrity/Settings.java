@@ -1,11 +1,10 @@
 package me.reddev.osucelebrity;
 
-import me.reddev.osucelebrity.osuapi.OsuApiSettings;
-
 import lombok.Data;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.osucelebrity.osu.OsuIrcSettings;
+import me.reddev.osucelebrity.osuapi.OsuApiSettings;
 import me.reddev.osucelebrity.twitch.TwitchApiSettings;
 import me.reddev.osucelebrity.twitch.TwitchIrcSettings;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -35,6 +34,7 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   private String osuIrcHost;
   private int osuIrcPort;
   private String osuCommandUser;
+  private String osuIrcCommand;
   
   // Osu! API settings
   private String osuApiKey;

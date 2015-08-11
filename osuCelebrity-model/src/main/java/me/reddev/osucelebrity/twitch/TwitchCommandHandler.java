@@ -1,6 +1,8 @@
 package me.reddev.osucelebrity.twitch;
 
-public interface TwitchCommandHandler {
+import me.reddev.osucelebrity.CommandHandler;
+
+public interface TwitchCommandHandler extends CommandHandler<TwitchCommand> {
   /**
    * @param command a command
    * @return true if the command was handled

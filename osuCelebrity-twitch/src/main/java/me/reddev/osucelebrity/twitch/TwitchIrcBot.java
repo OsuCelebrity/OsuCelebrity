@@ -1,15 +1,20 @@
 package me.reddev.osucelebrity.twitch;
 
 import lombok.extern.slf4j.Slf4j;
-import me.reddev.osucelebrity.Responses;
+import me.reddev.osucelebrity.CommandDispatcher;
+import me.reddev.osucelebrity.TwitchResponses;
+import me.reddev.osucelebrity.UserException;
+import me.reddev.osucelebrity.osuapi.OsuApi;
+import me.reddev.osucelebrity.twitch.commands.NextUserTwitchCommandImpl;
+import me.reddev.osucelebrity.twitch.commands.QueueUserTwitchCommandImpl;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
+import org.pircbotx.User;
 import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
-import org.tillerino.osuApiModel.Downloader;
 import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.OsuApiUser;
 
@@ -27,21 +32,23 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   private String username;
   private List<String> subscribers;
 
-  private TwitchManager twitchManager;
+  private Twitch twitch;
 
-  private Downloader downloader;
+  private OsuApi osuApi;
 
   private final TwitchIrcSettings settings;
+  
+  final CommandDispatcher<TwitchCommand> dispatcher = 
+      new CommandDispatcher<TwitchCommand>();
 
   /**
    * Constructs a new Twitch IRC bot.
    * 
    * @param settings The Twitch Irc settings for the program
-   * @param twitchManager The active TwitchManager
-   * @param downloader The generated downloader
+   * @param twitch The active TwitchManager
+   * @param osuApi The generated downloader
    */
-  public TwitchIrcBot(TwitchIrcSettings settings, TwitchManager twitchManager, 
-      Downloader downloader) {
+  public TwitchIrcBot(TwitchIrcSettings settings, OsuApi osuApi, Twitch twitch) {
     this.settings = settings;
 
     this.channel = settings.getTwitchIrcChannel();
@@ -61,8 +68,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
             .buildConfiguration();
     bot = new PircBotX(config);
 
-    this.twitchManager = twitchManager;
-    this.downloader = downloader;
+    this.twitch = twitch;
+    this.osuApi = osuApi;
   }
 
   /**
@@ -102,43 +109,66 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   public void sendMessage(String message) {
     bot.sendIRC().message(getChannel(), message);
   }
-
+  
+  /**
+   * Acts on a given command message.
+   * @param event The irc event for the command.
+   * @param message The message (without the command string ie. !)
+   */
   private void commandResponder(MessageEvent<PircBotX> event, String message) {
-    String[] messageSplit = message.substring(1).split(" ");
+    String[] messageSplit = message.split(" ");
     String commandName = messageSplit[0];
+    String user = event.getUser().getNick();
 
-    if (commandName.equalsIgnoreCase("queue")) {
-      // Missing supporting arguments
-      if (messageSplit.length < 2) {
-        sendMessage(Responses.INVALID_FORMAT_QUEUE);
-        return;
+    try {
+      if (commandName.equalsIgnoreCase("queue")) {
+        // Missing supporting arguments
+        if (messageSplit.length < 2) {
+          sendMessage(TwitchResponses.INVALID_FORMAT_QUEUE);
+          return;
+        }
+  
+        OsuApiUser selectedUser;
+        try {
+          selectedUser = osuApi.getUser(messageSplit[1], GameModes.OSU, 10 * 60 * 1000);
+        } catch (IOException e) {
+          log.warn("error getting user", e);
+          selectedUser = null;
+        }
+        
+        //User gave an invalid username
+        if (selectedUser == null) {
+          sendMessage(String.format(TwitchResponses.INVALID_USER , messageSplit[1]));
+          return;
+        }
+        
+        dispatcher.dispatchCommand(new QueueUserTwitchCommandImpl(twitch, user, selectedUser));
+      } else if (commandName.equalsIgnoreCase("next")) {
+        dispatcher.dispatchCommand(new NextUserTwitchCommandImpl(twitch, user));
       }
-
-      OsuApiUser selectedUser;
-      try {
-        selectedUser = downloader.getUser(messageSplit[1], GameModes.OSU, OsuApiUser.class);
-      } catch (IOException e) {
-        // I don't know what the plan should be in this case, but I didn't want the error to be
-        // unhandled --Tillerino
-
-        log.warn("error getting user", e);
-        selectedUser = null;
-      }
-      if (selectedUser == null) {
-        sendMessage(String.format(Responses.INVALID_USER , messageSplit[1]));
-        return;
-      }
-
-      twitchManager.addRequest(selectedUser);
-    } else if (commandName.equalsIgnoreCase("next")) {
-      TwitchRequest requests = twitchManager.getRequests();
-      sendMessage(String.format(Responses.NEXT_IN_QUEUE, requests.getRequestedUsers().peek()
-          .toString()));
+    } catch (Exception e) {
+      handleException(e, event.getUser());
     }
   }
 
   private void modCommandResponder(MessageEvent<PircBotX> event, String message) {
 
+  }
+  
+  //TODO make this Twitch specific
+  void handleException(Exception ex, User user) {
+    try {
+      throw ex;
+    } catch (UserException e) {
+      // no need to log this
+      user.send().message(e.getMessage());
+    } catch (IOException e) {
+      log.error("external error", e);
+      user.send().message("external error");
+    } catch (Exception e) {
+      log.error("internal error", e);
+      user.send().message("internal error");
+    }
   }
 
   // Listeners
@@ -147,8 +177,11 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   @Override
   public void onMessage(MessageEvent<PircBotX> event) {
     String message = event.getMessage();
+    log.debug("Received Twitch message: " + message);
     // Search through for command calls
     if (message.startsWith(settings.getTwitchIrcCommand())) {
+      message = message.substring(settings.getTwitchIrcCommand().length());
+      
       if (event.getChannel().isOp(event.getUser())) {
         modCommandResponder(event, message);
       }

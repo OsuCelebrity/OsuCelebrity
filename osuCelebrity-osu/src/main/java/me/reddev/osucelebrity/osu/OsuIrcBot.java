@@ -1,11 +1,11 @@
 package me.reddev.osucelebrity.osu;
 
-import me.reddev.osucelebrity.osuapi.OsuApi;
-import me.reddev.osucelebrity.osuapi.OsuApiSettings;
 import lombok.extern.slf4j.Slf4j;
-import me.reddev.osucelebrity.Responses;
+import me.reddev.osucelebrity.CommandDispatcher;
+import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.osu.commands.QueueSelfOsuCommandImpl;
+import me.reddev.osucelebrity.osuapi.OsuApi;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
@@ -20,8 +20,6 @@ import org.tillerino.osuApiModel.OsuApiUser;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
@@ -34,7 +32,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   private final OsuIrcSettings ircSettings;
 
-  final List<OsuCommandHandler> commandHandlers = new ArrayList<>();
+  final CommandDispatcher<OsuCommand> dispatcher = 
+      new CommandDispatcher<OsuCommand>();
 
   /**
    * Constructs a new Osu! IRC bot.
@@ -97,7 +96,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
    * @param user The username of the next player
    */
   public void notifyNextPlayer(String user) {
-    bot.sendIRC().message(user.toLowerCase(), Responses.UPCOMING_SESSION);
+    bot.sendIRC().message(user.toLowerCase(), OsuResponses.UPCOMING_SESSION);
   }
 
   // Listeners
@@ -105,13 +104,19 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   @Override
   public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
-    String[] messageSplit = event.getMessage().substring(1).split(" ");
+    //Must satisfy the command term
+    if (!event.getMessage().startsWith(ircSettings.getOsuIrcCommand())) {
+      return;
+    }
+    
+    String[] messageSplit = event.getMessage()
+        .substring(ircSettings.getOsuIrcCommand().length()).split(" ");
     String commandName = messageSplit[0];
     // TODO: Accept in-game requests
 
     try {
       if (commandName.equalsIgnoreCase("queue")) {
-        dispatchCommand(new QueueSelfOsuCommandImpl(osu, getOsuUser(event)));
+        dispatcher.dispatchCommand(new QueueSelfOsuCommandImpl(osu, getOsuUser(event)));
       }
     } catch (Exception e) {
       handleException(e, event.getUser());
@@ -123,17 +128,9 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     final OsuApiUser user =
         osuApi.getUser(event.getUser().getNick(), GameModes.OSU, 60 * 60 * 1000);
     if (user == null) {
-      throw new UserException(String.format(Responses.INVALID_USER, event.getUser().getNick()));
+      throw new UserException(String.format(OsuResponses.INVALID_USER, event.getUser().getNick()));
     }
     return user;
-  }
-
-  void dispatchCommand(OsuCommand command) throws Exception {
-    for (OsuCommandHandler osuCommandHandler : commandHandlers) {
-      if (osuCommandHandler.handle(command)) {
-        return;
-      }
-    }
   }
 
   void handleException(Exception ex, User user) {

@@ -1,5 +1,6 @@
 package me.reddev.osucelebrity.osuapi;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.tillerino.osuApiModel.OsuApiUser;
 
 import java.io.IOException;
@@ -28,6 +29,7 @@ public class MockOsuApi implements OsuApi {
   }
 
   @Override
+  @SuppressFBWarnings("TQ")
   public synchronized OsuApiUser getUser(String ircUserName, int gameMode, long maxAge)
       throws IOException, SQLException {
     if (!ids.containsKey(ircUserName)) {

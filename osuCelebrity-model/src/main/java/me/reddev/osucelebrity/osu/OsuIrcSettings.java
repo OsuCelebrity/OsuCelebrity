@@ -12,4 +12,6 @@ public interface OsuIrcSettings {
   int getOsuIrcPort();
 
   String getOsuCommandUser();
+  
+  String getOsuIrcCommand();
 }

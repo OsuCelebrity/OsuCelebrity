@@ -1,10 +1,10 @@
 package me.reddev.osucelebrity;
 
-import me.reddev.osucelebrity.osuapi.MockOsuApi;
-import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.core.Core;
 import me.reddev.osucelebrity.osu.OsuImpl;
-import me.reddev.osucelebrity.twitch.Twitch;
+import me.reddev.osucelebrity.osuapi.MockOsuApi;
+import me.reddev.osucelebrity.osuapi.OsuApi;
+import me.reddev.osucelebrity.twitch.TwitchImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,13 +22,14 @@ public class OsuCelebrity implements Runnable {
     Settings settings = new Settings();
     
     OsuImpl osu = new OsuImpl(osuApi, settings, settings);
-    Twitch twitch = null;
+    TwitchImpl twitch = new TwitchImpl(osuApi, settings, settings);
     Core core = new Core(osu, twitch, settings);
     
     List<Future<?>> tasks = new ArrayList<>();
 
     tasks.add(exec.submit(core));
     tasks.add(exec.submit(osu.getBot()));
+    tasks.add(exec.submit(twitch.getBot()));
   }
 
   /**

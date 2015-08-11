@@ -1,9 +1,7 @@
 package me.reddev.osucelebrity.osuapi;
 
-import org.tillerino.osuApiModel.types.GameMode;
-
-import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.OsuApiUser;
+import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
 
 import java.io.IOException;
@@ -19,7 +17,6 @@ public interface OsuApi {
    * @param gameMode game mode for rank, pp, ...
    * @param maxAge maximum age of the returned object. If there is a cached object which is younger
    *        than maximum age or maxAge is <= 0, it may be returned.
-   * 
    * @return null if the user does not exist
    */
   @CheckForNull
@@ -33,7 +30,6 @@ public interface OsuApi {
    * @param gameMode game mode for rank, pp, ...
    * @param maxAge maximum age of the returned object. If there is a cached object which is younger
    *        than maximum age or maxAge is <= 0, it may be returned.
-   * 
    * @return null if the user does not exist
    */
   @CheckForNull

@@ -1,11 +1,15 @@
 package me.reddev.osucelebrity.core;
 
 import lombok.extern.slf4j.Slf4j;
-
+import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuCommand;
 import me.reddev.osucelebrity.osu.commands.QueueSelfOsuCommand;
 import me.reddev.osucelebrity.twitch.Twitch;
+import me.reddev.osucelebrity.twitch.TwitchCommand;
+import me.reddev.osucelebrity.twitch.commands.NextUserTwitchCommand;
+import me.reddev.osucelebrity.twitch.commands.QueueUserTwitchCommand;
 import org.tillerino.osuApiModel.OsuApiUser;
 
 import java.util.concurrent.BlockingQueue;
@@ -37,14 +41,41 @@ public class Core implements Runnable {
     this.settings = settings;
 
     osu.registerCommandHandler(this::handleOsuCommand);
+    twitch.registerCommandHandler(this::handleTwitchCommand);
   }
-
-  boolean handleOsuCommand(OsuCommand command) {
+  
+  boolean handleOsuCommand(OsuCommand command) throws Exception {
     if (command instanceof QueueSelfOsuCommand) {
-      if (!queue.contains(command.getUser())) {
-        queue.add(command.getUser());
-        log.info("Queued " + command.getUser().getUserName());
+      QueueSelfOsuCommand queueCommand = (QueueSelfOsuCommand) command;
+      if (!queue.contains(queueCommand.getUser())) {
+        queue.add(queueCommand.getUser());
+        log.info("Queued " + queueCommand.getUser().getUserName());
+        osu.message(queueCommand.getUser(), String.format(OsuResponses.ADDED_TO_QUEUE));
+        return true;
       }
+    }
+    return false;
+  }
+  
+  boolean handleTwitchCommand(TwitchCommand command) throws Exception {
+    if (command instanceof QueueUserTwitchCommand) {
+      QueueUserTwitchCommand queueCommand = (QueueUserTwitchCommand) command;
+      if (!queue.contains(queueCommand.getRequestUser())) {
+        queue.add(queueCommand.getRequestUser());
+        log.info("Queued " + queueCommand.getRequestUser().getUserName());
+        twitch.sendMessageToChannel(String.format(TwitchResponses.ADDED_TO_QUEUE, 
+            queueCommand.getRequestUser().getUserName()));
+        return true;
+      }
+    } else if (command instanceof NextUserTwitchCommand) {
+      OsuApiUser next = queue.peek(); 
+      if (next != null) {
+        twitch.sendMessageToChannel(String.format(TwitchResponses.NEXT_IN_QUEUE, 
+            next.getUserName()));
+      } else {
+        twitch.sendMessageToChannel(String.format(TwitchResponses.QUEUE_EMPTY));
+      }
+      return true;
     }
     return false;
   }

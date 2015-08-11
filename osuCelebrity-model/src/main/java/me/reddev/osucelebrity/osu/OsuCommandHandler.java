@@ -1,6 +1,8 @@
 package me.reddev.osucelebrity.osu;
 
-public interface OsuCommandHandler {
+import me.reddev.osucelebrity.CommandHandler;
+
+public interface OsuCommandHandler extends CommandHandler<OsuCommand> {
   /**
    * @param command a command
    * @return true if the command was handled

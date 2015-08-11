@@ -1,11 +1,11 @@
 package me.reddev.osucelebrity.osu;
 
-import java.io.IOException;
-
-import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import org.tillerino.osuApiModel.OsuApiUser;
+
+import java.io.IOException;
 
 import javax.annotation.CheckForNull;
 
@@ -64,7 +64,7 @@ public class OsuImpl implements Osu {
 
   @Override
   public void registerCommandHandler(OsuCommandHandler handler) {
-    getBot().commandHandlers.add(handler);
+    getBot().dispatcher.addHandler(handler);
   }
 
   @Override
