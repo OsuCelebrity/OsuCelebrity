@@ -1,7 +1,10 @@
 package me.reddev.osucelebrity.core;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.QueueUser;
+import me.reddev.osucelebrity.QueueUser.QueueSource;
 import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuCommand;
@@ -26,7 +29,7 @@ public class Core implements Runnable {
   final Twitch twitch;
   final CoreSettings settings;
 
-  final BlockingQueue<OsuApiUser> queue = new LinkedBlockingQueue<>();
+  final BlockingQueue<QueueUser> queue = new LinkedBlockingQueue<>();
 
   /**
    * Creates a osuCelebrity core object.
@@ -47,8 +50,8 @@ public class Core implements Runnable {
   boolean handleOsuCommand(OsuCommand command) throws Exception {
     if (command instanceof QueueSelfOsuCommand) {
       QueueSelfOsuCommand queueCommand = (QueueSelfOsuCommand) command;
-      if (!queue.contains(queueCommand.getUser())) {
-        queue.add(queueCommand.getUser());
+      if (!queued(queueCommand.getUser())) {
+        queue.add(new QueueUser(queueCommand.getUser(), QueueSource.OSU));
         log.info("Queued " + queueCommand.getUser().getUserName());
         osu.message(queueCommand.getUser(), String.format(OsuResponses.ADDED_TO_QUEUE));
         return true;
@@ -60,18 +63,18 @@ public class Core implements Runnable {
   boolean handleTwitchCommand(TwitchCommand command) throws Exception {
     if (command instanceof QueueUserTwitchCommand) {
       QueueUserTwitchCommand queueCommand = (QueueUserTwitchCommand) command;
-      if (!queue.contains(queueCommand.getRequestUser())) {
-        queue.add(queueCommand.getRequestUser());
+      if (!queued(queueCommand.getRequestUser())) {
+        queue.add(new QueueUser(queueCommand.getRequestUser(), QueueSource.TWITCH));
         log.info("Queued " + queueCommand.getRequestUser().getUserName());
         twitch.sendMessageToChannel(String.format(TwitchResponses.ADDED_TO_QUEUE, 
             queueCommand.getRequestUser().getUserName()));
         return true;
       }
     } else if (command instanceof NextUserTwitchCommand) {
-      OsuApiUser next = queue.peek(); 
+      QueueUser next = queue.peek(); 
       if (next != null) {
         twitch.sendMessageToChannel(String.format(TwitchResponses.NEXT_IN_QUEUE, 
-            next.getUserName()));
+            next.getQueuedPlayer().getUserName()));
       } else {
         twitch.sendMessageToChannel(String.format(TwitchResponses.QUEUE_EMPTY));
       }
@@ -79,13 +82,26 @@ public class Core implements Runnable {
     }
     return false;
   }
+  
+  /**
+   * Checks whether the queue contains a user.
+   * @return True if the queue contains the user (any source)
+   */
+  @SuppressFBWarnings("GC")
+  boolean queued(OsuApiUser user) {
+    //Since FindBugs doesn't know I've overwritten the equals method for QueueUser
+    return queue.contains(user);
+  }
 
   @Override
   public void run() {
     for (long spectatingSince = 0;;spectatingSince = System.currentTimeMillis()) {
-      final OsuApiUser nextUser;
+      final QueueUser nextUser;
       try {
         nextUser = queue.take();
+        if (nextUser.getQueueSource() == QueueSource.OSU) {
+          osu.notifyUpcoming(nextUser.getQueuedPlayer());
+        }
       } catch (InterruptedException e) {
         return;
       }
@@ -97,7 +113,7 @@ public class Core implements Runnable {
           return;
         }
       }
-      osu.startSpectate(nextUser);
+      osu.startSpectate(nextUser.getQueuedPlayer());
     }
   }
 }

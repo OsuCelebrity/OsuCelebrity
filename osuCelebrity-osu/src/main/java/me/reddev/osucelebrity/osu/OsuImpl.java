@@ -73,4 +73,9 @@ public class OsuImpl implements Osu {
     
   }
 
+  @Override
+  public void notifyUpcoming(OsuApiUser user) {
+    getBot().notifyNextPlayer(user.getUserName());    
+  }
+
 }

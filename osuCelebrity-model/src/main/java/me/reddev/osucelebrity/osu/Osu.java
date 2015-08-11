@@ -25,4 +25,10 @@ public interface Osu {
    * @param message message
    */
   public void message(OsuApiUser user, String message);
+  
+  /**
+   * Notifies a player about their upcoming spectate period.
+   * @param user Recipient
+   */
+  public void notifyUpcoming(OsuApiUser user);
 }
