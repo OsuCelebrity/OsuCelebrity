@@ -95,8 +95,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
    * 
    * @param user The username of the next player
    */
-  public void notifyNextPlayer(String user) {
-    bot.sendIRC().message(user.toLowerCase(), OsuResponses.UPCOMING_SESSION);
+  public void notifyStartingPlayer(String user) {
+    bot.sendIRC().message(user.toLowerCase(), OsuResponses.STARTING_SESSION);
   }
 
   // Listeners

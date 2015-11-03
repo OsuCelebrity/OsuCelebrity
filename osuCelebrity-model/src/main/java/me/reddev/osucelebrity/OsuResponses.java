@@ -13,5 +13,5 @@ public class OsuResponses {
   public static final String CURRENT_PLAYER = "Current Player: %s";
 
   public static final String ADDED_TO_QUEUE = "You've been added to the queue!";
-  public static final String UPCOMING_SESSION = "You're next in queue for osu!Celebrity.";
+  public static final String STARTING_SESSION = "You're up. Show us your best moves!";
 }

@@ -25,13 +25,14 @@ public class QueueUser {
     //Matches QueueUser objects as well as OsuApiUser objects
     if (other instanceof QueueUser) {
       QueueUser otherUser = (QueueUser) other;
-      return otherUser.queuedPlayer == this.queuedPlayer 
-          && otherUser.queueSource == this.queueSource;
-    } else if (other instanceof OsuApiUser) {
-      OsuApiUser otherUser = (OsuApiUser) other;
-      return otherUser == this.queuedPlayer;
+      return otherUser.queuedPlayer.getUserId() == queuedPlayer.getUserId();
     }
     return false;
+  }
+  
+  @Override
+  public int hashCode() {
+    return queuedPlayer != null ? queuedPlayer.getUserId() : 0;
   }
   
   public enum QueueSource {

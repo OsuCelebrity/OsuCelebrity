@@ -15,6 +15,7 @@ local.properties
 */.classpath
 */.project
 */.settings/
+**/.checkstyle
 
 # Intellij
 */.idea/

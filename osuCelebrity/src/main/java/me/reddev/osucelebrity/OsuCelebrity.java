@@ -1,6 +1,8 @@
 package me.reddev.osucelebrity;
 
 import me.reddev.osucelebrity.core.Core;
+import me.reddev.osucelebrity.core.Spectator;
+import me.reddev.osucelebrity.core.SystemClock;
 import me.reddev.osucelebrity.osu.OsuImpl;
 import me.reddev.osucelebrity.osuapi.MockOsuApi;
 import me.reddev.osucelebrity.osuapi.OsuApi;
@@ -23,7 +25,8 @@ public class OsuCelebrity implements Runnable {
     
     OsuImpl osu = new OsuImpl(osuApi, settings, settings);
     TwitchImpl twitch = new TwitchImpl(osuApi, settings, settings);
-    Core core = new Core(osu, twitch, settings);
+    Spectator spectator = new Spectator(twitch, new SystemClock(), osu, settings);
+    Core core = new Core(osu, twitch, settings, spectator);
     
     List<Future<?>> tasks = new ArrayList<>();
 
