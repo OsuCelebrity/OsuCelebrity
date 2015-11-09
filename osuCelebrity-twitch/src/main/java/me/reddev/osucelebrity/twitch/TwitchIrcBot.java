@@ -73,7 +73,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
             .setLogin(this.username)
             .addListener(this)
             .setServer(settings.getTwitchIrcHost(), settings.getTwitchIrcPort(),
-                settings.getTwitchToken()).setAutoReconnect(true).addAutoJoinChannel(getChannel())
+                settings.getTwitchToken()).setAutoReconnect(true)
+                .addAutoJoinChannel(settings.getTwitchIrcChannel())
             .buildConfiguration();
     bot = new PircBotX(config);
 
@@ -117,7 +118,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
    * @param message The message to send to the channel
    */
   public void sendMessage(String message) {
-    bot.sendIRC().message(getChannel(), message);
+    bot.sendIRC().message(settings.getTwitchIrcChannel(), message);
   }
   
   /**
@@ -246,14 +247,5 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
    */
   public List<String> getSubscribers() {
     return subscribers;
-  }
-
-  /**
-   * Gets the IRC channel of the IRC bot.
-   * 
-   * @return The IRC channel with pound symbol
-   */
-  public String getChannel() {
-    return String.format("#%s", channel.toLowerCase());
   }
 }
