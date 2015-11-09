@@ -32,7 +32,7 @@ public class OsuApplication {
    */
   public static final Charset CONSOLE_CHARSET = Charset.forName("ISO-8859-1");
 
-  public static final String OSU_COMMAND_SPECTATE = "osu://spectate/%s";
+  public static final String OSU_COMMAND_SPECTATE = "osu://spectate/%d";
 
   @Getter
   private Process osuProcess;
@@ -43,11 +43,11 @@ public class OsuApplication {
    * @param osuUser The username of the Osu! player to spectate
    * @throws IOException Unable to run spectate command
    */
-  public void spectate(String osuUser) throws IOException {
+  public void spectate(OsuUser osuUser) throws IOException {
     Runtime rt = Runtime.getRuntime();
     String command =
         String.format("\"%s\" \"%s\"", settings.getOsuPath(),
-            String.format(OSU_COMMAND_SPECTATE, osuUser));
+            String.format(OSU_COMMAND_SPECTATE, osuUser.getUserId()));
     log.debug("issued command " + command);
     osuProcess = rt.exec(command);
   }

@@ -14,4 +14,6 @@ public interface OsuIrcSettings {
   String getOsuCommandUser();
   
   String getOsuIrcCommand();
+
+  String getOsuIrcAutoJoin();
 }

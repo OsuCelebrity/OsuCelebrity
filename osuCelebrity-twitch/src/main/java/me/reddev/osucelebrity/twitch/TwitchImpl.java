@@ -4,12 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 
 import javax.annotation.CheckForNull;
+import javax.jdo.PersistenceManagerFactory;
 
 @Slf4j
 public class TwitchImpl implements Twitch {
   final OsuApi osuApi;
   final TwitchIrcSettings ircSettings;
   final TwitchApiSettings apiSettings;
+  final PersistenceManagerFactory pmf;
   
   @CheckForNull
   TwitchIrcBot bot;
@@ -18,10 +20,11 @@ public class TwitchImpl implements Twitch {
    * Constructs a new Twitch instance.
    */
   public TwitchImpl(OsuApi twitchDownloader, TwitchIrcSettings ircSettings, 
-      TwitchApiSettings apiSettings) {
+      TwitchApiSettings apiSettings, PersistenceManagerFactory pmf) {
     this.osuApi = twitchDownloader;
     this.ircSettings = ircSettings;
     this.apiSettings = apiSettings;
+    this.pmf = pmf;
   }
   
   /**
@@ -30,7 +33,7 @@ public class TwitchImpl implements Twitch {
    */
   public TwitchIrcBot getBot() {
     if (bot == null) {
-      bot = new TwitchIrcBot(ircSettings, osuApi, this);
+      bot = new TwitchIrcBot(ircSettings, osuApi, this, pmf);
     }
     return bot;
   }

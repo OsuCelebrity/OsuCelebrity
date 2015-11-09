@@ -1,5 +1,6 @@
 package me.reddev.osucelebrity.osu;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.osucelebrity.osuapi.OsuApi;
@@ -9,22 +10,15 @@ import org.tillerino.osuApiModel.OsuApiUser;
 import java.io.IOException;
 
 import javax.annotation.CheckForNull;
+import javax.jdo.PersistenceManagerFactory;
 
 @Slf4j
+@RequiredArgsConstructor
 public class OsuImpl implements Osu {
   final OsuApi osuApi;
   final OsuIrcSettings ircSettings;
   final OsuApplicationSettings settings;
-
-  /**
-   * constructs a new Osu instance.
-   */
-  public OsuImpl(OsuApi osuApi, OsuIrcSettings ircSettings, OsuApplicationSettings settings) {
-    super();
-    this.osuApi = osuApi;
-    this.ircSettings = ircSettings;
-    this.settings = settings;
-  }
+  final PersistenceManagerFactory pmf;
 
   @CheckForNull
   OsuIrcBot bot;
@@ -39,7 +33,7 @@ public class OsuImpl implements Osu {
    */
   public OsuIrcBot getBot() {
     if (bot == null) {
-      bot = new OsuIrcBot(ircSettings, osuApi, this);
+      bot = new OsuIrcBot(ircSettings, osuApi, this, pmf);
     }
     return bot;
   }
@@ -57,9 +51,9 @@ public class OsuImpl implements Osu {
   }
 
   @Override
-  public void startSpectate(OsuApiUser user) {
+  public void startSpectate(OsuUser user) {
     try {
-      getApp().spectate(user.getUserName());
+      getApp().spectate(user);
     } catch (IOException e) {
       log.error("error spectating", e);
     }
@@ -71,18 +65,19 @@ public class OsuImpl implements Osu {
   }
 
   @Override
-  public void message(OsuApiUser user, String message) {
+  public void message(OsuUser user, String message) {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public void notifyStarting(OsuApiUser user) {
-    getBot().notifyStartingPlayer(user.getUserName());
+  public void notifyStarting(OsuUser user) {
+    // spaces are replaced with underscores on IRC
+    getBot().notifyStartingPlayer(user.getUserName().replace(" ", "_"));
   }
 
   @Override
-  public void notifySoon(OsuApiUser player) {
+  public void notifySoon(OsuUser player) {
     // implement and make consistent #notifyUpcoming
     throw new UnsupportedOperationException();
   }

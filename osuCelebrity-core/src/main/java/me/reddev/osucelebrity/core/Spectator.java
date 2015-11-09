@@ -2,15 +2,14 @@ package me.reddev.osucelebrity.core;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import me.reddev.osucelebrity.QueueUser;
 import me.reddev.osucelebrity.osu.Osu;
+import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.twitch.Twitch;
 
-import org.tillerino.osuApiModel.OsuApiUser;
+import java.util.Optional;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Objects;
+import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
 
 /**
  * Controller for what's shown on the screen. Currently all methods except run() are synchronized.
@@ -21,35 +20,6 @@ import java.util.Objects;
 @Slf4j
 @RequiredArgsConstructor
 public class Spectator implements Runnable {
-  class QueuedPlayer implements Comparable<QueuedPlayer> {
-    final long queuedAt = clock.getTime();
-
-    final QueueUser user;
-
-    public QueuedPlayer(QueueUser user) {
-      super();
-      this.user = user;
-    }
-
-    @Override
-    public int compareTo(QueuedPlayer obj) {
-      return Long.compare(queuedAt, obj.queuedAt);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj instanceof QueuedPlayer) {
-        return Objects.equals(user, ((QueuedPlayer) obj).user);
-      }
-      return false;
-    }
-
-    @Override
-    public int hashCode() {
-      return user.hashCode();
-    }
-  }
-
   final Twitch twitch;
 
   final Clock clock;
@@ -57,31 +27,26 @@ public class Spectator implements Runnable {
   final Osu osu;
 
   final CoreSettings settings;
-
-  final ArrayList<QueuedPlayer> queue = new ArrayList<>();
-
-  long spectatingSince = 0;
-
-  long spectatingUntil = 0;
+  
+  final PersistenceManagerFactory pmf;
 
   boolean run = true;
 
   Thread runThread = null;
 
-  QueueUser currentlySpectating = null;
-
-  QueueUser spectatingNext = null;
-
   @Override
   public void run() {
     try {
       for (; run;) {
-        long sleepUntil = loop();
+        PersistenceManager pm = pmf.getPersistenceManager();
         try {
+          long sleepUntil = loop(pm);
           runThread = Thread.currentThread();
           clock.sleepUntil(sleepUntil);
         } catch (InterruptedException e) {
           // time to wake up and work!
+        } finally {
+          pm.close();
         }
       }
     } catch (Exception e) {
@@ -98,19 +63,24 @@ public class Spectator implements Runnable {
     }
   }
 
-  synchronized long loop() {
-    if (currentlySpectating == null || spectatingUntil < clock.getTime()) {
-      advance();
-    } else if (spectatingUntil < clock.getTime() + 10000 && spectatingNext == null) {
-      lockNext();
+  synchronized long loop(PersistenceManager pm) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    if (!queue.currentlySpectating().isPresent() || queue.spectatingUntil() < clock.getTime()) {
+      advance(queue);
+    } else if (queue.spectatingUntil() < clock.getTime() + 10000
+        && !queue.spectatingNext().isPresent()) {
+      lockNext(queue);
     }
-    return Math.min(clock.getTime() + 100, spectatingUntil > clock.getTime() ? spectatingUntil
-        : clock.getTime() + 100);
+    long until = queue.currentlySpectating().isPresent() ? queue.spectatingUntil() : 0;
+    return Math.min(clock.getTime() + 100,
+        until > clock.getTime() ? until
+            : clock.getTime() + 100);
   }
 
-  synchronized void lockNext() {
-    spectatingNext = poll();
-    if (spectatingNext != null) {
+  synchronized void lockNext(PlayerQueue queue) {
+    Optional<QueuedPlayer> spectatingNext = queue.poll();
+    if (spectatingNext.isPresent()) {
+      spectatingNext.get().setState(QueuedPlayer.NEXT);
       // TODO send 10 second warning
     }
   }
@@ -121,18 +91,13 @@ public class Spectator implements Runnable {
    * @return true if the player was added, false if they are already in the queue or currently being
    *         spectated.
    */
-  public synchronized boolean enqueue(QueueUser user) {
-    if (Objects.equals(currentlySpectating, user)) {
+  public synchronized boolean enqueue(PersistenceManager pm, QueuedPlayer user) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    if (queue.contains(user)) {
       return false;
     }
-    if (Objects.equals(spectatingNext, user)) {
-      return false;
-    }
-    if (queue.contains(new QueuedPlayer(user))) {
-      return false;
-    }
-    queue.add(new QueuedPlayer(user));
-    log.info("Queued " + user.getQueuedPlayer().getUserName());
+    pm.makePersistent(user);
+    log.info("Queued " + user.getPlayer().getUserName());
     // wake spectator in the case that the queue was empty.
     wake();
     return true;
@@ -143,47 +108,38 @@ public class Spectator implements Runnable {
    * 
    * @return True if successful, false if there is no next queued player.
    */
-  public synchronized boolean advance() {
-    QueueUser next = spectatingNext;
-    if (next == null) {
-      next = poll();
-    } else {
-      spectatingNext = null;
+  public synchronized boolean advance(PersistenceManager pm) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    return advance(queue);
+  }
+
+  boolean advance(PlayerQueue queue) {
+    Optional<QueuedPlayer> next = queue.spectatingNext();
+    if (!next.isPresent()) {
+      next = queue.poll();
     }
-    if (next == null) {
+    if (!next.isPresent()) {
       return false;
     }
     // TODO say good-bye to the player currently being spectated
-    startSpectating(next);
+    startSpectating(queue, next.get());
     return true;
   }
 
-  synchronized QueueUser poll() {
-    if (queue.isEmpty()) {
-      return null;
+  private synchronized void startSpectating(PlayerQueue queue, QueuedPlayer next) {
+    Optional<QueuedPlayer> spectating = queue.currentlySpectating();
+    if (spectating.isPresent()) {
+      spectating.get().setState(QueuedPlayer.DONE);
     }
-    Collections.sort(queue);
-    return queue.remove(0).user;
-  }
-
-  private synchronized void startSpectating(QueueUser next) {
-    currentlySpectating = next;
-    spectatingSince = clock.getTime();
-    spectatingUntil = spectatingSince + settings.getDefaultSpecDuration();
-    OsuApiUser user = next.getQueuedPlayer();
+    next.setState(QueuedPlayer.SPECTATING);
+    next.setStartedAt(clock.getTime());
+    next.setStoppingAt(next.getStartedAt() + settings.getDefaultSpecDuration());
+    OsuUser user = next.getPlayer();
     osu.notifyStarting(user);
     osu.startSpectate(user);
-    QueueUser peek = peek();
-    if (peek != null) {
-      osu.notifySoon(peek.getQueuedPlayer());
+    Optional<QueuedPlayer> peek = queue.poll();
+    if (peek.isPresent()) {
+      osu.notifySoon(peek.get().getPlayer());
     }
-  }
-
-  private synchronized QueueUser peek() {
-    if (queue.isEmpty()) {
-      return null;
-    }
-    Collections.sort(queue);
-    return queue.get(0).user;
   }
 }

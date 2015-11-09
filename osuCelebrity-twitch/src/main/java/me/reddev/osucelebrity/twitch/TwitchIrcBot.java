@@ -4,19 +4,22 @@ import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.CommandDispatcher;
 import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.UserException;
+import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.commands.NextUserTwitchCommandImpl;
 import me.reddev.osucelebrity.twitch.commands.QueueUserTwitchCommandImpl;
+
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.ListenerAdapter;
+import org.pircbotx.hooks.events.ConnectEvent;
+import org.pircbotx.hooks.events.DisconnectEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.tillerino.osuApiModel.GameModes;
-import org.tillerino.osuApiModel.OsuApiUser;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,9 +27,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
+
 @Slf4j
 public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
-  private PircBotX bot;
+  PircBotX bot;
 
   private String channel;
   private String username;
@@ -38,6 +44,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   private final TwitchIrcSettings settings;
   
+  private final PersistenceManagerFactory pmf;
+  
   final CommandDispatcher<TwitchCommand> dispatcher = 
       new CommandDispatcher<TwitchCommand>();
 
@@ -48,7 +56,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
    * @param twitch The active TwitchManager
    * @param osuApi The generated downloader
    */
-  public TwitchIrcBot(TwitchIrcSettings settings, OsuApi osuApi, Twitch twitch) {
+  public TwitchIrcBot(TwitchIrcSettings settings, OsuApi osuApi, Twitch twitch,
+      PersistenceManagerFactory pmf) {
     this.settings = settings;
 
     this.channel = settings.getTwitchIrcChannel();
@@ -70,6 +79,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
     this.twitch = twitch;
     this.osuApi = osuApi;
+    this.pmf = pmf;
   }
 
   /**
@@ -120,6 +130,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     String commandName = messageSplit[0];
     String user = event.getUser().getNick();
 
+    PersistenceManager pm = pmf.getPersistenceManager();
     try {
       if (commandName.equalsIgnoreCase("queue")) {
         // Missing supporting arguments
@@ -128,9 +139,9 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
           return;
         }
   
-        OsuApiUser selectedUser;
+        OsuUser selectedUser;
         try {
-          selectedUser = osuApi.getUser(messageSplit[1], GameModes.OSU, 10 * 60 * 1000);
+          selectedUser = osuApi.getUser(messageSplit[1], GameModes.OSU, pm, 10 * 60 * 1000);
         } catch (IOException e) {
           log.warn("error getting user", e);
           selectedUser = null;
@@ -142,12 +153,14 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
           return;
         }
         
-        dispatcher.dispatchCommand(new QueueUserTwitchCommandImpl(twitch, user, selectedUser));
+        dispatcher.dispatchCommand(new QueueUserTwitchCommandImpl(twitch, user, selectedUser, pm));
       } else if (commandName.equalsIgnoreCase("next")) {
-        dispatcher.dispatchCommand(new NextUserTwitchCommandImpl(twitch, user));
+        dispatcher.dispatchCommand(new NextUserTwitchCommandImpl(twitch, user, pm));
       }
     } catch (Exception e) {
       handleException(e, event.getUser());
+    } finally {
+      pm.close();
     }
   }
 
@@ -173,6 +186,16 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   // Listeners
   // http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
+
+  @Override
+  public void onConnect(ConnectEvent<PircBotX> event) throws Exception {
+    log.debug("connected");
+  }
+  
+  @Override
+  public void onDisconnect(DisconnectEvent<PircBotX> event) throws Exception {
+    log.debug("disconnected");
+  }
 
   @Override
   public void onMessage(MessageEvent<PircBotX> event) {

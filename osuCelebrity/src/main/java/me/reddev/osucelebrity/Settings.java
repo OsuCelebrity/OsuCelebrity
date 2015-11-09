@@ -42,6 +42,8 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   // Osu! Account Settings
   private String osuIrcUsername;
   private String osuIrcPassword;
+  private String osuIrcAutoJoin;
+  
   private String twitchClientId;
   private String twitchClientSecret;
 

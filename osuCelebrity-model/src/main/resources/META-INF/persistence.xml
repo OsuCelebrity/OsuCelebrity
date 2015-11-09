@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence
+        http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
+	version="2.0">
+
+	<persistence-unit name="core">
+		<class>me.reddev.osucelebrity.osu.OsuUser</class>
+		<class>me.reddev.osucelebrity.osu.OsuIrcUser</class>
+		<class>me.reddev.osucelebrity.core.QueuedPlayer</class>
+		<exclude-unlisted-classes></exclude-unlisted-classes>	
+	</persistence-unit>
+</persistence>

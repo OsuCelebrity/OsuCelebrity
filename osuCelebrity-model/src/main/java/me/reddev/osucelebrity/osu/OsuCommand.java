@@ -1,8 +1,8 @@
 package me.reddev.osucelebrity.osu;
 
-import org.tillerino.osuApiModel.OsuApiUser;
+import me.reddev.osucelebrity.Command;
 
-public interface OsuCommand {
+public interface OsuCommand extends Command {
   Osu getOsu();
 
   /**
@@ -10,5 +10,5 @@ public interface OsuCommand {
    * 
    * @return user object
    */
-  OsuApiUser getUser();
+  OsuUser getUser();
 }

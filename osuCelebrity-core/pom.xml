@@ -17,6 +17,12 @@
 			<artifactId>osuCelebrity-model</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>tv.rdbk.osuCelebrity</groupId>
+			<artifactId>osuCelebrity-model</artifactId>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<scope>provided</scope>

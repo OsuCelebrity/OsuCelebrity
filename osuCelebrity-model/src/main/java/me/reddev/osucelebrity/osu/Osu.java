@@ -1,14 +1,12 @@
 package me.reddev.osucelebrity.osu;
 
-import org.tillerino.osuApiModel.OsuApiUser;
-
 public interface Osu {
   /**
    * Starts spectating a player. TODO specify behaviour (async with callback? success/failure?)
    * 
    * @param user The user to be spectated.
    */
-  public void startSpectate(OsuApiUser user);
+  public void startSpectate(OsuUser user);
 
   /**
    * Registers a command handler. The order of these handlers is preserved and every command is
@@ -22,22 +20,22 @@ public interface Osu {
   /**
    * Sends a message via ingame chat.
    * 
-   * @param user recipient
+   * @param osuUser recipient
    * @param message message
    */
-  public void message(OsuApiUser user, String message);
+  public void message(OsuUser osuUser, String message);
 
   /**
    * Notifies a player about their upcoming spectate period.
    * 
    * @param user Recipient
    */
-  public void notifyStarting(OsuApiUser user);
+  public void notifyStarting(OsuUser user);
 
   /**
    * Notifies a player that they're going to be spectated soon.
    * 
-   * @param player the player to be notified.
+   * @param osuUser the player to be notified.
    */
-  public void notifySoon(OsuApiUser player);
+  public void notifySoon(OsuUser osuUser);
 }

@@ -5,21 +5,25 @@ import me.reddev.osucelebrity.CommandDispatcher;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.osu.commands.QueueSelfOsuCommandImpl;
+import me.reddev.osucelebrity.osu.commands.QueueUserOsuCommandImpl;
 import me.reddev.osucelebrity.osuapi.OsuApi;
+
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
-import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.ListenerAdapter;
+import org.pircbotx.hooks.events.ConnectEvent;
+import org.pircbotx.hooks.events.DisconnectEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.types.GenericChannelEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.tillerino.osuApiModel.GameModes;
-import org.tillerino.osuApiModel.OsuApiUser;
 
 import java.io.IOException;
-import java.sql.SQLException;
+
+import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
 
 @Slf4j
 public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
@@ -32,17 +36,20 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   private final OsuIrcSettings ircSettings;
 
-  final CommandDispatcher<OsuCommand> dispatcher = 
-      new CommandDispatcher<OsuCommand>();
+  final CommandDispatcher<OsuCommand> dispatcher = new CommandDispatcher<OsuCommand>();
+
+  private final PersistenceManagerFactory pmf;
 
   /**
    * Constructs a new Osu! IRC bot.
    */
-  public OsuIrcBot(OsuIrcSettings ircSettings, OsuApi osuApi, Osu osu) {
+  public OsuIrcBot(OsuIrcSettings ircSettings, OsuApi osuApi, Osu osu,
+      PersistenceManagerFactory pmf) {
     this.username = ircSettings.getOsuIrcUsername();
     this.osu = osu;
     this.osuApi = osuApi;
     this.ircSettings = ircSettings;
+    this.pmf = pmf;
 
     // Reset bot
     Configuration<PircBotX> config =
@@ -51,7 +58,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
             .setLogin(username)
             .addListener(this)
             .setServer(ircSettings.getOsuIrcHost(), ircSettings.getOsuIrcPort(),
-                ircSettings.getOsuIrcPassword()).setAutoReconnect(true).buildConfiguration();
+                ircSettings.getOsuIrcPassword()).setAutoReconnect(true)
+            .addAutoJoinChannel(ircSettings.getOsuIrcAutoJoin()).buildConfiguration();
     bot = new PircBotX(config);
   }
 
@@ -61,10 +69,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   public void run() {
     try {
       bot.startBot();
-    } catch (IOException e) {
-      log.error("OsuIRCBot IOException: " + e.getMessage());
-    } catch (IrcException e) {
-      log.error("OsuIRCBot IrcException: " + e.getMessage());
+    } catch (Exception e) {
+      log.error("Exception", e);
     }
   }
 
@@ -103,30 +109,57 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   // http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
 
   @Override
-  public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
-    //Must satisfy the command term
-    if (!event.getMessage().startsWith(ircSettings.getOsuIrcCommand())) {
-      return;
-    }
-    
-    String[] messageSplit = event.getMessage()
-        .substring(ircSettings.getOsuIrcCommand().length()).split(" ");
-    String commandName = messageSplit[0];
-    // TODO: Accept in-game requests
+  public void onConnect(ConnectEvent<PircBotX> event) throws Exception {
+    log.debug("connected");
+  }
 
+  @Override
+  public void onDisconnect(DisconnectEvent<PircBotX> event) throws Exception {
+    log.debug("disconnected");
+  }
+
+  @Override
+  public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
+    log.debug("received message from {}: {}", event.getUser().getNick(), event.getMessage());
+    PersistenceManager pm = pmf.getPersistenceManager();
     try {
-      if (commandName.equalsIgnoreCase("queue")) {
-        dispatcher.dispatchCommand(new QueueSelfOsuCommandImpl(osu, getOsuUser(event)));
+      // Must satisfy the command term
+      if (!event.getMessage().startsWith(ircSettings.getOsuIrcCommand())) {
+        return;
       }
-    } catch (Exception e) {
-      handleException(e, event.getUser());
+
+      String[] messageSplit =
+          event.getMessage().substring(ircSettings.getOsuIrcCommand().length()).split(" ", 2);
+      String commandName = messageSplit[0];
+      // TODO: Accept in-game requests
+
+      try {
+        if (commandName.equalsIgnoreCase("queue")) {
+          OsuUser thisUser = getOsuUser(event, pm);
+          if (messageSplit.length == 1) {
+            dispatcher.dispatchCommand(new QueueSelfOsuCommandImpl(osu, thisUser, pm));
+          } else {
+            OsuUser requestedUser =
+                osuApi.getUser(messageSplit[1], GameModes.OSU, pm, 60 * 60 * 1000);
+            if (requestedUser == null) {
+              log.debug("requested non-existing user {}", messageSplit[1]);
+            }
+            dispatcher
+                .dispatchCommand(new QueueUserOsuCommandImpl(osu, thisUser, requestedUser, pm));
+          }
+        }
+      } catch (Exception e) {
+        handleException(e, event.getUser());
+      }
+    } finally {
+      pm.close();
     }
   }
 
-  OsuApiUser getOsuUser(GenericMessageEvent<PircBotX> event) throws SQLException, IOException,
-      UserException {
-    final OsuApiUser user =
-        osuApi.getUser(event.getUser().getNick(), GameModes.OSU, 60 * 60 * 1000);
+  OsuUser getOsuUser(GenericMessageEvent<PircBotX> event, PersistenceManager pm)
+      throws IOException, UserException {
+    final OsuUser user =
+        osuApi.getUser(event.getUser().getNick(), GameModes.OSU, pm, 60 * 60 * 1000);
     if (user == null) {
       throw new UserException(String.format(OsuResponses.INVALID_USER, event.getUser().getNick()));
     }

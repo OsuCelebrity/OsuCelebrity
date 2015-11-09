@@ -1,6 +1,8 @@
 package me.reddev.osucelebrity.twitch;
 
-public interface TwitchCommand {
+import me.reddev.osucelebrity.Command;
+
+public interface TwitchCommand extends Command {
   Twitch getTwitch();
   
   /**

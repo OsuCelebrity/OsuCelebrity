@@ -1,10 +1,12 @@
 package me.reddev.osucelebrity.osu;
 
 import lombok.Data;
-import org.tillerino.osuApiModel.OsuApiUser;
+
+import javax.jdo.PersistenceManager;
 
 @Data
 public abstract class AbstractOsuCommand implements OsuCommand {
   private final Osu osu;
-  private final OsuApiUser user;
+  private final OsuUser user;
+  private final PersistenceManager persistenceManager;
 }
