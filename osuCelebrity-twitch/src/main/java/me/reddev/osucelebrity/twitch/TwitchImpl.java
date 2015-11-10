@@ -15,11 +15,6 @@ public class TwitchImpl implements Twitch {
   final TwitchApiSettings apiSettings;
   final PersistenceManagerFactory pmf;
   final TwitchIrcBot bot;
-    
-  @Override
-  public void registerCommandHandler(TwitchCommandHandler handler) {
-    bot.dispatcher.addHandler(handler);
-  }
 
   @Override
   public void sendMessageToChannel(String message) {
@@ -31,5 +26,4 @@ public class TwitchImpl implements Twitch {
     // TODO Auto-generated method stub
 
   }
-
 }

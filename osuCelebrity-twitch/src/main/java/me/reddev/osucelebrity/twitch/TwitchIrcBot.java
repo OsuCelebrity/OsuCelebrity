@@ -2,14 +2,18 @@ package me.reddev.osucelebrity.twitch;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import me.reddev.osucelebrity.CommandDispatcher;
 import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.UserException;
+import me.reddev.osucelebrity.core.Clock;
+import me.reddev.osucelebrity.core.EnqueueResult;
+import me.reddev.osucelebrity.core.QueuedPlayer;
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
+import me.reddev.osucelebrity.core.Spectator;
+import me.reddev.osucelebrity.core.VoteType;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
-import me.reddev.osucelebrity.twitch.commands.NextUserTwitchCommandImpl;
-import me.reddev.osucelebrity.twitch.commands.QueueUserTwitchCommandImpl;
 
+import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
@@ -34,19 +38,35 @@ import javax.jdo.PersistenceManagerFactory;
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
+  @FunctionalInterface
+  interface CommandHandler {
+    boolean handle(MessageEvent<PircBotX> event, String message, String twitchUserName,
+        PersistenceManager pm) throws UserException, IOException;
+  }
+
   private final TwitchIrcSettings settings;
-  
+
   private final OsuApi osuApi;
-  
+
   private final Twitch twitch;
 
   private final PersistenceManagerFactory pmf;
+
+  private final Spectator spectator;
+
+  private final Clock clock;
 
   PircBotX bot;
 
   private final List<String> subscribers = new ArrayList<String>();
 
-  final CommandDispatcher<TwitchCommand> dispatcher = new CommandDispatcher<TwitchCommand>();
+  private final List<CommandHandler> handlers = new ArrayList<>();
+
+  {
+    handlers.add(this::handleQueue);
+    handlers.add(this::handleVote);
+    handlers.add(this::handleAdvance);
+  }
 
   @Override
   public void run() {
@@ -63,7 +83,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
       bot.startBot();
     } catch (Exception e) {
-      log.error("TwitchIRCBot IOException: " + e.getMessage());
+      log.error("Exception", e);
     }
   }
 
@@ -83,55 +103,6 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
    */
   public void sendMessage(String message) {
     bot.sendIRC().message(settings.getTwitchIrcChannel(), message);
-  }
-
-  /**
-   * Acts on a given command message.
-   * 
-   * @param event The irc event for the command.
-   * @param message The message (without the command string ie. !)
-   */
-  private void commandResponder(MessageEvent<PircBotX> event, String message) {
-    String[] messageSplit = message.split(" ");
-    String commandName = messageSplit[0];
-    String user = event.getUser().getNick();
-
-    PersistenceManager pm = pmf.getPersistenceManager();
-    try {
-      if (commandName.equalsIgnoreCase("queue")) {
-        // Missing supporting arguments
-        if (messageSplit.length < 2) {
-          sendMessage(TwitchResponses.INVALID_FORMAT_QUEUE);
-          return;
-        }
-
-        OsuUser selectedUser;
-        try {
-          selectedUser = osuApi.getUser(messageSplit[1], GameModes.OSU, pm, 10 * 60 * 1000);
-        } catch (IOException e) {
-          log.warn("error getting user", e);
-          selectedUser = null;
-        }
-
-        // User gave an invalid username
-        if (selectedUser == null) {
-          sendMessage(String.format(TwitchResponses.INVALID_USER, messageSplit[1]));
-          return;
-        }
-
-        dispatcher.dispatchCommand(new QueueUserTwitchCommandImpl(twitch, user, selectedUser, pm));
-      } else if (commandName.equalsIgnoreCase("next")) {
-        dispatcher.dispatchCommand(new NextUserTwitchCommandImpl(twitch, user, pm));
-      }
-    } catch (Exception e) {
-      handleException(e, event.getUser());
-    } finally {
-      pm.close();
-    }
-  }
-
-  private void modCommandResponder(MessageEvent<PircBotX> event, String message) {
-
   }
 
   // TODO make this Twitch specific
@@ -168,14 +139,71 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     String message = event.getMessage();
     log.debug("Received Twitch message: " + message);
     // Search through for command calls
-    if (message.startsWith(settings.getTwitchIrcCommand())) {
-      message = message.substring(settings.getTwitchIrcCommand().length());
-
-      if (event.getChannel().isOp(event.getUser())) {
-        modCommandResponder(event, message);
-      }
-      commandResponder(event, message);
+    if (!message.startsWith(settings.getTwitchIrcCommand())) {
+      return;
     }
+
+    message = message.substring(settings.getTwitchIrcCommand().length());
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      for (CommandHandler commandHandler : handlers) {
+        if (commandHandler.handle(event, message, event.getUser().getNick(), pm)) {
+          break;
+        }
+      }
+    } catch (Exception e) {
+      handleException(e, event.getUser());
+    } finally {
+      pm.close();
+    }
+  }
+
+  boolean handleQueue(MessageEvent<PircBotX> event, String message, String twitchUserName,
+      PersistenceManager pm) throws UserException, IOException {
+    if (StringUtils.startsWithIgnoreCase(message, "queue ")) {
+      String targetUser = message.substring("queue ".length());
+      OsuUser requestedUser = osuApi.getUser(targetUser, GameModes.OSU, pm, 60 * 60 * 1000L);
+      if (requestedUser == null) {
+        throw new UserException(String.format(TwitchResponses.INVALID_USER, targetUser));
+      }
+      QueuedPlayer queueRequest =
+          new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
+      EnqueueResult result = spectator.enqueue(pm, queueRequest);
+      if (result == EnqueueResult.SUCCESS) {
+        event.getChannel().send()
+            .message(String.format(TwitchResponses.QUEUE_SUCCESSFUL, requestedUser.getUserName()));
+      }
+      return true;
+    }
+    return false;
+  }
+
+  boolean handleVote(MessageEvent<PircBotX> event, String message, String twitchUserName,
+      PersistenceManager pm) throws UserException, IOException {
+    VoteType type = null;
+    if (message.equalsIgnoreCase("dank")) {
+      type = VoteType.UP;
+    }
+    if (message.equalsIgnoreCase("skip")) {
+      type = VoteType.DOWN;
+    }
+    if (type == null) {
+      return false;
+    }
+    spectator.vote(pm, twitchUserName, type);
+    return true;
+  }
+
+  boolean handleAdvance(MessageEvent<PircBotX> event, String message, String twitchUserName,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!message.equalsIgnoreCase("forceskip")) {
+      return false;
+    }
+    if (event.getUser().isIrcop()) {
+      spectator.advance(pm);
+    }
+    return true;
   }
 
   @Override
@@ -200,7 +228,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   public void onJoin(JoinEvent<PircBotX> event) {
     if (event.getUser().getLogin().equalsIgnoreCase(settings.getTwitchIrcUsername())) {
       // Ask for subscription and admin information
-      event.getBot().sendRaw().rawLine("TWITCHCLIENT 3");
+      event.getBot().sendRaw().rawLine("CAP REQ :twitch.tv/membership");
       log.info(String.format("Joined %s", event.getChannel().getName()));
     }
   }

@@ -2,12 +2,14 @@ package me.reddev.osucelebrity.core.api;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.Spectator;
 
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.jdo.PersistenceManager;
@@ -26,11 +28,15 @@ public class CurrentPlayerService {
     String name;
 
     String playingFor;
+    
+    double health;
   }
 
   private final PersistenceManagerFactory pmf;
 
   private final Spectator spectator;
+  
+  private final CoreSettings coreSettings;
 
   /**
    * Shows details about the player currently being spectated.
@@ -48,6 +54,8 @@ public class CurrentPlayerService {
         LocalTime localTime = LocalTime.MIDNIGHT.plus(duration);
         currentPlayer.setPlayingFor(DateTimeFormatter.ofPattern("m:ss").format(localTime));
       }
+      currentPlayer.setHealth((player.getStoppingAt() - player.getLastRemainingTimeUpdate())
+          / (double) coreSettings.getDefaultSpecDuration());
       return currentPlayer;
     } finally {
       pm.close();

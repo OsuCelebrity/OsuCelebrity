@@ -3,9 +3,11 @@ package me.reddev.osucelebrity.core.api;
 import static org.mockito.Mockito.*;
 
 import java.net.URI;
+
 import javax.ws.rs.core.UriBuilder;
 
 import me.reddev.osucelebrity.AbstractJDOTest;
+import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
@@ -30,6 +32,8 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
 
   @Mock
   Spectator spectator;
+  @Mock
+  CoreSettings coreSettings;
 
   OsuApi osuApi = new MockOsuApi();
 
@@ -41,7 +45,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
             QueueSource.OSU, 0));
 
     CoreApiApplication apiServerApp =
-        new CoreApiApplication(new CurrentPlayerService(pmf, spectator));
+        new CoreApiApplication(new CurrentPlayerService(pmf, spectator, coreSettings));
 
     Server apiServer =
         JettyHttpContainerFactory

@@ -23,4 +23,14 @@ public interface Spectator {
   boolean advance(PersistenceManager pm);
 
   QueuedPlayer getCurrentPlayer(PersistenceManager pm);
+  
+  /**
+   * Votes for the current player.
+   * 
+   * @param pm the current request's persistence manager
+   * @param twitchIrcNick the voting player's twitch irc nickname
+   * @param voteType up/down
+   * @return true if the vote will count, false otherwise.
+   */
+  boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType);
 }

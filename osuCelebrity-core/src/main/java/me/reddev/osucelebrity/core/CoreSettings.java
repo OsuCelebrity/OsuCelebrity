@@ -3,5 +3,11 @@ package me.reddev.osucelebrity.core;
 public interface CoreSettings {
   long getDefaultSpecDuration();
   
+  long getNextPlayerNotifyTime();
+  
   int getApiPort();
+  
+  long getStreamDelay();
+
+  long getVoteWindow();
 }

@@ -30,10 +30,25 @@ public class SpectatorImplTest extends AbstractJDOTest {
   Clock clock = mock(Clock.class);
   OsuApi api = new MockOsuApi();
 
+  @Before
+  public void initMocks() {
+    MockitoAnnotations.initMocks(this);
+
+    when(settings.getDefaultSpecDuration()).thenReturn(30000l);
+    when(settings.getNextPlayerNotifyTime()).thenReturn(10000l);
+    when(settings.getVoteWindow()).thenReturn(30000l);
+  }
+
+  QueuedPlayer getUser(int id) {
+    OsuApiUser apiUser1 = new OsuApiUser();
+    apiUser1.setUserId(id);
+    return new QueuedPlayer(new OsuUser(apiUser1, clock.getTime()), null, clock.getTime());
+  }
+
   @Test
-  public void testName() throws Exception {
+  public void testEnqueue() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
-    
+
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     assertFalse(spectator.advance(pm));
@@ -56,8 +71,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     long[] time = {0};
     when(clock.getTime()).thenAnswer(x -> time[0]);
-
-    when(settings.getDefaultSpecDuration()).thenReturn(30000l);
 
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
@@ -91,14 +104,92 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertFalse(queue.spectatingNext().isPresent());
   }
 
-  QueuedPlayer getUser(int id) {
-    OsuApiUser apiUser1 = new OsuApiUser();
-    apiUser1.setUserId(id);
-    return new QueuedPlayer(new OsuUser(apiUser1, clock.getTime()), null, clock.getTime());
+  @Test
+  public void testApprovalUnique() throws Exception {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser user = api.getUser("someplayer", 0, pm, 0);
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
+
+    spectator.loop(pm);
+
+    spectator.vote(pm, "spammer", VoteType.UP);
+    spectator.vote(pm, "spammer", VoteType.UP);
+    spectator.vote(pm, "spammer", VoteType.UP);
+    spectator.vote(pm, "spammer", VoteType.UP);
+    spectator.vote(pm, "spammer", VoteType.UP);
+
+    spectator.vote(pm, "bummer", VoteType.DOWN);
+
+    assertEquals(.5, spectator.getApproval(pm, spectator.getCurrentPlayer(pm)), 0d);
   }
 
-  @Before
-  public void initMocks() {
-    MockitoAnnotations.initMocks(this);
+  @Test
+  public void testApprovalLast() throws Exception {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser user = api.getUser("someplayer", 0, pm, 0);
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
+
+    spectator.loop(pm);
+
+    spectator.vote(pm, "flipflopper", VoteType.UP);
+    spectator.vote(pm, "flipflopper", VoteType.DOWN);
+
+    assertEquals(0, spectator.getApproval(pm, spectator.getCurrentPlayer(pm)), 0d);
+  }
+
+  @Test
+  public void testApprovalNoVotes() throws Exception {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser user = api.getUser("someplayer", 0, pm, 0);
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
+
+    spectator.loop(pm);
+
+    assertEquals(Double.NaN, spectator.getApproval(pm, spectator.getCurrentPlayer(pm)), 0d);
+  }
+
+  @Test
+  public void testRemainingTime() throws Exception {
+    long[] time = {0};
+    when(clock.getTime()).thenAnswer(x -> time[0]);
+
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser user = api.getUser("someplayer", 0, pm, 0);
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
+
+    spectator.loop(pm);
+
+    {
+      QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
+      assertEquals(user, currentPlayer.getPlayer());
+      assertEquals(30000, currentPlayer.getStoppingAt());
+    }
+
+    time[0] = 10000;
+    spectator.loop(pm);
+    // remaining time is now 20s
+    spectator.vote(pm, "me", VoteType.UP);
+
+    for (long t = 10000; t <= 40000; t += 10000) {
+      time[0] = t;
+      spectator.loop(pm);
+      QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
+      assertEquals(user, currentPlayer.getPlayer());
+      assertEquals(t + 20000, currentPlayer.getStoppingAt());
+    }
+    
+    time[0] = 50000;
+    spectator.loop(pm);
+    QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
+    assertEquals(user, currentPlayer.getPlayer());
+    assertEquals(60000, currentPlayer.getStoppingAt());
   }
 }

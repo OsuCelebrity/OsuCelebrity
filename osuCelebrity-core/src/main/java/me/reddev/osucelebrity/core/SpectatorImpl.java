@@ -1,11 +1,16 @@
 package me.reddev.osucelebrity.core;
 
+import static me.reddev.osucelebrity.core.QVote.vote;
+
+import com.querydsl.jdo.JDOQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.twitch.Twitch;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.inject.Inject;
@@ -28,7 +33,7 @@ public class SpectatorImpl implements Spectator, Runnable {
   final Osu osu;
 
   final CoreSettings settings;
-  
+
   final PersistenceManagerFactory pmf;
 
   boolean run = true;
@@ -68,14 +73,44 @@ public class SpectatorImpl implements Spectator, Runnable {
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
     if (!queue.currentlySpectating().isPresent() || queue.spectatingUntil() < clock.getTime()) {
       advance(queue);
-    } else if (queue.spectatingUntil() < clock.getTime() + 10000
+    } else if (queue.spectatingUntil() < clock.getTime() + settings.getNextPlayerNotifyTime()
         && !queue.spectatingNext().isPresent()) {
       lockNext(queue);
+    } else {
+      updateRemainingTime(pm, queue.currentlySpectating().get());
     }
     long until = queue.currentlySpectating().isPresent() ? queue.spectatingUntil() : 0;
-    return Math.min(clock.getTime() + 100,
-        until > clock.getTime() ? until
-            : clock.getTime() + 100);
+    return Math.min(clock.getTime() + 100, until > clock.getTime() ? until : clock.getTime() + 100);
+  }
+
+  private void updateRemainingTime(PersistenceManager pm, QueuedPlayer queuedPlayer) {
+    double approval = getApproval(pm, queuedPlayer);
+    long time = clock.getTime();
+    if (approval > .5) {
+      queuedPlayer.setStoppingAt(time + queuedPlayer.getStoppingAt()
+          - queuedPlayer.getLastRemainingTimeUpdate());
+    }
+
+    queuedPlayer.setLastRemainingTimeUpdate(time);
+  }
+
+  double getApproval(PersistenceManager pm, QueuedPlayer queuedPlayer) {
+    double approval;
+    try (JDOQuery<Vote> query = new JDOQuery<>(pm)) {
+      query
+          .select(vote)
+          .from(vote)
+          .where(vote.referece.eq(queuedPlayer),
+              vote.voteTime.goe(clock.getTime() - settings.getVoteWindow()))
+          .orderBy(vote.voteTime.asc());
+
+      Map<String, Vote> votes = new HashMap<>();
+      query.fetch().stream().forEach(vote -> votes.put(vote.getTwitchUser(), vote));
+      long upVotes =
+          votes.values().stream().filter(x -> x.getVoteType().equals(VoteType.UP)).count();
+      approval = upVotes / (double) votes.size();
+    }
+    return approval;
   }
 
   synchronized void lockNext(PlayerQueue queue) {
@@ -134,20 +169,38 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (spectating.isPresent()) {
       spectating.get().setState(QueuedPlayer.DONE);
     }
+    long time = clock.getTime();
     next.setState(QueuedPlayer.SPECTATING);
-    next.setStartedAt(clock.getTime());
+    next.setStartedAt(time);
+    next.setLastRemainingTimeUpdate(time);
     next.setStoppingAt(next.getStartedAt() + settings.getDefaultSpecDuration());
     OsuUser user = next.getPlayer();
-    osu.notifyStarting(user);
+    // TODO enable notification after alpha
+    // osu.notifyStarting(user);
     osu.startSpectate(user);
-    Optional<QueuedPlayer> peek = queue.poll();
-    if (peek.isPresent()) {
-      osu.notifySoon(peek.get().getPlayer());
-    }
   }
 
   @Override
   public QueuedPlayer getCurrentPlayer(PersistenceManager pm) {
     return PlayerQueue.loadQueue(pm).currentlySpectating().orElse(null);
+  }
+
+  @Override
+  public boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    Optional<QueuedPlayer> currentlySpectating = queue.currentlySpectating();
+    if (!currentlySpectating.isPresent()) {
+      return false;
+    }
+    if (queue.spectatingNext().isPresent()) {
+      return false;
+    }
+    Vote vote = new Vote();
+    vote.setReferece(currentlySpectating.get());
+    vote.setVoteType(voteType);
+    vote.setVoteTime(clock.getTime());
+    vote.setTwitchUser(twitchIrcNick);
+    pm.makePersistent(vote);
+    return true;
   }
 }

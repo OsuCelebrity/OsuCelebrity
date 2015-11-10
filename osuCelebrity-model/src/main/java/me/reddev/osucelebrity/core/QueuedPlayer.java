@@ -36,6 +36,9 @@ public class QueuedPlayer {
   long startedAt;
 
   long stoppingAt;
+  
+  @Column(defaultValue = "0")
+  long lastRemainingTimeUpdate;
 
   @Index
   int state = 2;

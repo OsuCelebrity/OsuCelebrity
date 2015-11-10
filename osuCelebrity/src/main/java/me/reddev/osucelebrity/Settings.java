@@ -1,12 +1,14 @@
 package me.reddev.osucelebrity;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.ToString;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.osucelebrity.osu.OsuIrcSettings;
 import me.reddev.osucelebrity.osuapi.OsuApiSettings;
 import me.reddev.osucelebrity.twitch.TwitchApiSettings;
 import me.reddev.osucelebrity.twitch.TwitchIrcSettings;
+
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.InputStream;
@@ -14,7 +16,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Properties;
 
-@Data
+@Getter
+@ToString
 public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSettings,
     OsuApplicationSettings, OsuApiSettings, CoreSettings {
   // Twitch IRC settings
@@ -56,6 +59,9 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   // Application Settings
   private long defaultSpecDuration;
   private int apiPort;
+  private long streamDelay;
+  private long voteWindow;
+  private long nextPlayerNotifyTime;
 
   /**
    * Creates a new settings object using a given property list.
@@ -66,6 +72,9 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
     Field[] fields = Settings.class.getDeclaredFields();
     for (Field f : fields) {
       Class<?> fieldClass = f.getType();
+      if (f.getName().startsWith("$")) {
+        continue;
+      }
       String property = properties.getProperty(f.getName());
       
       if (property == null) {

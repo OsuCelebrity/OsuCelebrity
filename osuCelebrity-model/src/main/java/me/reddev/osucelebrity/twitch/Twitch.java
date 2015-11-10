@@ -8,7 +8,6 @@ public interface Twitch {
    * 
    * @param handler handler
    */
-  public void registerCommandHandler(TwitchCommandHandler handler);
 
   public void sendMessageToChannel(String message);
 

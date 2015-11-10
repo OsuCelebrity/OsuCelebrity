@@ -2,9 +2,13 @@ package me.reddev.osucelebrity.twitch;
 
 import static org.mockito.Mockito.*;
 import me.reddev.osucelebrity.AbstractJDOTest;
-import me.reddev.osucelebrity.CommandHandler;
+import me.reddev.osucelebrity.core.EnqueueResult;
+import me.reddev.osucelebrity.core.MockClock;
+import me.reddev.osucelebrity.core.QueuedPlayer;
+import me.reddev.osucelebrity.core.Spectator;
+import me.reddev.osucelebrity.core.VoteType;
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.osuapi.MockOsuApi;
-import me.reddev.osucelebrity.twitch.commands.QueueUserTwitchCommandImpl;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -16,6 +20,7 @@ import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.managers.ListenerManager;
+import org.pircbotx.output.OutputChannel;
 import org.pircbotx.output.OutputUser;
 
 
@@ -23,7 +28,8 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   @Mock
   TwitchIrcSettings settings;
   @Mock
-  CommandHandler<TwitchCommand> handler;
+  Spectator spectator;
+
   @Mock
   User user;
   @Mock
@@ -31,13 +37,17 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   @Mock
   Channel channel;
   @Mock
+  OutputChannel outputChannel;
+  @Mock
   PircBotX bot;
   @Mock
   Configuration<PircBotX> configuration;
   @Mock
   ListenerManager<PircBotX> listenerManager;
-  
+
   MockOsuApi api = new MockOsuApi();
+
+  TwitchIrcBot ircBot;
 
   @Before
   public void initMocks() {
@@ -45,24 +55,53 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
     when(bot.getConfiguration()).thenReturn(configuration);
     when(configuration.getListenerManager()).thenReturn(listenerManager);
-    when(user.getNick()).thenReturn("osuIrcUser");
-    
+    when(user.getNick()).thenReturn("twitchIrcUser");
+    when(channel.send()).thenReturn(outputChannel);
+
     when(settings.getTwitchIrcCommand()).thenReturn("!");
-    
-    when(user.getNick()).thenReturn("ircUser");
+
+    ircBot = new TwitchIrcBot(settings, api, null, pmf, spectator, new MockClock());
   }
 
   @Test
   public void testQueue() throws Exception {
-    TwitchIrcBot ircBot = new TwitchIrcBot(settings, api, null, pmf);
-    ircBot.dispatcher.addHandler(handler);
+    when(spectator.enqueue(any(), any())).thenReturn(EnqueueResult.SUCCESS);
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!queue someone"));
+    
+    verify(spectator).enqueue(
+        any(),
+        eq(new QueuedPlayer(api.getUser("someone", 0, pmf.getPersistenceManagerProxy(), 0),
+            QueueSource.TWITCH, 0)));
+    verify(outputChannel).message(anyString());
+  }
 
-    MessageEvent<PircBotX> event =
-        new MessageEvent<PircBotX>(bot, channel, user, "!queue someone");
-    ircBot.onMessage(event);
+  @Test
+  public void testDank() throws Exception {
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!dank"));
 
-    verify(handler).handle(
-        eq(new QueueUserTwitchCommandImpl(null, "ircUser", api.getUser("someone", 0,
-            pmf.getPersistenceManagerProxy(), 0), null)));
+    verify(spectator).vote(any(), eq("twitchIrcUser"), eq(VoteType.UP));
+  }
+
+  @Test
+  public void testSkip() throws Exception {
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!skip"));
+
+    verify(spectator).vote(any(), eq("twitchIrcUser"), eq(VoteType.DOWN));
+  }
+
+  @Test
+  public void testForceSkip() throws Exception {
+    when(user.isIrcop()).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip"));
+
+    verify(spectator).advance(any());
+  }
+
+  @Test
+  public void testForceSkipUnauthorized() throws Exception {
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip"));
+
+    verifyNoMoreInteractions(spectator);
   }
 }
