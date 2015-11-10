@@ -1,13 +1,9 @@
 package me.reddev.osucelebrity.core;
 
 import lombok.extern.slf4j.Slf4j;
-import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.osu.Osu;
-import me.reddev.osucelebrity.osu.OsuCommand;
-import me.reddev.osucelebrity.osu.commands.QueueSelfOsuCommand;
-import me.reddev.osucelebrity.osu.commands.QueueUserOsuCommand;
 import me.reddev.osucelebrity.twitch.Twitch;
 import me.reddev.osucelebrity.twitch.TwitchCommand;
 import me.reddev.osucelebrity.twitch.commands.NextUserTwitchCommand;
@@ -24,7 +20,7 @@ public class Core implements Runnable {
   final Twitch twitch;
   final CoreSettings settings;
 
-  final Spectator spectator;
+  final SpectatorImpl spectator;
   final Clock clock;
 
   /**
@@ -34,7 +30,7 @@ public class Core implements Runnable {
    * @param twitch A controller for Twitch Irc
    * @param settings The settings for the core program
    */
-  public Core(Osu osu, Twitch twitch, CoreSettings settings, Spectator spectator, Clock clock) {
+  public Core(Osu osu, Twitch twitch, CoreSettings settings, SpectatorImpl spectator, Clock clock) {
     super();
     this.osu = osu;
     this.twitch = twitch;
@@ -42,36 +38,16 @@ public class Core implements Runnable {
     this.spectator = spectator;
     this.clock = clock;
 
-    osu.registerCommandHandler(this::handleOsuCommand);
     twitch.registerCommandHandler(this::handleTwitchCommand);
-  }
-
-  boolean handleOsuCommand(OsuCommand command) throws Exception {
-    if (command instanceof QueueSelfOsuCommand) {
-      QueueSelfOsuCommand queueCommand = (QueueSelfOsuCommand) command;
-      if (spectator.enqueue(command.getPersistenceManager(), new QueuedPlayer(command.getUser(),
-          QueueSource.OSU, clock.getTime()))) {
-        osu.message(queueCommand.getUser(), String.format(OsuResponses.ADDED_TO_QUEUE));
-      }
-      return true;
-    }
-    if (command instanceof QueueUserOsuCommand) {
-      QueueUserOsuCommand queueCommand = (QueueUserOsuCommand) command;
-      if (spectator.enqueue(command.getPersistenceManager(),
-          new QueuedPlayer(queueCommand.getRequestedUser(), QueueSource.OSU, clock.getTime()))) {
-        // TODO some confirmation message
-      }
-      return true;
-    }
-    return false;
   }
 
   boolean handleTwitchCommand(TwitchCommand command) throws Exception {
     if (command instanceof QueueUserTwitchCommand) {
       QueueUserTwitchCommand queueCommand = (QueueUserTwitchCommand) command;
       if (spectator.enqueue(command.getPersistenceManager(),
-          new QueuedPlayer(queueCommand.getRequestedUser(), QueueSource.TWITCH, clock.getTime()))) {
-        twitch.sendMessageToChannel(String.format(TwitchResponses.ADDED_TO_QUEUE, queueCommand
+          new QueuedPlayer(queueCommand.getRequestedUser(), QueueSource.TWITCH, clock.getTime()))
+          == EnqueueResult.SUCCESS) {
+        twitch.sendMessageToChannel(String.format(TwitchResponses.QUEUE_SUCCESSFUL, queueCommand
             .getRequestedUser().getUserName()));
       }
       return true;

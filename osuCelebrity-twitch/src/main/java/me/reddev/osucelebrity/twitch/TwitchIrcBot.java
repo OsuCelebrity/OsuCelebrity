@@ -1,5 +1,6 @@
 package me.reddev.osucelebrity.twitch;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.CommandDispatcher;
 import me.reddev.osucelebrity.TwitchResponses;
@@ -12,7 +13,6 @@ import me.reddev.osucelebrity.twitch.commands.QueueUserTwitchCommandImpl;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
-import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.ConnectEvent;
 import org.pircbotx.hooks.events.DisconnectEvent;
@@ -27,79 +27,43 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 
 @Slf4j
+@RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
-  PircBotX bot;
-
-  private String channel;
-  private String username;
-  private List<String> subscribers;
-
-  private Twitch twitch;
-
-  private OsuApi osuApi;
-
   private final TwitchIrcSettings settings;
   
-  private final PersistenceManagerFactory pmf;
+  private final OsuApi osuApi;
   
-  final CommandDispatcher<TwitchCommand> dispatcher = 
-      new CommandDispatcher<TwitchCommand>();
+  private final Twitch twitch;
 
-  /**
-   * Constructs a new Twitch IRC bot.
-   * 
-   * @param settings The Twitch Irc settings for the program
-   * @param twitch The active TwitchManager
-   * @param osuApi The generated downloader
-   */
-  public TwitchIrcBot(TwitchIrcSettings settings, OsuApi osuApi, Twitch twitch,
-      PersistenceManagerFactory pmf) {
-    this.settings = settings;
+  private final PersistenceManagerFactory pmf;
 
-    this.channel = settings.getTwitchIrcChannel();
-    this.username = settings.getTwitchIrcUsername();
+  PircBotX bot;
 
-    // Reset user lists
-    this.subscribers = new ArrayList<String>();
+  private final List<String> subscribers = new ArrayList<String>();
 
-    // Reset bot
-    Configuration<PircBotX> config =
-        new Configuration.Builder<PircBotX>()
-            .setName(this.username)
-            .setLogin(this.username)
-            .addListener(this)
-            .setServer(settings.getTwitchIrcHost(), settings.getTwitchIrcPort(),
-                settings.getTwitchToken()).setAutoReconnect(true)
-                .addAutoJoinChannel(settings.getTwitchIrcChannel())
-            .buildConfiguration();
-    bot = new PircBotX(config);
-
-    this.twitch = twitch;
-    this.osuApi = osuApi;
-    this.pmf = pmf;
-  }
-
-  /**
-   * Connects to IRC and sets up listeners.
-   */
-  public void start() {
-    Thread botThread = new Thread(this);
-    botThread.setName("TwitchIRCBot");
-    (botThread).start();
-  }
+  final CommandDispatcher<TwitchCommand> dispatcher = new CommandDispatcher<TwitchCommand>();
 
   @Override
   public void run() {
     try {
+      Configuration<PircBotX> config =
+          new Configuration.Builder<PircBotX>()
+              .setName(settings.getTwitchIrcUsername())
+              .setLogin(settings.getTwitchIrcUsername())
+              .addListener(this)
+              .setServer(settings.getTwitchIrcHost(), settings.getTwitchIrcPort(),
+                  settings.getTwitchToken()).setAutoReconnect(true)
+              .addAutoJoinChannel(settings.getTwitchIrcChannel()).buildConfiguration();
+      bot = new PircBotX(config);
+
       bot.startBot();
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.error("TwitchIRCBot IOException: " + e.getMessage());
-    } catch (IrcException e) {
-      log.error("TwitchIRCBot IrcException: " + e.getMessage());
     }
   }
 
@@ -120,9 +84,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   public void sendMessage(String message) {
     bot.sendIRC().message(settings.getTwitchIrcChannel(), message);
   }
-  
+
   /**
    * Acts on a given command message.
+   * 
    * @param event The irc event for the command.
    * @param message The message (without the command string ie. !)
    */
@@ -139,7 +104,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
           sendMessage(TwitchResponses.INVALID_FORMAT_QUEUE);
           return;
         }
-  
+
         OsuUser selectedUser;
         try {
           selectedUser = osuApi.getUser(messageSplit[1], GameModes.OSU, pm, 10 * 60 * 1000);
@@ -147,13 +112,13 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
           log.warn("error getting user", e);
           selectedUser = null;
         }
-        
-        //User gave an invalid username
+
+        // User gave an invalid username
         if (selectedUser == null) {
-          sendMessage(String.format(TwitchResponses.INVALID_USER , messageSplit[1]));
+          sendMessage(String.format(TwitchResponses.INVALID_USER, messageSplit[1]));
           return;
         }
-        
+
         dispatcher.dispatchCommand(new QueueUserTwitchCommandImpl(twitch, user, selectedUser, pm));
       } else if (commandName.equalsIgnoreCase("next")) {
         dispatcher.dispatchCommand(new NextUserTwitchCommandImpl(twitch, user, pm));
@@ -168,8 +133,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   private void modCommandResponder(MessageEvent<PircBotX> event, String message) {
 
   }
-  
-  //TODO make this Twitch specific
+
+  // TODO make this Twitch specific
   void handleException(Exception ex, User user) {
     try {
       throw ex;
@@ -192,7 +157,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   public void onConnect(ConnectEvent<PircBotX> event) throws Exception {
     log.debug("connected");
   }
-  
+
   @Override
   public void onDisconnect(DisconnectEvent<PircBotX> event) throws Exception {
     log.debug("disconnected");
@@ -205,7 +170,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     // Search through for command calls
     if (message.startsWith(settings.getTwitchIrcCommand())) {
       message = message.substring(settings.getTwitchIrcCommand().length());
-      
+
       if (event.getChannel().isOp(event.getUser())) {
         modCommandResponder(event, message);
       }
@@ -233,7 +198,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   @Override
   public void onJoin(JoinEvent<PircBotX> event) {
-    if (event.getUser().getLogin().equalsIgnoreCase(username)) {
+    if (event.getUser().getLogin().equalsIgnoreCase(settings.getTwitchIrcUsername())) {
       // Ask for subscription and admin information
       event.getBot().sendRaw().rawLine("TWITCHCLIENT 3");
       log.info(String.format("Joined %s", event.getChannel().getName()));

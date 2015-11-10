@@ -1,7 +1,6 @@
 package me.reddev.osucelebrity.twitch;
 
 import static org.mockito.Mockito.*;
-
 import me.reddev.osucelebrity.AbstractJDOTest;
 import me.reddev.osucelebrity.CommandHandler;
 import me.reddev.osucelebrity.osuapi.MockOsuApi;
@@ -12,9 +11,12 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.pircbotx.Channel;
+import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.hooks.events.MessageEvent;
+import org.pircbotx.hooks.managers.ListenerManager;
+import org.pircbotx.output.OutputUser;
 
 
 public class TwitchIrcBotTest extends AbstractJDOTest {
@@ -23,7 +25,17 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   @Mock
   CommandHandler<TwitchCommand> handler;
   @Mock
-  User user = mock(User.class);
+  User user;
+  @Mock
+  OutputUser outputUser;
+  @Mock
+  Channel channel;
+  @Mock
+  PircBotX bot;
+  @Mock
+  Configuration<PircBotX> configuration;
+  @Mock
+  ListenerManager<PircBotX> listenerManager;
   
   MockOsuApi api = new MockOsuApi();
 
@@ -31,10 +43,10 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   public void initMocks() {
     MockitoAnnotations.initMocks(this);
 
-    when(settings.getTwitchIrcChannel()).thenReturn("channel");
-    when(settings.getTwitchIrcUsername()).thenReturn("name");
-    when(settings.getTwitchIrcHost()).thenReturn("host");
-    when(settings.getTwitchIrcPort()).thenReturn(1);
+    when(bot.getConfiguration()).thenReturn(configuration);
+    when(configuration.getListenerManager()).thenReturn(listenerManager);
+    when(user.getNick()).thenReturn("osuIrcUser");
+    
     when(settings.getTwitchIrcCommand()).thenReturn("!");
     
     when(user.getNick()).thenReturn("ircUser");
@@ -42,12 +54,12 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testQueue() throws Exception {
-    TwitchIrcBot bot = new TwitchIrcBot(settings, api, null, pmf);
-    bot.dispatcher.addHandler(handler);
+    TwitchIrcBot ircBot = new TwitchIrcBot(settings, api, null, pmf);
+    ircBot.dispatcher.addHandler(handler);
 
     MessageEvent<PircBotX> event =
-        new MessageEvent<PircBotX>(bot.bot, mock(Channel.class), user, "!queue someone");
-    bot.onMessage(event);
+        new MessageEvent<PircBotX>(bot, channel, user, "!queue someone");
+    ircBot.onMessage(event);
 
     verify(handler).handle(
         eq(new QueueUserTwitchCommandImpl(null, "ircUser", api.getUser("someone", 0,

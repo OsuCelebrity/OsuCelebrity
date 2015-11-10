@@ -3,6 +3,7 @@ package me.reddev.osucelebrity.core;
 import lombok.Data;
 import me.reddev.osucelebrity.osu.OsuUser;
 
+import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.Index;
 import javax.jdo.annotations.PersistenceCapable;
@@ -13,7 +14,6 @@ import javax.jdo.annotations.PrimaryKey;
  * A user who is in the spectating queue.
  * 
  * @author Redback
- *
  */
 @Data
 @PersistenceCapable
@@ -39,6 +39,12 @@ public class QueuedPlayer {
 
   @Index
   int state = 2;
+
+  /**
+   * Whether or not to notify a player of their upcoming turn via the osu chat.
+   */
+  @Column(defaultValue = "false")
+  boolean notify = false;
 
   /**
    * Creates a new queued player object. This alone won't enqueue this player.

@@ -3,6 +3,7 @@ package me.reddev.osucelebrity.osu;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.tillerino.osuApiModel.OsuApiUser;
 
 import java.io.BufferedReader;
@@ -17,8 +18,10 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 
+import javax.inject.Inject;
+
 @Slf4j
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class OsuApplication {
   public interface OsuApplicationSettings {
     String getStreamOutputPath();

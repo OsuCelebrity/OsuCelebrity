@@ -9,15 +9,6 @@ public interface Osu {
   public void startSpectate(OsuUser user);
 
   /**
-   * Registers a command handler. The order of these handlers is preserved and every command is
-   * passed to every handler in the order in which they were registered until on handler's
-   * {@link OsuCommandHandler#handle(OsuCommand)} method returns true.
-   * 
-   * @param handler handler
-   */
-  public void registerCommandHandler(OsuCommandHandler handler);
-
-  /**
    * Sends a message via ingame chat.
    * 
    * @param osuUser recipient

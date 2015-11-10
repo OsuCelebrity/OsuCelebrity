@@ -1,6 +1,8 @@
 package me.reddev.osucelebrity.osu;
 
 import lombok.Getter;
+import lombok.Setter;
+import me.reddev.osucelebrity.Priviledge;
 
 import org.tillerino.osuApiModel.OsuApiUser;
 
@@ -18,6 +20,9 @@ public class OsuUser {
   String userName;
 
   private long downloaded;
+  
+  @Setter
+  Priviledge priviledge = Priviledge.PLAYER;
 
   /**
    * Creates a new user object copying all relevant data from the api user object.

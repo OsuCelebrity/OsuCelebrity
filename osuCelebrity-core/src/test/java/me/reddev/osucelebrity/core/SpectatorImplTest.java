@@ -19,7 +19,7 @@ import org.mockito.MockitoAnnotations;
 import org.tillerino.osuApiModel.OsuApiUser;
 
 
-public class SpectatorTest extends AbstractJDOTest {
+public class SpectatorImplTest extends AbstractJDOTest {
   @Mock
   private Twitch twitch;
   @Mock
@@ -34,20 +34,20 @@ public class SpectatorTest extends AbstractJDOTest {
   public void testName() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     
-    Spectator spectator = new Spectator(twitch, clock, osu, settings, pmf);
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     assertFalse(spectator.advance(pm));
 
     QueuedPlayer user = getUser(1);
-    assertTrue(spectator.enqueue(pm, user));
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user));
     // already in queue
-    assertFalse(spectator.enqueue(pm, user));
+    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, user));
 
     spectator.loop(pm);
 
     verify(osu).startSpectate(user.getPlayer());
     // currently being spectated
-    assertFalse(spectator.enqueue(pm, user));
+    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, user));
   }
 
   @Test
@@ -59,7 +59,7 @@ public class SpectatorTest extends AbstractJDOTest {
 
     when(settings.getDefaultSpecDuration()).thenReturn(30000l);
 
-    Spectator spectator = new Spectator(twitch, clock, osu, settings, pmf);
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     spectator.loop(pm);
 

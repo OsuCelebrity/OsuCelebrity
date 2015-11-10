@@ -8,6 +8,7 @@ import me.reddev.osucelebrity.twitch.Twitch;
 
 import java.util.Optional;
 
+import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 
@@ -18,8 +19,8 @@ import javax.jdo.PersistenceManagerFactory;
  * @author Tillerino
  */
 @Slf4j
-@RequiredArgsConstructor
-public class Spectator implements Runnable {
+@RequiredArgsConstructor(onConstructor = @__(@Inject))
+public class SpectatorImpl implements Spectator, Runnable {
   final Twitch twitch;
 
   final Clock clock;
@@ -91,16 +92,17 @@ public class Spectator implements Runnable {
    * @return true if the player was added, false if they are already in the queue or currently being
    *         spectated.
    */
-  public synchronized boolean enqueue(PersistenceManager pm, QueuedPlayer user) {
+  @Override
+  public synchronized EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
     if (queue.contains(user)) {
-      return false;
+      return EnqueueResult.FAILURE;
     }
     pm.makePersistent(user);
     log.info("Queued " + user.getPlayer().getUserName());
     // wake spectator in the case that the queue was empty.
     wake();
-    return true;
+    return EnqueueResult.SUCCESS;
   }
 
   /**
@@ -108,6 +110,7 @@ public class Spectator implements Runnable {
    * 
    * @return True if successful, false if there is no next queued player.
    */
+  @Override
   public synchronized boolean advance(PersistenceManager pm) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
     return advance(queue);
