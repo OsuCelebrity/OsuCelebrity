@@ -18,42 +18,15 @@
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<version>2.4.2</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<filters>
-								<filter>
-									<artifact>*:*</artifact>
-									<excludes>
-										<exclude>*.properties</exclude>
-										<exclude>osuapikey</exclude>
-									</excludes>
-								</filter>
-								<filter>
-									<artifact>org.datanucleus:*</artifact>
-									<excludes>
-										<exclude>**/*</exclude>
-									</excludes>
-								</filter>
-							</filters>
-							<shadedArtifactAttached>true</shadedArtifactAttached>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<executions>
 					<execution>
 						<goals>
 							<goal>copy-dependencies</goal>
 						</goals>
+						<configuration>
+							<includeScope>compile</includeScope>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
