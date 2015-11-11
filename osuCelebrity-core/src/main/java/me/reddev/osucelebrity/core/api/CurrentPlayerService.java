@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.Spectator;
 
+import java.time.Duration;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.jdo.PersistenceManager;
@@ -21,10 +24,12 @@ public class CurrentPlayerService {
   @Data
   public static class CurrentPlayer {
     String name;
+
+    String playingFor;
   }
 
   private final PersistenceManagerFactory pmf;
-  
+
   private final Spectator spectator;
 
   /**
@@ -38,6 +43,11 @@ public class CurrentPlayerService {
       CurrentPlayer currentPlayer = new CurrentPlayer();
       QueuedPlayer player = spectator.getCurrentPlayer(pm);
       currentPlayer.setName(player.getPlayer().getUserName());
+      {
+        Duration duration = Duration.ofMillis(System.currentTimeMillis() - player.getStartedAt());
+        LocalTime localTime = LocalTime.MIDNIGHT.plus(duration);
+        currentPlayer.setPlayingFor(DateTimeFormatter.ofPattern("m:ss").format(localTime));
+      }
       return currentPlayer;
     } finally {
       pm.close();
