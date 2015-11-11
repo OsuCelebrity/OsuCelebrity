@@ -145,4 +145,9 @@ public class SpectatorImpl implements Spectator, Runnable {
       osu.notifySoon(peek.get().getPlayer());
     }
   }
+
+  @Override
+  public QueuedPlayer getCurrentPlayer(PersistenceManager pm) {
+    return PlayerQueue.loadQueue(pm).currentlySpectating().orElse(null);
+  }
 }

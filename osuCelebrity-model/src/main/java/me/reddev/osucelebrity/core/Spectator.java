@@ -21,4 +21,6 @@ public interface Spectator {
    * @return true if the current player was skipped.
    */
   boolean advance(PersistenceManager pm);
+
+  QueuedPlayer getCurrentPlayer(PersistenceManager pm);
 }

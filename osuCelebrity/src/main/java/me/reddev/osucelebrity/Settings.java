@@ -55,6 +55,7 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
 
   // Application Settings
   private long defaultSpecDuration;
+  private int apiPort;
 
   /**
    * Creates a new settings object using a given property list.
