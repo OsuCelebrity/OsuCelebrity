@@ -45,8 +45,9 @@ public class OsuImpl implements Osu {
     // implement and make consistent #notifyUpcoming
     throw new UnsupportedOperationException();
   }
-
-  public OsuIrcBot getBot() {
-    return bot;
+  
+  @Override
+  public OsuStatus getClientStatus() {
+    return app.getStatus();
   }
 }

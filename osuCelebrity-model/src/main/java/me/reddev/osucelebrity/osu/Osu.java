@@ -29,4 +29,11 @@ public interface Osu {
    * @param osuUser the player to be notified.
    */
   public void notifySoon(OsuUser osuUser);
+
+  /**
+   * Retrieves the client status.
+   * 
+   * @return null if the status is unknown.
+   */
+  public OsuStatus getClientStatus();
 }

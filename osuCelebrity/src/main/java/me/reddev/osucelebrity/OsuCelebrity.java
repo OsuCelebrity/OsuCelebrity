@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.SpectatorImpl;
 import me.reddev.osucelebrity.core.api.CoreApiApplication;
+import me.reddev.osucelebrity.osu.OsuApplication;
 import me.reddev.osucelebrity.osu.OsuIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
 
@@ -27,6 +28,7 @@ public class OsuCelebrity {
   final OsuIrcBot osuBot;
   final CoreApiApplication apiServerApp;
   final CoreSettings coreSettings;
+  final OsuApplication osuApp;
 
   ExecutorService exec = Executors.newCachedThreadPool();
 
@@ -34,6 +36,7 @@ public class OsuCelebrity {
     exec.submit(spectator);
     exec.submit(twitchBot);
     exec.submit(osuBot);
+    exec.submit(osuApp);
 
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(coreSettings.getApiPort()).build();
 

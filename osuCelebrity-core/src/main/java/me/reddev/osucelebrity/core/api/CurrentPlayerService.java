@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.Spectator;
+import me.reddev.osucelebrity.osu.Osu;
+import me.reddev.osucelebrity.osu.OsuStatus;
+import me.reddev.osucelebrity.osu.OsuStatus.Type;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -30,6 +33,8 @@ public class CurrentPlayerService {
     String playingFor;
     
     double health;
+    
+    String beatmap;
   }
 
   private final PersistenceManagerFactory pmf;
@@ -37,6 +42,8 @@ public class CurrentPlayerService {
   private final Spectator spectator;
   
   private final CoreSettings coreSettings;
+  
+  private final Osu osu;
 
   /**
    * Shows details about the player currently being spectated.
@@ -57,6 +64,10 @@ public class CurrentPlayerService {
       long timeLeft = Math.max(0, player.getStoppingAt() - player.getLastRemainingTimeUpdate());
       currentPlayer.setHealth(timeLeft
           / (double) coreSettings.getDefaultSpecDuration());
+      OsuStatus clientStatus = osu.getClientStatus();
+      if (clientStatus != null && clientStatus.getType() == Type.PLAYING) {
+        currentPlayer.setBeatmap(clientStatus.getDetail());
+      }
       return currentPlayer;
     } finally {
       pm.close();

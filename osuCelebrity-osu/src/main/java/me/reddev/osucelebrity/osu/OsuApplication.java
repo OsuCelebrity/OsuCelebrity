@@ -3,6 +3,7 @@ package me.reddev.osucelebrity.osu;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.osu.OsuStatus.Type;
 
 import org.tillerino.osuApiModel.OsuApiUser;
 
@@ -17,12 +18,17 @@ import java.io.Writer;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
-public class OsuApplication {
+public class OsuApplication implements Runnable {
+  static Pattern playingPattern = Pattern.compile("osu!  - (.*)");
+  static Pattern watchingPattern = Pattern.compile("osu!  -  \\(watching (.*)\\)");
+
   public interface OsuApplicationSettings {
     String getStreamOutputPath();
 
@@ -89,8 +95,8 @@ public class OsuApplication {
 
   private static void saveImage(String imageUrl, String destinationFile) throws IOException {
     URL url = new URL(imageUrl);
-    try (InputStream is = url.openStream();
-        OutputStream os = new FileOutputStream(destinationFile)) {
+    try (InputStream is = url.openStream(); OutputStream os
+      = new FileOutputStream(destinationFile)) {
       byte[] buf = new byte[2048];
       int length;
 
@@ -113,7 +119,34 @@ public class OsuApplication {
     writer.close();
   }
 
-  private String getWindowTitle() {
+  String windowTitle = null;
+
+  @Override
+  public void run() {
+    try {
+      for (;;) {
+        try {
+          windowTitle = readWindowTitle();
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          return;
+        }
+      }
+    } catch (Exception e) {
+      log.error("Exception", e);
+    }
+  }
+
+  /**
+   * Retrieves the window title.
+   * 
+   * @return the window title or null if there is no window
+   */
+  public String getWindowTitle() {
+    return windowTitle;
+  }
+
+  String readWindowTitle() {
     String line = "";
     try {
       Process proc =
@@ -129,5 +162,28 @@ public class OsuApplication {
       err.printStackTrace();
     }
     return line;
+  }
+
+  OsuStatus getStatus() {
+    String title = getWindowTitle();
+    if (title == null) {
+      return null;
+    }
+
+    {
+      Matcher matcher = watchingPattern.matcher(title);
+      if (matcher.matches()) {
+        return new OsuStatus(Type.WATCHING, matcher.group(1));
+      }
+    }
+
+    {
+      Matcher matcher = playingPattern.matcher(title);
+      if (matcher.matches()) {
+        return new OsuStatus(Type.PLAYING, matcher.group(1));
+      }
+    }
+
+    return null;
   }
 }
