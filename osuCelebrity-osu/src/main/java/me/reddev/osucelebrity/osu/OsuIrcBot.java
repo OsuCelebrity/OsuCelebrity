@@ -154,7 +154,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   boolean handleQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws IOException, UserException {
     String[] messageSplit = message.split("\\s+", 2);
-    if (!messageSplit[0].equalsIgnoreCase("queue") || messageSplit.length < 2) {
+    if (!messageSplit[0].equalsIgnoreCase("q") || messageSplit.length < 2) {
       return false;
     }
 
@@ -177,7 +177,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   boolean handleSelfQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) {
-    if (!message.equalsIgnoreCase("queue")) {
+    if (!message.equalsIgnoreCase("q")) {
       return false;
     }
     QueuedPlayer queueRequest = new QueuedPlayer(user, QueueSource.OSU, clock.getTime());

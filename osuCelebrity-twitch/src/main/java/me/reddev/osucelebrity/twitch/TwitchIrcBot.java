@@ -161,8 +161,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   boolean handleQueue(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (StringUtils.startsWithIgnoreCase(message, "queue ")) {
-      String targetUser = message.substring("queue ".length());
+    if (StringUtils.startsWithIgnoreCase(message, "q ")) {
+      String targetUser = message.substring("q ".length());
       OsuUser requestedUser = osuApi.getUser(targetUser, GameModes.OSU, pm, 60 * 60 * 1000L);
       if (requestedUser == null) {
         throw new UserException(String.format(TwitchResponses.INVALID_USER, targetUser));
