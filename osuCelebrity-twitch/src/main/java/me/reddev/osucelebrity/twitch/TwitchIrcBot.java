@@ -200,7 +200,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (!message.equalsIgnoreCase("forceskip")) {
       return false;
     }
-    if (event.getUser().isIrcop()) {
+    if (event.getChannel().isOp(event.getUser())) {
       spectator.advance(pm);
     }
     return true;

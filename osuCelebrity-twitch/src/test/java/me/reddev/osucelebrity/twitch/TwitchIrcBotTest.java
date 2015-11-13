@@ -92,7 +92,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testForceSkip() throws Exception {
-    when(user.isIrcop()).thenReturn(true);
+    when(channel.isOp(user)).thenReturn(true);
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip"));
 
     verify(spectator).advance(any());
