@@ -54,7 +54,8 @@ public class CurrentPlayerService {
         LocalTime localTime = LocalTime.MIDNIGHT.plus(duration);
         currentPlayer.setPlayingFor(DateTimeFormatter.ofPattern("m:ss").format(localTime));
       }
-      currentPlayer.setHealth((player.getStoppingAt() - player.getLastRemainingTimeUpdate())
+      long timeLeft = Math.max(0, player.getStoppingAt() - player.getLastRemainingTimeUpdate());
+      currentPlayer.setHealth(timeLeft
           / (double) coreSettings.getDefaultSpecDuration());
       return currentPlayer;
     } finally {

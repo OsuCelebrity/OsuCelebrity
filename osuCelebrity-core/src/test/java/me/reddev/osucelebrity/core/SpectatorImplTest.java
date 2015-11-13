@@ -184,12 +184,16 @@ public class SpectatorImplTest extends AbstractJDOTest {
       QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
       assertEquals(user, currentPlayer.getPlayer());
       assertEquals(t + 20000, currentPlayer.getStoppingAt());
+      assertEquals(clock.getTime(), currentPlayer.getLastRemainingTimeUpdate());
     }
     
-    time[0] = 50000;
-    spectator.loop(pm);
-    QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
-    assertEquals(user, currentPlayer.getPlayer());
-    assertEquals(60000, currentPlayer.getStoppingAt());
+    for (long t = 50000; t <= 10000; t += 10000) {
+      time[0] = t;
+      spectator.loop(pm);
+      QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
+      assertEquals(user, currentPlayer.getPlayer());
+      assertEquals(60000, currentPlayer.getStoppingAt());
+      assertEquals(clock.getTime(), currentPlayer.getLastRemainingTimeUpdate());
+    }
   }
 }

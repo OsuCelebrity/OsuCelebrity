@@ -76,22 +76,33 @@ public class SpectatorImpl implements Spectator, Runnable {
     } else if (queue.spectatingUntil() < clock.getTime() + settings.getNextPlayerNotifyTime()
         && !queue.spectatingNext().isPresent()) {
       lockNext(queue);
-    } else {
-      updateRemainingTime(pm, queue.currentlySpectating().get());
     }
+    
+    updateRemainingTime(pm, queue);
     long until = queue.currentlySpectating().isPresent() ? queue.spectatingUntil() : 0;
     return Math.min(clock.getTime() + 100, until > clock.getTime() ? until : clock.getTime() + 100);
   }
 
-  private void updateRemainingTime(PersistenceManager pm, QueuedPlayer queuedPlayer) {
-    double approval = getApproval(pm, queuedPlayer);
+  private void updateRemainingTime(PersistenceManager pm, PlayerQueue queue) {
+    Optional<QueuedPlayer> currentlySpectating = queue.currentlySpectating();
+    if (!currentlySpectating.isPresent()) {
+      return;
+    }
+    QueuedPlayer current = currentlySpectating.get();
+    
+    if (queue.spectatingNext().isPresent()) {
+      current.setLastRemainingTimeUpdate(clock.getTime());
+      return;
+    }
+    
+    double approval = getApproval(pm, current);
     long time = clock.getTime();
     if (approval > .5) {
-      queuedPlayer.setStoppingAt(time + queuedPlayer.getStoppingAt()
-          - queuedPlayer.getLastRemainingTimeUpdate());
+      current.setStoppingAt(time + current.getStoppingAt()
+          - current.getLastRemainingTimeUpdate());
     }
 
-    queuedPlayer.setLastRemainingTimeUpdate(time);
+    current.setLastRemainingTimeUpdate(time);
   }
 
   double getApproval(PersistenceManager pm, QueuedPlayer queuedPlayer) {
