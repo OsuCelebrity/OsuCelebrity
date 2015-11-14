@@ -1,0 +1,20 @@
+language: java
+jdk:
+  - oraclejdk8
+
+before_install:
+  - git clone https://github.com/Tillerino/osuApiConnector.git
+  - cd osuApiConnector
+  - git checkout f11c2de47eed125dc4834451d14aa0bc0d9d8f86
+  - mvn -fosuApiConnector/pom.xml -DskipTests=true -Dmaven.javadoc.skip=true -Dversions.skip=true -Dlombok.delombok.skip=true -Dfindbugs.skip=true install
+  - cd ../osuCelebrity-parent
+
+# we're not installing anything
+install: true
+
+script:
+  - mvn verify -Dmaven.javadoc.skip=true -B -V
+
+cache:
+  directories:
+    - $HOME/.m2/repository
