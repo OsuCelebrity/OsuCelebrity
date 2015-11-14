@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.tillerino.osuApiModel.OsuApiUser;
+import org.tillerino.osuApiModel.types.UserId;
 
 
 public class SpectatorImplTest extends AbstractJDOTest {
@@ -39,7 +40,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     when(settings.getVoteWindow()).thenReturn(30000l);
   }
 
-  QueuedPlayer getUser(int id) {
+  QueuedPlayer getUser(@UserId int id) {
     OsuApiUser apiUser1 = new OsuApiUser();
     apiUser1.setUserId(id);
     return new QueuedPlayer(new OsuUser(apiUser1, clock.getTime()), null, clock.getTime());

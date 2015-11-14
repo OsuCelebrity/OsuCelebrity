@@ -2,9 +2,11 @@ package me.reddev.osucelebrity.osu;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import me.reddev.osucelebrity.Priviledge;
 
 import org.tillerino.osuApiModel.OsuApiUser;
+import org.tillerino.osuApiModel.types.UserId;
 
 import javax.jdo.annotations.Index;
 import javax.jdo.annotations.PersistenceCapable;
@@ -12,15 +14,18 @@ import javax.jdo.annotations.PrimaryKey;
 
 @PersistenceCapable(detachable = "true")
 @Getter
+@ToString
 public class OsuUser {
   @PrimaryKey
+  @UserId
+  @Getter(onMethod = @__(@UserId))
   private int userId;
 
   @Index
   private String userName;
 
   private long downloaded;
-  
+
   @Setter
   private Priviledge priviledge = Priviledge.PLAYER;
 
@@ -61,7 +66,7 @@ public class OsuUser {
   void setDownloaded(long downloaded) {
     this.downloaded = downloaded;
   }
-  
+
   void setUserName(String userName) {
     this.userName = userName;
   }

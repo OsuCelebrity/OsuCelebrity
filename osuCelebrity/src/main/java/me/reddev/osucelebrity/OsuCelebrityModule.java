@@ -26,6 +26,8 @@ import org.tillerino.osuApiModel.Downloader;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 import javax.inject.Singleton;
 import javax.jdo.JDOHelper;
@@ -56,7 +58,7 @@ public class OsuCelebrityModule extends AbstractModule {
     bind(PersistenceManagerFactory.class)
         .toInstance(JDOHelper.getPersistenceManagerFactory(properties, "core"));
 
-    bind(Downloader.class).toInstance(new Downloader(settings.getOsuApiKey()));
+    bind(Downloader.class).toInstance(new BlockingDownloader(settings.getOsuApiKey()));
     
     bind(Clock.class).to(SystemClock.class);
     
@@ -69,5 +71,7 @@ public class OsuCelebrityModule extends AbstractModule {
     bind(OsuApplication.class).in(Singleton.class);
     
     bind(Spectator.class).to(SpectatorImpl.class).in(Singleton.class);
+    
+    bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool());
   }
 }

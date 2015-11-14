@@ -3,6 +3,7 @@ package me.reddev.osucelebrity.core.api;
 import static org.mockito.Mockito.*;
 
 import java.net.URI;
+import java.util.concurrent.Executors;
 
 import javax.ws.rs.core.UriBuilder;
 
@@ -48,7 +49,8 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
             QueueSource.OSU, 0));
 
     CoreApiApplication apiServerApp =
-        new CoreApiApplication(new CurrentPlayerService(pmf, spectator, coreSettings, osu));
+        new CoreApiApplication(new CurrentPlayerService(pmf, spectator, coreSettings, osu, osuApi,
+            Executors.newCachedThreadPool()));
 
     Server apiServer =
         JettyHttpContainerFactory

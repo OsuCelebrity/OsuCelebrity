@@ -15,7 +15,6 @@ import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 
 import java.net.URI;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
 import javax.inject.Inject;
@@ -29,8 +28,7 @@ public class OsuCelebrity {
   final CoreApiApplication apiServerApp;
   final CoreSettings coreSettings;
   final OsuApplication osuApp;
-
-  ExecutorService exec = Executors.newCachedThreadPool();
+  final ExecutorService exec;
 
   void start() {
     exec.submit(spectator);

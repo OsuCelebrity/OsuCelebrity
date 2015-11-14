@@ -2,6 +2,7 @@ package me.reddev.osucelebrity.osuapi;
 
 import static me.reddev.osucelebrity.osu.QOsuIrcUser.osuIrcUser;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
+import static me.reddev.osucelebrity.osuapi.QApiUser.apiUser;
 
 import com.querydsl.jdo.JDOQuery;
 
@@ -17,8 +18,7 @@ import javax.jdo.PersistenceManager;
 
 public class MockOsuApi implements OsuApi {
   @Override
-  public OsuUser getUser(int userid, PersistenceManager pm, long maxAge)
-      throws IOException {
+  public OsuUser getUser(int userid, PersistenceManager pm, long maxAge) throws IOException {
     JDOQuery<OsuUser> query =
         new JDOQuery<>(pm).select(osuUser).from(osuUser).where(osuUser.userId.eq(userid));
     OsuUser user = query.fetchOne();
@@ -59,11 +59,26 @@ public class MockOsuApi implements OsuApi {
 
     if (ircUser == null) {
       ircUser =
-          new OsuIrcUser(ircUserName, getUser(ircUserName, pm, maxAge),
-              System.currentTimeMillis());
+          new OsuIrcUser(ircUserName, getUser(ircUserName, pm, maxAge), System.currentTimeMillis());
       pm.makePersistent(ircUser);
     }
 
     return ircUser;
+  }
+
+  @Override
+  public ApiUser getUserData(int userid, int gameMode, PersistenceManager pm, long maxAge) {
+    JDOQuery<ApiUser> query =
+        new JDOQuery<>(pm).select(apiUser).from(apiUser).where(apiUser.userId.eq(userid));
+
+    ApiUser savedUser = query.fetchOne();
+    if (savedUser != null) {
+      return savedUser;
+    }
+
+    OsuApiUser apiUser = new OsuApiUser();
+    apiUser.setUserId(userid);
+    apiUser.setMode(gameMode);
+    return pm.makePersistent(new ApiUser(apiUser, System.currentTimeMillis()));
   }
 }

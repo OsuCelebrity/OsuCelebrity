@@ -9,6 +9,7 @@
 		<class>me.reddev.osucelebrity.osu.OsuUser</class>
 		<class>me.reddev.osucelebrity.osu.OsuIrcUser</class>
 		<class>me.reddev.osucelebrity.core.QueuedPlayer</class>
+		<class>me.reddev.osucelebrity.osuapi.ApiUser</class>
 		<exclude-unlisted-classes></exclude-unlisted-classes>	
 	</persistence-unit>
 </persistence>

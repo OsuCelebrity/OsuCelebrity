@@ -50,6 +50,19 @@ public interface OsuApi {
    * @return null if the user does not exist
    */
   @CheckForNull
-  OsuIrcUser getIrcUser(String ircUserName, @GameMode int gameMode, PersistenceManager pm,
+  OsuIrcUser getIrcUser(String ircUserName, PersistenceManager pm, long maxAge) throws IOException;
+
+  /**
+   * Get a user's data for a specific mod.
+   * 
+   * @param userid user id
+   * @param gameMode game mode
+   * @param pm the requests's persistence manager
+   * @param maxAge maximum age of the returned object. If there is a cached object which is younger
+   *        than maximum age or maxAge is <= 0, it may be returned.
+   * @return null if the user does not exist
+   */
+  @CheckForNull
+  ApiUser getUserData(@UserId int userid, @GameMode int gameMode, PersistenceManager pm, 
       long maxAge) throws IOException;
 }
