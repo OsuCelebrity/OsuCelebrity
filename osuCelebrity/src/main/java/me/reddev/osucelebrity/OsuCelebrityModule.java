@@ -56,13 +56,14 @@ public class OsuCelebrityModule extends AbstractModule {
     bind(PersistenceManagerFactory.class)
         .toInstance(JDOHelper.getPersistenceManagerFactory(properties, "core"));
 
-    bind(OsuApi.class).toInstance(new OsuApiImpl(new Downloader(settings.getOsuApiKey())));
+    bind(Downloader.class).toInstance(new Downloader(settings.getOsuApiKey()));
     
     bind(Clock.class).to(SystemClock.class);
     
+    bind(OsuApi.class).to(OsuApiImpl.class).in(Singleton.class);
     bind(Osu.class).to(OsuImpl.class).in(Singleton.class);
     bind(Twitch.class).to(TwitchImpl.class).in(Singleton.class);
-    
+
     bind(OsuIrcBot.class).in(Singleton.class);
     bind(TwitchIrcBot.class).in(Singleton.class);
     bind(OsuApplication.class).in(Singleton.class);

@@ -71,7 +71,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     
     verify(spectator).enqueue(
         any(),
-        eq(new QueuedPlayer(api.getUser("someone", 0, pmf.getPersistenceManagerProxy(), 0),
+        eq(new QueuedPlayer(api.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
             QueueSource.TWITCH, 0)));
     verify(outputChannel).message(anyString());
   }

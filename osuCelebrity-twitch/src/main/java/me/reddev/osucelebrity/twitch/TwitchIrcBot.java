@@ -23,7 +23,6 @@ import org.pircbotx.hooks.events.DisconnectEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
-import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -163,7 +162,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       PersistenceManager pm) throws UserException, IOException {
     if (StringUtils.startsWithIgnoreCase(message, "q ")) {
       String targetUser = message.substring("q ".length());
-      OsuUser requestedUser = osuApi.getUser(targetUser, GameModes.OSU, pm, 60 * 60 * 1000L);
+      OsuUser requestedUser = osuApi.getUser(targetUser, pm, 60 * 60 * 1000L);
       if (requestedUser == null) {
         throw new UserException(String.format(TwitchResponses.INVALID_USER, targetUser));
       }

@@ -17,7 +17,7 @@ import javax.jdo.PersistenceManager;
 
 public class MockOsuApi implements OsuApi {
   @Override
-  public OsuUser getUser(int userid, int gameMode, PersistenceManager pm, long maxAge)
+  public OsuUser getUser(int userid, PersistenceManager pm, long maxAge)
       throws IOException {
     JDOQuery<OsuUser> query =
         new JDOQuery<>(pm).select(osuUser).from(osuUser).where(osuUser.userId.eq(userid));
@@ -32,8 +32,7 @@ public class MockOsuApi implements OsuApi {
 
   @Override
   @SuppressFBWarnings("TQ")
-  public synchronized OsuUser getUser(String ircUserName, int gameMode, PersistenceManager pm,
-      long maxAge) {
+  public synchronized OsuUser getUser(String ircUserName, PersistenceManager pm, long maxAge) {
     JDOQuery<OsuUser> query =
         new JDOQuery<>(pm).select(osuUser).from(osuUser).where(osuUser.userName.eq(ircUserName));
 
@@ -46,15 +45,12 @@ public class MockOsuApi implements OsuApi {
     OsuApiUser apiUser = new OsuApiUser();
     apiUser.setUserId(userid++);
     apiUser.setUserName(ircUserName);
-    apiUser.setMode(gameMode);
-    apiUser.setRank(1000);
-    apiUser.setPp(1000);
     user = new OsuUser(apiUser, System.currentTimeMillis());
     return pm.makePersistent(user);
   }
 
   @Override
-  public OsuIrcUser getIrcUser(String ircUserName, int gameMode, PersistenceManager pm, long maxAge) {
+  public OsuIrcUser getIrcUser(String ircUserName, PersistenceManager pm, long maxAge) {
     JDOQuery<OsuIrcUser> query =
         new JDOQuery<>(pm).select(osuIrcUser).from(osuIrcUser)
             .where(osuIrcUser.ircName.eq(ircUserName));
@@ -63,7 +59,7 @@ public class MockOsuApi implements OsuApi {
 
     if (ircUser == null) {
       ircUser =
-          new OsuIrcUser(ircUserName, getUser(ircUserName, gameMode, pm, maxAge),
+          new OsuIrcUser(ircUserName, getUser(ircUserName, pm, maxAge),
               System.currentTimeMillis());
       pm.makePersistent(ircUser);
     }

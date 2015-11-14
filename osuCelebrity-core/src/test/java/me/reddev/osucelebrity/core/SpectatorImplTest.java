@@ -109,7 +109,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     PersistenceManager pm = pmf.getPersistenceManager();
-    OsuUser user = api.getUser("someplayer", 0, pm, 0);
+    OsuUser user = api.getUser("someplayer", pm, 0);
     spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
 
     spectator.loop(pm);
@@ -130,7 +130,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     PersistenceManager pm = pmf.getPersistenceManager();
-    OsuUser user = api.getUser("someplayer", 0, pm, 0);
+    OsuUser user = api.getUser("someplayer", pm, 0);
     spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
 
     spectator.loop(pm);
@@ -146,7 +146,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     PersistenceManager pm = pmf.getPersistenceManager();
-    OsuUser user = api.getUser("someplayer", 0, pm, 0);
+    OsuUser user = api.getUser("someplayer", pm, 0);
     spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
 
     spectator.loop(pm);
@@ -162,7 +162,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     PersistenceManager pm = pmf.getPersistenceManager();
-    OsuUser user = api.getUser("someplayer", 0, pm, 0);
+    OsuUser user = api.getUser("someplayer", pm, 0);
     spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
 
     spectator.loop(pm);

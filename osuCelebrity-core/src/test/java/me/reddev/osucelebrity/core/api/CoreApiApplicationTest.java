@@ -44,7 +44,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(1666).build();
 
     when(spectator.getCurrentPlayer(any())).thenReturn(
-        new QueuedPlayer(osuApi.getUser("that player", 0, pmf.getPersistenceManager(), 0),
+        new QueuedPlayer(osuApi.getUser("that player", pmf.getPersistenceManager(), 0),
             QueueSource.OSU, 0));
 
     CoreApiApplication apiServerApp =

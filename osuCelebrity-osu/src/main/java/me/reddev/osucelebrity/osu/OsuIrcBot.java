@@ -22,7 +22,6 @@ import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.types.GenericChannelEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
-import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -135,7 +134,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
         return;
       }
 
-      OsuUser user = osuApi.getUser(event.getUser().getNick(), GameModes.OSU, pm, 60 * 60 * 1000L);
+      OsuUser user = osuApi.getUser(event.getUser().getNick(), pm, 60 * 60 * 1000L);
 
       String message = event.getMessage().substring(ircSettings.getOsuIrcCommand().length());
 
@@ -158,7 +157,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       return false;
     }
 
-    OsuUser requestedUser = osuApi.getUser(messageSplit[1], GameModes.OSU, pm, 60 * 60 * 1000);
+    OsuUser requestedUser = osuApi.getUser(messageSplit[1], pm, 60 * 60 * 1000);
     if (requestedUser == null) {
       log.debug("requested non-existing user {}", messageSplit[1]);
       return true;
@@ -210,7 +209,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   OsuUser getOsuUser(GenericMessageEvent<PircBotX> event, PersistenceManager pm)
       throws IOException, UserException {
     final OsuUser user =
-        osuApi.getUser(event.getUser().getNick(), GameModes.OSU, pm, 60 * 60 * 1000);
+        osuApi.getUser(event.getUser().getNick(), pm, 60 * 60 * 1000);
     if (user == null) {
       throw new UserException(String.format(Responses.INVALID_USER, event.getUser().getNick()));
     }

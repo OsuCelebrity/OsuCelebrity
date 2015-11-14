@@ -14,15 +14,15 @@ import javax.jdo.annotations.PrimaryKey;
 @Getter
 public class OsuUser {
   @PrimaryKey
-  int userId;
+  private int userId;
 
   @Index
-  String userName;
+  private String userName;
 
   private long downloaded;
   
   @Setter
-  Priviledge priviledge = Priviledge.PLAYER;
+  private Priviledge priviledge = Priviledge.PLAYER;
 
   /**
    * Creates a new user object copying all relevant data from the api user object.
@@ -31,8 +31,8 @@ public class OsuUser {
    * @param downloaded current time in millis.
    */
   public OsuUser(OsuApiUser user, long downloaded) {
-    update(user);
-    this.setDownloaded(downloaded);
+    this.userId = user.getUserId();
+    update(user, downloaded);
   }
 
   /**
@@ -40,9 +40,9 @@ public class OsuUser {
    * 
    * @param user downloaded data
    */
-  public void update(OsuApiUser user) {
-    this.userId = user.getUserId();
-    this.userName = user.getUserName();
+  public void update(OsuApiUser user, long downloaded) {
+    this.setUserName(user.getUserName());
+    this.setDownloaded(downloaded);
   }
 
   @Override
@@ -58,7 +58,11 @@ public class OsuUser {
     return userId;
   }
 
-  public void setDownloaded(long downloaded) {
+  void setDownloaded(long downloaded) {
     this.downloaded = downloaded;
+  }
+  
+  void setUserName(String userName) {
+    this.userName = userName;
   }
 }
