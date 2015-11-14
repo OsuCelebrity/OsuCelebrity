@@ -26,8 +26,23 @@ public interface Spectator {
    */
   boolean advance(PersistenceManager pm);
 
+  /**
+   * Gets all information about the player currently being spectated.
+   * 
+   * @param pm the current request's persistence manager
+   * @return null, if there is no current player.
+   */
   @CheckForNull
   QueuedPlayer getCurrentPlayer(PersistenceManager pm);
+  
+  /**
+   * Gets all information about the player being spectated next.
+   * 
+   * @param pm the current request's persistence manager
+   * @return null, if the next player has not been determined yet.
+   */
+  @CheckForNull
+  QueuedPlayer getNextPlayer(PersistenceManager pm);
   
   /**
    * Votes for the current player.

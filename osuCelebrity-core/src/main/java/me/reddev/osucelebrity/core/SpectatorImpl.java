@@ -3,6 +3,7 @@ package me.reddev.osucelebrity.core;
 import static me.reddev.osucelebrity.core.QVote.vote;
 
 import com.querydsl.jdo.JDOQuery;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.osu.Osu;
@@ -192,12 +193,12 @@ public class SpectatorImpl implements Spectator, Runnable {
   }
 
   @Override
-  public QueuedPlayer getCurrentPlayer(PersistenceManager pm) {
+  public synchronized QueuedPlayer getCurrentPlayer(PersistenceManager pm) {
     return PlayerQueue.loadQueue(pm).currentlySpectating().orElse(null);
   }
 
   @Override
-  public boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType) {
+  public synchronized boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
     Optional<QueuedPlayer> currentlySpectating = queue.currentlySpectating();
     if (!currentlySpectating.isPresent()) {
@@ -213,5 +214,11 @@ public class SpectatorImpl implements Spectator, Runnable {
     vote.setTwitchUser(twitchIrcNick);
     pm.makePersistent(vote);
     return true;
+  }
+  
+  @Override
+  public synchronized QueuedPlayer getNextPlayer(PersistenceManager pm) {
+    PlayerQueue loadQueue = PlayerQueue.loadQueue(pm);
+    return loadQueue.spectatingNext().orElse(null);
   }
 }

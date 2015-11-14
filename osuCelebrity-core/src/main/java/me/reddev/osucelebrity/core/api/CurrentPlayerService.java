@@ -67,6 +67,8 @@ public class CurrentPlayerService {
     double accuracy;
 
     String country;
+
+    String nextPlayer;
   }
 
   private final PersistenceManagerFactory pmf;
@@ -116,6 +118,10 @@ public class CurrentPlayerService {
       OsuStatus clientStatus = osu.getClientStatus();
       if (clientStatus != null && clientStatus.getType() == Type.PLAYING) {
         response.setBeatmap(clientStatus.getDetail());
+      }
+      QueuedPlayer nextPlayer = spectator.getNextPlayer(pm);
+      if (nextPlayer != null) {
+        response.nextPlayer = nextPlayer.getPlayer().getUserName();
       }
       return response;
     } finally {
