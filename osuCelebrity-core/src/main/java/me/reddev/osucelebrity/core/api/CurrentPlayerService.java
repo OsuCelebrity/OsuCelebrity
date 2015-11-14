@@ -14,8 +14,10 @@ import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 
 import org.tillerino.osuApiModel.GameModes;
+import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -100,7 +102,7 @@ public class CurrentPlayerService {
         response.setHealth(timeLeft / (double) coreSettings.getDefaultSpecDuration());
         response.setId(player.getPlayer().getUserId());
 
-        ApiUser apiUser = getApiUser(pm, response);
+        ApiUser apiUser = getApiUser(response);
 
         if (apiUser != null) {
           response.rank = apiUser.getRank();
@@ -121,18 +123,32 @@ public class CurrentPlayerService {
     }
   }
 
-  private ApiUser getApiUser(PersistenceManager pm, CurrentPlayer currentPlayer) {
+  private ApiUser getApiUser(CurrentPlayer currentPlayer) {
     Future<ApiUser> request =
-        exec.submit(() -> api.getUserData(currentPlayer.getId(), GameModes.OSU, pm, 60 * 1000L));
+        exec.submit(() -> getApiUserTransient(currentPlayer.getId(), GameModes.OSU, 60 * 1000L));
     try {
       return request.get(500, TimeUnit.MILLISECONDS);
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      request = exec.submit(() -> api.getUserData(currentPlayer.getId(), GameModes.OSU, pm, 0));
+      request = exec.submit(() -> getApiUserTransient(currentPlayer.getId(), GameModes.OSU, 0));
       try {
         return request.get(500, TimeUnit.MILLISECONDS);
       } catch (InterruptedException | ExecutionException | TimeoutException e1) {
         return null;
       }
+    }
+  }
+
+  private ApiUser getApiUserTransient(@UserId int userid, @GameMode int gameMode, long maxAge)
+      throws IOException {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      ApiUser userData = api.getUserData(userid, gameMode, pm, maxAge);
+      if (userData != null) {
+        pm.makeTransient(userData);
+      }
+      return userData;
+    } finally {
+      pm.close();
     }
   }
 }
