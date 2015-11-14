@@ -21,6 +21,7 @@ import java.text.DecimalFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.CheckForNull;
 import javax.inject.Inject;
 
 @Slf4j
@@ -146,22 +147,30 @@ public class OsuApplication implements Runnable {
     return windowTitle;
   }
 
-  String readWindowTitle() {
-    String line = "";
+  @CheckForNull
+  String readWindowTitle() throws InterruptedException {
     try {
       Process proc =
-          Runtime.getRuntime().exec(
-              "cmd /c for /f \"tokens=10 delims=,\" %F in"
-                  + " ('tasklist /nh /fi \"imagename eq osu!.exe\" /v /fo csv') do @echo %~F");
-      BufferedReader bri =
-          new BufferedReader(new InputStreamReader(proc.getInputStream(), CONSOLE_CHARSET));
-      line = bri.readLine();
-      bri.close();
-      proc.waitFor();
-    } catch (Exception err) {
-      err.printStackTrace();
+          Runtime.getRuntime().exec("cmd /c tasklist /nh /fi \"imagename eq osu!.exe\" /v /fo csv");
+      try (BufferedReader bri =
+          new BufferedReader(new InputStreamReader(proc.getInputStream(), CONSOLE_CHARSET))) {
+        String line = bri.readLine();
+        if (line == null) {
+          return null;
+        }
+        String[] split = line.split("\",\"");
+        if (split.length <= 1) {
+          return null;
+        }
+        String name = split[split.length - 1];
+        return name.substring(0, name.length() - 1);
+      } finally {
+        proc.waitFor();
+      }
+    } catch (IOException err) {
+      log.error("error while getting osu client window title", err);
+      return null;
     }
-    return line;
   }
 
   OsuStatus getStatus() {
