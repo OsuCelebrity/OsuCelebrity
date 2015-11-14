@@ -29,6 +29,8 @@ public class CurrentPlayerService {
   @Data
   public static class CurrentPlayer {
     String name;
+    
+    int id;
 
     String playingFor;
     
@@ -55,15 +57,18 @@ public class CurrentPlayerService {
     try {
       CurrentPlayer currentPlayer = new CurrentPlayer();
       QueuedPlayer player = spectator.getCurrentPlayer(pm);
-      currentPlayer.setName(player.getPlayer().getUserName());
-      {
-        Duration duration = Duration.ofMillis(System.currentTimeMillis() - player.getStartedAt());
-        LocalTime localTime = LocalTime.MIDNIGHT.plus(duration);
-        currentPlayer.setPlayingFor(DateTimeFormatter.ofPattern("m:ss").format(localTime));
+      if (player != null) {
+        currentPlayer.setName(player.getPlayer().getUserName());
+        {
+          Duration duration = Duration.ofMillis(System.currentTimeMillis() - player.getStartedAt());
+          LocalTime localTime = LocalTime.MIDNIGHT.plus(duration);
+          currentPlayer.setPlayingFor(DateTimeFormatter.ofPattern("m:ss").format(localTime));
+        }
+        long timeLeft = Math.max(0, player.getStoppingAt() - player.getLastRemainingTimeUpdate());
+        currentPlayer.setHealth(timeLeft
+            / (double) coreSettings.getDefaultSpecDuration());
+        currentPlayer.setId(player.getPlayer().getUserId());
       }
-      long timeLeft = Math.max(0, player.getStoppingAt() - player.getLastRemainingTimeUpdate());
-      currentPlayer.setHealth(timeLeft
-          / (double) coreSettings.getDefaultSpecDuration());
       OsuStatus clientStatus = osu.getClientStatus();
       if (clientStatus != null && clientStatus.getType() == Type.PLAYING) {
         currentPlayer.setBeatmap(clientStatus.getDetail());

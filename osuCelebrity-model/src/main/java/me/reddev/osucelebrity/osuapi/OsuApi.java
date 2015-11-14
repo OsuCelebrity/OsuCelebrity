@@ -1,5 +1,6 @@
 package me.reddev.osucelebrity.osuapi;
 
+import me.reddev.osucelebrity.PassAndReturnNonnull;
 import me.reddev.osucelebrity.osu.OsuIrcUser;
 import me.reddev.osucelebrity.osu.OsuUser;
 
@@ -7,9 +8,11 @@ import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
 
 import java.io.IOException;
+
 import javax.annotation.CheckForNull;
 import javax.jdo.PersistenceManager;
 
+@PassAndReturnNonnull
 public interface OsuApi {
   /**
    * Get a user object from the osu api.

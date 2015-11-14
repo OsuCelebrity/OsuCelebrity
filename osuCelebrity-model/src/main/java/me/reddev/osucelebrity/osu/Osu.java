@@ -1,5 +1,8 @@
 package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.PassAndReturnNonnull;
+
+@PassAndReturnNonnull
 public interface Osu {
   /**
    * Starts spectating a player. TODO specify behaviour (async with callback? success/failure?)

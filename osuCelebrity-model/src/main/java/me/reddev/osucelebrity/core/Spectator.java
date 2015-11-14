@@ -1,7 +1,11 @@
 package me.reddev.osucelebrity.core;
 
+import me.reddev.osucelebrity.PassAndReturnNonnull;
+
+import javax.annotation.CheckForNull;
 import javax.jdo.PersistenceManager;
 
+@PassAndReturnNonnull
 public interface Spectator {
   /**
    * Add the given player to the queue.
@@ -22,6 +26,7 @@ public interface Spectator {
    */
   boolean advance(PersistenceManager pm);
 
+  @CheckForNull
   QueuedPlayer getCurrentPlayer(PersistenceManager pm);
   
   /**

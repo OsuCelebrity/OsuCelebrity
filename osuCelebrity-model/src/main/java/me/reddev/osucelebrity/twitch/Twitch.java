@@ -1,5 +1,8 @@
 package me.reddev.osucelebrity.twitch;
 
+import me.reddev.osucelebrity.PassAndReturnNonnull;
+
+@PassAndReturnNonnull
 public interface Twitch {
   /**
    * Registers a command handler. The order of these handlers is preserved and every command is
