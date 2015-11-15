@@ -42,13 +42,19 @@ public class QueuedPlayer {
 
   @Index
   int state = 2;
-
+  
   /**
    * Whether or not to notify a player of their upcoming turn via the osu chat.
    */
   @Column(defaultValue = "false")
   boolean notify = false;
 
+  /**
+   * When the player received their heads-up that they're on in a couple of seconds.
+   */
+  @Column(defaultValue = "-1")
+  long notifiedAt = Long.MAX_VALUE;
+  
   /**
    * Creates a new queued player object. This alone won't enqueue this player.
    * 
@@ -78,6 +84,6 @@ public class QueuedPlayer {
   }
 
   public enum QueueSource {
-    TWITCH, OSU
+    TWITCH, OSU, AUTO
   }
 }

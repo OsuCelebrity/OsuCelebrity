@@ -16,4 +16,8 @@ public interface CoreSettings {
   long getOfflineTimeout();
   
   long getIdleTimeout();
+  
+  long getAutoSpecMaxRank();
+  
+  long getAutoSpecMaxLastActivity();
 }

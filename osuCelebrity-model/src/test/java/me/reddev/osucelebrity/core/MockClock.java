@@ -14,8 +14,4 @@ public class MockClock implements Clock {
       this.time = time;
     }
   }
-
-  public void setTime(long time) {
-    this.time = time;
-  }
 }

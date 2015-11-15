@@ -1,8 +1,11 @@
 package me.reddev.osucelebrity.osuapi;
 
 import lombok.Getter;
-
+import lombok.Setter;
+import lombok.ToString;
 import org.tillerino.osuApiModel.OsuApiUser;
+import org.tillerino.osuApiModel.types.GameMode;
+import org.tillerino.osuApiModel.types.UserId;
 
 import java.io.Serializable;
 import java.util.StringTokenizer;
@@ -12,25 +15,37 @@ import javax.jdo.annotations.PrimaryKey;
 
 @PersistenceCapable(objectIdClass = ApiUser.ComposedIdKey.class)
 @Getter
+@ToString
 public class ApiUser {
   @PrimaryKey
+  @Getter(onMethod = @__(@UserId))
+  @UserId
   private int userId;
 
+  @GameMode
+  @Getter(onMethod = @__(@GameMode))
   @PrimaryKey
   private int gameMode;
 
+  @Setter
   long downloaded;
 
+  @Setter
   private int rank;
 
+  @Setter
   private double pp;
 
+  @Setter
   private int playCount;
 
+  @Setter
   private double level;
 
+  @Setter
   private double accuracy;
 
+  @Setter
   private String country;
 
   /**
@@ -105,29 +120,5 @@ public class ApiUser {
     this.setLevel(downloadedData.getLevel());
     this.setAccuracy(downloadedData.getAccuracy());
     this.setCountry(downloadedData.getCountry());
-  }
-
-  private void setRank(int rank) {
-    this.rank = rank;
-  }
-
-  private void setPp(double pp) {
-    this.pp = pp;
-  }
-
-  private void setPlayCount(int playCount) {
-    this.playCount = playCount;
-  }
-
-  private void setLevel(double level) {
-    this.level = level;
-  }
-
-  private void setAccuracy(double accuracy) {
-    this.accuracy = accuracy;
-  }
-
-  private void setCountry(String country) {
-    this.country = country;
   }
 }

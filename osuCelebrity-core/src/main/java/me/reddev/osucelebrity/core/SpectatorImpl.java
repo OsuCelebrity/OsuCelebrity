@@ -1,23 +1,31 @@
 package me.reddev.osucelebrity.core;
 
+import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
 import static me.reddev.osucelebrity.core.QVote.vote;
+import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
+import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 
 import com.google.common.base.Objects;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
+import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.twitch.Twitch;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.ToDoubleFunction;
 
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
@@ -81,29 +89,40 @@ public class SpectatorImpl implements Spectator, Runnable {
     Optional<QueuedPlayer> next = lockNext(queue);
     long time = clock.getTime();
 
+    if (current.isPresent() && next.isPresent()) {
+      QueuedPlayer currentPlayer = current.get();
+      QueuedPlayer nextPlayer = next.get();
+      if (nextPlayer.isNotify() && nextPlayer.getNotifiedAt() == Long.MAX_VALUE
+          && clock.getTime() >= currentPlayer.getStoppingAt()
+          - settings.getNextPlayerNotifyTime()) {
+        osu.notifySoon(nextPlayer.getPlayer());
+        nextPlayer.setNotifiedAt(clock.getTime());
+      }
+    }
     if (current.isPresent()) {
       SkipReason shouldSkip = status.shouldSkip();
       if (shouldSkip != null) {
-        if (advance(queue)) {
+        if (advance(pm, queue)) {
           twitch.announcePlayerSkipped(shouldSkip, current.get().getPlayer());
         }
       } else {
         if (queue.spectatingUntil() <= time) {
-          if (next.isPresent()) {
-            advance(queue);
+          if (next.isPresent() || current.get().getQueueSource() == QueueSource.AUTO) {
+            advance(pm, queue);
           } else {
-            if (queue.spectatingUntil() <= time - settings.getAutoSpecTime()) {
-              advance(queue);
+            if (queue.spectatingUntil() <= time
+                - (settings.getAutoSpecTime() - settings.getDefaultSpecDuration())) {
+              advance(pm, queue);
             }
           }
         }
       }
     } else {
-      advance(queue);
+      advance(pm, queue);
     }
 
     updateRemainingTime(pm, queue);
-    long until = current.isPresent() ? queue.spectatingUntil() : 0;
+    long until = queue.currentlySpectating().isPresent() ? queue.spectatingUntil() : 0;
     return Math.min(time + 100, until > time ? until : time + 100);
   }
 
@@ -183,7 +202,6 @@ public class SpectatorImpl implements Spectator, Runnable {
       spectatingNext = queue.poll();
       if (spectatingNext.isPresent()) {
         spectatingNext.get().setState(QueuedPlayer.NEXT);
-        // TODO send 10 second warning
       }
     }
     return spectatingNext;
@@ -201,6 +219,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (queue.contains(user)) {
       return EnqueueResult.FAILURE;
     }
+    user.setNotify(true);
     pm.makePersistent(user);
     log.info("Queued " + user.getPlayer().getUserName());
     // wake spectator in the case that the queue was empty.
@@ -218,13 +237,16 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (!currentUser.get().getPlayer().equals(expectedUser)) {
       return false;
     }
-    return advance(queue);
+    return advance(pm, queue);
   }
 
-  boolean advance(PlayerQueue queue) {
+  boolean advance(PersistenceManager pm, PlayerQueue queue) {
     Optional<QueuedPlayer> next = queue.spectatingNext();
     if (!next.isPresent()) {
       next = queue.poll();
+    }
+    if (!next.isPresent()) {
+      next = pickAutoPlayer(pm, queue.currentlySpectating().orElse(null));
     }
     if (!next.isPresent()) {
       return false;
@@ -244,10 +266,13 @@ public class SpectatorImpl implements Spectator, Runnable {
     next.setState(QueuedPlayer.SPECTATING);
     next.setStartedAt(time);
     next.setLastRemainingTimeUpdate(time);
-    next.setStoppingAt(next.getStartedAt() + settings.getDefaultSpecDuration());
+    next.setStoppingAt(next.getStartedAt()
+        + (next.getQueueSource() == QueueSource.AUTO ? settings.getAutoSpecTime() : settings
+            .getDefaultSpecDuration()));
     OsuUser user = next.getPlayer();
-    // TODO enable notification after alpha
-    // osu.notifyStarting(user);
+    if (next.isNotify()) {
+      osu.notifyStarting(user);
+    }
     osu.startSpectate(user);
   }
 
@@ -263,7 +288,8 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (!currentlySpectating.isPresent()) {
       return false;
     }
-    if (queue.spectatingNext().isPresent()) {
+    Optional<QueuedPlayer> next = queue.spectatingNext();
+    if (next.isPresent() && next.get().getNotifiedAt() < Long.MAX_VALUE) {
       return false;
     }
     Vote vote = new Vote();
@@ -279,5 +305,63 @@ public class SpectatorImpl implements Spectator, Runnable {
   public synchronized QueuedPlayer getNextPlayer(PersistenceManager pm) {
     PlayerQueue loadQueue = PlayerQueue.loadQueue(pm);
     return loadQueue.spectatingNext().orElse(null);
+  }
+
+  Optional<QueuedPlayer> pickAutoPlayer(PersistenceManager pm, QueuedPlayer currentPlayer) {
+    List<ApiUser> recentlyActive = getRecentlyActive(pm);
+    Map<Integer, Long> lastPlayTime = getLastPlayTimes(pm);
+    long time = clock.getTime();
+    ToDoubleFunction<ApiUser> sortingProperty =
+        user -> Math.pow(user.getRank() + 50, 2)
+            / (double) Math.max(1, time - lastPlayTime.computeIfAbsent(user.getUserId(), x -> 0L));
+    double min = Double.POSITIVE_INFINITY;
+    ApiUser minArg = null;
+    for (ApiUser apiUser : recentlyActive) {
+      if (currentPlayer != null && currentPlayer.getPlayer().getUserId() == apiUser.getUserId()) {
+        continue;
+      }
+      double val = sortingProperty.applyAsDouble(apiUser);
+      if (val < min) {
+        min = val;
+        minArg = apiUser;
+      }
+    }
+    if (minArg == null) {
+      return Optional.empty();
+    }
+    try (JDOQuery<OsuUser> query =
+        new JDOQuery<OsuUser>(pm).select(osuUser).from(osuUser)
+            .where(osuUser.userId.eq(minArg.getUserId()))) {
+      return Optional.of(pm.makePersistent(new QueuedPlayer(query.fetchOne(), QueueSource.AUTO,
+          clock.getTime())));
+    }
+  }
+
+  Map<Integer, Long> getLastPlayTimes(PersistenceManager pm) {
+    Map<Integer, Long> lastPlayTime = new HashMap<>();
+    try (JDOQuery<Tuple> queuedUsers =
+        new JDOQuery<>(pm).select(queuedPlayer.player, queuedPlayer.startedAt.max())
+            .from(queuedPlayer).where(queuedPlayer.state.eq(QueuedPlayer.DONE))
+            .groupBy(queuedPlayer.player)) {
+      queuedUsers.fetch().forEach(
+          tuple -> lastPlayTime.put(tuple.get(0, OsuUser.class).getUserId(),
+              tuple.get(1, long.class)));
+    }
+    return lastPlayTime;
+  }
+
+  List<ApiUser> getRecentlyActive(PersistenceManager pm) {
+    List<ApiUser> recentlyActive;
+    try (JDOQuery<ApiUser> query =
+        new JDOQuery<ApiUser>(pm)
+            .select(playerActivity.user)
+            .from(playerActivity)
+            .where(
+                playerActivity.user.rank.loe(settings.getAutoSpecMaxRank()),
+                playerActivity.lastActivity.goe(clock.getTime()
+                    - settings.getAutoSpecMaxLastActivity()))) {
+      recentlyActive = new ArrayList<>(query.fetch());
+    }
+    return recentlyActive;
   }
 }

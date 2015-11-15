@@ -44,6 +44,7 @@ public class OsuUser {
    * updates this object with the downloaded data.
    * 
    * @param user downloaded data
+   * @param downloaded current time
    */
   public void update(OsuApiUser user, long downloaded) {
     this.setUserName(user.getUserName());
