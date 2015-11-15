@@ -120,6 +120,7 @@ public class OsuApplication implements Runnable {
     writer.close();
   }
 
+  @CheckForNull
   String windowTitle = null;
 
   @Override
@@ -143,6 +144,7 @@ public class OsuApplication implements Runnable {
    * 
    * @return the window title or null if there is no window
    */
+  @CheckForNull
   public String getWindowTitle() {
     return windowTitle;
   }
@@ -173,6 +175,7 @@ public class OsuApplication implements Runnable {
     }
   }
 
+  @CheckForNull
   OsuStatus getStatus() {
     String title = getWindowTitle();
     if (title == null) {

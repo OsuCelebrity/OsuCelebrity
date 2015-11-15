@@ -2,6 +2,8 @@ package me.reddev.osucelebrity.osu;
 
 import me.reddev.osucelebrity.PassAndReturnNonnull;
 
+import javax.annotation.CheckForNull;
+
 @PassAndReturnNonnull
 public interface Osu {
   /**
@@ -38,5 +40,6 @@ public interface Osu {
    * 
    * @return null if the status is unknown.
    */
+  @CheckForNull
   public OsuStatus getClientStatus();
 }

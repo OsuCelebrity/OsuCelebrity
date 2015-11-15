@@ -62,6 +62,9 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   private long streamDelay;
   private long voteWindow;
   private long nextPlayerNotifyTime;
+  private long autoSpecTime;
+  private long offlineTimeout;
+  private long idleTimeout;
 
   /**
    * Creates a new settings object using a given property list.

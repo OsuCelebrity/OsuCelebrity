@@ -6,4 +6,10 @@ package me.reddev.osucelebrity;
  */
 public class TwitchResponses extends Responses {
   public static final String INVALID_FORMAT_QUEUE = "Expected !queue {username}";
+
+  public static final String SKIPPED_OFFLINE = "It appears %s is offline.";
+
+  public static final String SKIPPED_IDLE = "%s isn't doing anything. Let's move on.";
+
+  public static final String SKIPPED_FORCE = "%s was skipped by %s.";
 }

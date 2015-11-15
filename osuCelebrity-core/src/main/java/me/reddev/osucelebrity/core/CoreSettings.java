@@ -10,4 +10,10 @@ public interface CoreSettings {
   long getStreamDelay();
 
   long getVoteWindow();
+  
+  long getAutoSpecTime();
+  
+  long getOfflineTimeout();
+  
+  long getIdleTimeout();
 }

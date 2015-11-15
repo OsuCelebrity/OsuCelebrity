@@ -2,11 +2,16 @@ package me.reddev.osucelebrity.core;
 
 import static me.reddev.osucelebrity.core.QVote.vote;
 
+import com.google.common.base.Objects;
+
 import com.querydsl.jdo.JDOQuery;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.osu.Osu;
+import me.reddev.osucelebrity.osu.OsuStatus;
+import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.twitch.Twitch;
 
@@ -72,17 +77,65 @@ public class SpectatorImpl implements Spectator, Runnable {
 
   synchronized long loop(PersistenceManager pm) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
-    if (!queue.currentlySpectating().isPresent() || queue.spectatingUntil() < clock.getTime()) {
+    Optional<QueuedPlayer> current = queue.currentlySpectating();
+    Optional<QueuedPlayer> next = lockNext(queue);
+    long time = clock.getTime();
+
+    if (current.isPresent()) {
+      SkipReason shouldSkip = status.shouldSkip();
+      if (shouldSkip != null) {
+        if (advance(queue)) {
+          twitch.announcePlayerSkipped(shouldSkip, current.get().getPlayer());
+        }
+      } else {
+        if (queue.spectatingUntil() <= time) {
+          if (next.isPresent()) {
+            advance(queue);
+          } else {
+            if (queue.spectatingUntil() <= time - settings.getAutoSpecTime()) {
+              advance(queue);
+            }
+          }
+        }
+      }
+    } else {
       advance(queue);
-    } else if (queue.spectatingUntil() < clock.getTime() + settings.getNextPlayerNotifyTime()
-        && !queue.spectatingNext().isPresent()) {
-      lockNext(queue);
     }
-    
+
     updateRemainingTime(pm, queue);
-    long until = queue.currentlySpectating().isPresent() ? queue.spectatingUntil() : 0;
-    return Math.min(clock.getTime() + 100, until > clock.getTime() ? until : clock.getTime() + 100);
+    long until = current.isPresent() ? queue.spectatingUntil() : 0;
+    return Math.min(time + 100, until > time ? until : time + 100);
   }
+
+  class Status {
+    long lastStatusChange = -1;
+    OsuStatus lastStatus;
+
+    @SuppressFBWarnings(value = "NP",
+        justification = "lastStatus = currentStatus raises a weird bug")
+    SkipReason shouldSkip() {
+      OsuStatus currentStatus = osu.getClientStatus();
+      try {
+        if (lastStatusChange == -1 || !Objects.equal(currentStatus, lastStatus)) {
+          lastStatusChange = clock.getTime();
+          return null;
+        }
+        if (currentStatus == null
+            && lastStatusChange <= clock.getTime() - settings.getOfflineTimeout()) {
+          return SkipReason.OFFLINE;
+        }
+        if (currentStatus != null && currentStatus.getType() == Type.WATCHING
+            && lastStatusChange <= clock.getTime() - settings.getIdleTimeout()) {
+          return SkipReason.IDLE;
+        }
+        return null;
+      } finally {
+        lastStatus = currentStatus;
+      }
+    }
+  }
+
+  Status status = new Status();
 
   private void updateRemainingTime(PersistenceManager pm, PlayerQueue queue) {
     Optional<QueuedPlayer> currentlySpectating = queue.currentlySpectating();
@@ -90,17 +143,16 @@ public class SpectatorImpl implements Spectator, Runnable {
       return;
     }
     QueuedPlayer current = currentlySpectating.get();
-    
+
     if (queue.spectatingNext().isPresent()) {
       current.setLastRemainingTimeUpdate(clock.getTime());
       return;
     }
-    
+
     double approval = getApproval(pm, current);
     long time = clock.getTime();
     if (approval > .5) {
-      current.setStoppingAt(time + current.getStoppingAt()
-          - current.getLastRemainingTimeUpdate());
+      current.setStoppingAt(time + current.getStoppingAt() - current.getLastRemainingTimeUpdate());
     }
 
     current.setLastRemainingTimeUpdate(time);
@@ -125,12 +177,16 @@ public class SpectatorImpl implements Spectator, Runnable {
     return approval;
   }
 
-  synchronized void lockNext(PlayerQueue queue) {
-    Optional<QueuedPlayer> spectatingNext = queue.poll();
-    if (spectatingNext.isPresent()) {
-      spectatingNext.get().setState(QueuedPlayer.NEXT);
-      // TODO send 10 second warning
+  synchronized Optional<QueuedPlayer> lockNext(PlayerQueue queue) {
+    Optional<QueuedPlayer> spectatingNext = queue.spectatingNext();
+    if (!spectatingNext.isPresent()) {
+      spectatingNext = queue.poll();
+      if (spectatingNext.isPresent()) {
+        spectatingNext.get().setState(QueuedPlayer.NEXT);
+        // TODO send 10 second warning
+      }
     }
+    return spectatingNext;
   }
 
   /**
@@ -152,14 +208,16 @@ public class SpectatorImpl implements Spectator, Runnable {
     return EnqueueResult.SUCCESS;
   }
 
-  /**
-   * Advances to the next player in queue.
-   * 
-   * @return True if successful, false if there is no next queued player.
-   */
   @Override
-  public synchronized boolean advance(PersistenceManager pm) {
+  public synchronized boolean advanceConditional(PersistenceManager pm, OsuUser expectedUser) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    Optional<QueuedPlayer> currentUser = queue.currentlySpectating();
+    if (!currentUser.isPresent()) {
+      return false;
+    }
+    if (!currentUser.get().getPlayer().equals(expectedUser)) {
+      return false;
+    }
     return advance(queue);
   }
 
@@ -173,6 +231,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     }
     // TODO say good-bye to the player currently being spectated
     startSpectating(queue, next.get());
+    status = new Status();
     return true;
   }
 
@@ -215,7 +274,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     pm.makePersistent(vote);
     return true;
   }
-  
+
   @Override
   public synchronized QueuedPlayer getNextPlayer(PersistenceManager pm) {
     PlayerQueue loadQueue = PlayerQueue.loadQueue(pm);

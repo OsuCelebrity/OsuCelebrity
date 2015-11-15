@@ -12,6 +12,7 @@ import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 
+import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
@@ -191,25 +192,28 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   }
 
   boolean handleSkip(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
-      PersistenceManager pm) throws UserException {
-    if (!message.equalsIgnoreCase("skip")) {
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, "forceskip ")) {
       return false;
     }
     if (!user.getPriviledge().canSkip) {
       throw new UserException("Unauthorized to skip.");
     }
-    if (spectator.advance(pm)) {
-      event.getUser().send().message("Skipped.");
-    } else {
-      event.getUser().send().message("Not skipped.");
+    message = message.substring("forceskip ".length());
+    OsuUser ircUser = osuApi.getUser(message, pm, 0);
+    if (ircUser != null) {
+      if (spectator.advanceConditional(pm, ircUser)) {
+        event.getUser().send().message("Skipped.");
+      } else {
+        event.getUser().send().message("Not skipped.");
+      }
     }
     return true;
   }
 
   OsuUser getOsuUser(GenericMessageEvent<PircBotX> event, PersistenceManager pm)
       throws IOException, UserException {
-    final OsuUser user =
-        osuApi.getUser(event.getUser().getNick(), pm, 60 * 60 * 1000);
+    final OsuUser user = osuApi.getUser(event.getUser().getNick(), pm, 60 * 60 * 1000);
     if (user == null) {
       throw new UserException(String.format(Responses.INVALID_USER, event.getUser().getNick()));
     }
