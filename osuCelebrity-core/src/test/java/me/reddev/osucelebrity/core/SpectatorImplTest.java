@@ -219,26 +219,44 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     clock.sleepUntil(10000);
     spectator.loop(pm);
-    // remaining time is now 20s
+    assertEquals(30000, spectator.getCurrentPlayer(pm).getStoppingAt());
     spectator.vote(pm, "me", VoteType.UP);
 
-    for (long t = 10000; t <= 40000; t += 10000) {
-      clock.sleepUntil(t);
-      spectator.loop(pm);
+    clock.sleepUntil(20000);
+    spectator.loop(pm);
+    assertEquals(50000, spectator.getCurrentPlayer(pm).getStoppingAt());
+    
+    clock.sleepUntil(40000);
+    spectator.loop(pm);
+    assertEquals(70000, spectator.getCurrentPlayer(pm).getStoppingAt());
+    
+    clock.sleepUntil(60000);
+    spectator.loop(pm);
+    assertEquals(70000, spectator.getCurrentPlayer(pm).getStoppingAt());
+  }
+  
+  @Test
+  public void testTimeRefill() throws Exception {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser user = api.getUser("someplayer", pm, 0);
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
+
+    spectator.loop(pm);
+
+    {
       QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
       assertEquals(user, currentPlayer.getPlayer());
-      assertEquals(t + 20000, currentPlayer.getStoppingAt());
-      assertEquals(clock.getTime(), currentPlayer.getLastRemainingTimeUpdate());
+      assertEquals(30000, currentPlayer.getStoppingAt());
     }
 
-    for (long t = 50000; t <= 10000; t += 10000) {
-      clock.sleepUntil(t);
-      spectator.loop(pm);
-      QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
-      assertEquals(user, currentPlayer.getPlayer());
-      assertEquals(60000, currentPlayer.getStoppingAt());
-      assertEquals(clock.getTime(), currentPlayer.getLastRemainingTimeUpdate());
-    }
+    clock.sleepUntil(10000);
+    spectator.loop(pm);
+    // remaining time is now 20s
+    spectator.vote(pm, "me", VoteType.UP);
+    spectator.vote(pm, "someotherguy", VoteType.DOWN);
+
   }
 
   @Test

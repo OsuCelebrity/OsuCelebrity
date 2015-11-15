@@ -107,7 +107,7 @@ public class SpectatorImpl implements Spectator, Runnable {
         }
       } else {
         if (queue.spectatingUntil() <= time) {
-          if (next.isPresent() || current.get().getQueueSource() == QueueSource.AUTO) {
+          if (next.isPresent()) {
             advance(pm, queue);
           } else {
             if (queue.spectatingUntil() <= time
@@ -170,7 +170,13 @@ public class SpectatorImpl implements Spectator, Runnable {
 
     double approval = getApproval(pm, current);
     long time = clock.getTime();
-    if (approval > .5) {
+    if (approval > .7) {
+      long lastRemainingTime = current.getStoppingAt() - current.getLastRemainingTimeUpdate();
+      long newRemainingTime =
+          Math.min(settings.getDefaultSpecDuration(),
+              lastRemainingTime + time - current.getLastRemainingTimeUpdate());
+      current.setStoppingAt(time + newRemainingTime);
+    } else if (approval > .4) {
       current.setStoppingAt(time + current.getStoppingAt() - current.getLastRemainingTimeUpdate());
     }
 
@@ -266,9 +272,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     next.setState(QueuedPlayer.SPECTATING);
     next.setStartedAt(time);
     next.setLastRemainingTimeUpdate(time);
-    next.setStoppingAt(next.getStartedAt()
-        + (next.getQueueSource() == QueueSource.AUTO ? settings.getAutoSpecTime() : settings
-            .getDefaultSpecDuration()));
+    next.setStoppingAt(next.getStartedAt() + settings.getDefaultSpecDuration());
     OsuUser user = next.getPlayer();
     if (next.isNotify()) {
       osu.notifyStarting(user);
