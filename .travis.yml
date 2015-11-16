@@ -11,8 +11,14 @@ before_install:
 # we're not installing anything
 install: true
 
+before_script:
+  - pip install --user codecov
+
 script:
   - mvn verify -Dmaven.javadoc.skip=true -B -V
+    
+after_success:
+  - codecov
 
 cache:
   directories:
