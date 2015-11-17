@@ -54,6 +54,14 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.19</version>
+				<configuration>
+<!-- 					<forkCount>1C</forkCount> -->
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>findbugs-maven-plugin</artifactId>
 				<version>3.0.0</version>
@@ -63,11 +71,12 @@
 							<goal>check</goal>
 						</goals>
 						<phase>test</phase>
-						<configuration>
-							<maxRank>15</maxRank>
-						</configuration>
 					</execution>
 				</executions>
+				<configuration>
+					<fork>false</fork>
+					<maxRank>15</maxRank>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.datanucleus</groupId>
@@ -85,6 +94,25 @@
 						<version>${querydsl.version}</version>
 					</dependency>
 				</dependencies>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.7.5.201505241946</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
@@ -131,7 +159,7 @@
 			<dependency>
 				<groupId>org.tillerino.osu</groupId>
 				<artifactId>osuApiConnector</artifactId>
-				<version>0.9.3</version>
+				<version>0.9.5</version>
 			</dependency>
 			<dependency>
 				<groupId>org.projectlombok</groupId>
@@ -206,6 +234,11 @@
 				<artifactId>querydsl-jdo</artifactId>
 				<version>${querydsl.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>com.querydsl</groupId>
+				<artifactId>querydsl-sql</artifactId>
+				<version>${querydsl.version}</version>
+			</dependency>
 			<!-- API stuff -->
 			<dependency>
 				<groupId>javax.ws.rs</groupId>
@@ -239,8 +272,16 @@
 			<artifactId>jdo-api</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>javax.inject</groupId>
+			<artifactId>javax.inject</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>com.querydsl</groupId>
 			<artifactId>querydsl-jdo</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.querydsl</groupId>
+			<artifactId>querydsl-sql</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.datanucleus</groupId>
@@ -269,10 +310,6 @@
 			<groupId>org.datanucleus</groupId>
 			<artifactId>datanucleus-rdbms</artifactId>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.google.inject</groupId>
-			<artifactId>guice</artifactId>
 		</dependency>
 	</dependencies>
 </project>

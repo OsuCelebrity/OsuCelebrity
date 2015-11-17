@@ -2,6 +2,10 @@ package me.reddev.osucelebrity.osu;
 
 import me.reddev.osucelebrity.PassAndReturnNonnull;
 
+import java.util.List;
+import javax.annotation.CheckForNull;
+import javax.jdo.PersistenceManager;
+
 @PassAndReturnNonnull
 public interface Osu {
   /**
@@ -38,5 +42,24 @@ public interface Osu {
    * 
    * @return null if the status is unknown.
    */
+  @CheckForNull
   public OsuStatus getClientStatus();
+
+  /**
+   * Returns a list of users who are definitely online. Note that this list is not complete.
+   */
+  public List<String> getOnlineUsers();
+
+  /**
+   * Checks if this player is definitely online. Note that the player might still be online if this
+   * method returns false.
+   */
+  public boolean isOnline(OsuUser player);
+
+  /**
+   * Returns the timestamp of the last completed play.
+   * 
+   * @return 0 if unknown.
+   */
+  public long lastActivity(PersistenceManager pm, OsuUser player);
 }

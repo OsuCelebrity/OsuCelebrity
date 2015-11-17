@@ -196,11 +196,18 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   boolean handleAdvance(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!message.equalsIgnoreCase("forceskip")) {
+    if (!StringUtils.startsWithIgnoreCase(message, "forceskip ")) {
       return false;
     }
+    message = message.substring("forceskip ".length());
     if (event.getChannel().isOp(event.getUser())) {
-      spectator.advance(pm);
+      OsuUser ircUser = osuApi.getUser(message, pm, 0);
+      if (ircUser != null) {
+        if (spectator.advanceConditional(pm, ircUser)) {
+          sendMessage(String.format(TwitchResponses.SKIPPED_FORCE, message, event.getUser()
+              .getNick()));
+        }
+      }
     }
     return true;
   }

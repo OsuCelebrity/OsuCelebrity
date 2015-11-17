@@ -66,9 +66,9 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   @Test
   public void testQueue() throws Exception {
     when(spectator.enqueue(any(), any())).thenReturn(EnqueueResult.SUCCESS);
-    
+
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!q someone"));
-    
+
     verify(spectator).enqueue(
         any(),
         eq(new QueuedPlayer(api.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
@@ -93,9 +93,10 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   @Test
   public void testForceSkip() throws Exception {
     when(channel.isOp(user)).thenReturn(true);
-    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip"));
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip x"));
 
-    verify(spectator).advance(any());
+    verify(spectator).advanceConditional(any(),
+        eq(api.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
   }
 
   @Test

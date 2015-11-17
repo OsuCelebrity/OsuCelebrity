@@ -50,7 +50,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   ListenerManager<PircBotX> listenerManager;
   @Mock
   OsuIrcSettings settings;
-  
+
   OsuIrcBot ircBot;
 
   @Before
@@ -70,17 +70,17 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   @Test
   public void testSelfQueue() throws Exception {
     when(spectator.enqueue(any(), any())).thenReturn(EnqueueResult.SUCCESS);
-    
+
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!q"));
 
     ArgumentCaptor<QueuedPlayer> captor = ArgumentCaptor.forClass(QueuedPlayer.class);
-    
+
     verify(spectator, only()).enqueue(any(), captor.capture());
-    
+
     QueuedPlayer request = captor.getValue();
     assertEquals("osuIrcUser", request.getPlayer().getUserName());
     assertEquals(true, request.isNotify());
-    
+
     verify(outputUser, only()).message(Responses.SELF_QUEUE_SUCCESSFUL);
   }
 
@@ -88,20 +88,21 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   public void testSkip() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     osuApi.getUser("osuIrcUser", pm, 0).setPriviledge(Priviledge.MOD);
-    
-    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!skip"));
 
-    verify(spectator, only()).advance(any());
-    
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!forceskip x"));
+
+    verify(spectator, only()).advanceConditional(any(),
+        eq(osuApi.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
+
     verify(outputUser, only()).message(any());
   }
 
   @Test
   public void testSkipUnauthorized() throws Exception {
-    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!skip"));
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!forceskip x"));
 
     verifyZeroInteractions(spectator);
-    
+
     verify(outputUser, only()).message(any());
   }
 }

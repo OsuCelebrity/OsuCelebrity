@@ -1,6 +1,7 @@
 package me.reddev.osucelebrity.core;
 
 import me.reddev.osucelebrity.PassAndReturnNonnull;
+import me.reddev.osucelebrity.osu.OsuUser;
 
 import javax.annotation.CheckForNull;
 import javax.jdo.PersistenceManager;
@@ -22,12 +23,28 @@ public interface Spectator {
    * Stops spectating the current player and advances to the next player.
    * 
    * @param pm the current request's persistence manager
+   * @param expected only advances if this player is currently being spectated.
    * @return true if the current player was skipped.
    */
-  boolean advance(PersistenceManager pm);
+  boolean advanceConditional(PersistenceManager pm, OsuUser expected);
 
+  /**
+   * Gets all information about the player currently being spectated.
+   * 
+   * @param pm the current request's persistence manager
+   * @return null, if there is no current player.
+   */
   @CheckForNull
   QueuedPlayer getCurrentPlayer(PersistenceManager pm);
+  
+  /**
+   * Gets all information about the player being spectated next.
+   * 
+   * @param pm the current request's persistence manager
+   * @return null, if the next player has not been determined yet.
+   */
+  @CheckForNull
+  QueuedPlayer getNextPlayer(PersistenceManager pm);
   
   /**
    * Votes for the current player.

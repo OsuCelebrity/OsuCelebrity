@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
+import com.google.common.collect.ImmutableList;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.OsuResponses;
@@ -11,8 +13,9 @@ import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.osuapi.OsuApi;
-
+import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
+import org.pircbotx.Configuration.Builder;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.hooks.ListenerAdapter;
@@ -20,12 +23,17 @@ import org.pircbotx.hooks.events.ConnectEvent;
 import org.pircbotx.hooks.events.DisconnectEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
+import org.pircbotx.hooks.events.QuitEvent;
+import org.pircbotx.hooks.events.ServerResponseEvent;
 import org.pircbotx.hooks.types.GenericChannelEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
@@ -52,6 +60,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   private PircBotX bot;
 
+  private Set<String> onlineUsers = new ConcurrentSkipListSet<>();
+
   private final List<CommandHandler> handlers = new ArrayList<>();
 
   {
@@ -65,14 +75,16 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
    */
   public void run() {
     try {
-      Configuration<PircBotX> config =
+      Builder<PircBotX> configBuilder =
           new Configuration.Builder<PircBotX>()
               .setName(ircSettings.getOsuIrcUsername())
               .setLogin(ircSettings.getOsuIrcUsername())
               .addListener(this)
               .setServer(ircSettings.getOsuIrcHost(), ircSettings.getOsuIrcPort(),
-                  ircSettings.getOsuIrcPassword()).setAutoReconnect(true)
-              .addAutoJoinChannel(ircSettings.getOsuIrcAutoJoin()).buildConfiguration();
+                  ircSettings.getOsuIrcPassword()).setAutoReconnect(true);
+      Stream.of(ircSettings.getOsuIrcAutoJoin().split(",")).forEach(
+          configBuilder::addAutoJoinChannel);
+      Configuration<PircBotX> config = configBuilder.buildConfiguration();
       bot = new PircBotX(config);
 
       bot.startBot();
@@ -191,25 +203,28 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   }
 
   boolean handleSkip(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
-      PersistenceManager pm) throws UserException {
-    if (!message.equalsIgnoreCase("skip")) {
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, "forceskip ")) {
       return false;
     }
     if (!user.getPriviledge().canSkip) {
       throw new UserException("Unauthorized to skip.");
     }
-    if (spectator.advance(pm)) {
-      event.getUser().send().message("Skipped.");
-    } else {
-      event.getUser().send().message("Not skipped.");
+    message = message.substring("forceskip ".length());
+    OsuUser ircUser = osuApi.getUser(message, pm, 0);
+    if (ircUser != null) {
+      if (spectator.advanceConditional(pm, ircUser)) {
+        event.getUser().send().message("Skipped.");
+      } else {
+        event.getUser().send().message("Not skipped.");
+      }
     }
     return true;
   }
 
   OsuUser getOsuUser(GenericMessageEvent<PircBotX> event, PersistenceManager pm)
       throws IOException, UserException {
-    final OsuUser user =
-        osuApi.getUser(event.getUser().getNick(), pm, 60 * 60 * 1000);
+    final OsuUser user = osuApi.getUser(event.getUser().getNick(), pm, 60 * 60 * 1000);
     if (user == null) {
       throw new UserException(String.format(Responses.INVALID_USER, event.getUser().getNick()));
     }
@@ -234,9 +249,40 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   @Override
   public void onJoin(JoinEvent<PircBotX> event) {
     // Ask for subscription and admin information
-    if (event.getUser().getLogin().equalsIgnoreCase(ircSettings.getOsuIrcUsername())) {
+    if (event.getUser().getNick().equalsIgnoreCase(ircSettings.getOsuIrcUsername())) {
       log.info(String.format("Joined %s", event.getChannel().getName()));
     }
+    onlineUsers.add(event.getUser().getNick());
+  }
+
+  @Override
+  public void onQuit(QuitEvent<PircBotX> event) throws Exception {
+    onlineUsers.remove(event.getUser().getNick());
+  }
+
+  @Override
+  public void onServerResponse(ServerResponseEvent<PircBotX> event) throws Exception {
+    if (event.getCode() == 353) {
+      ImmutableList<String> parsedResponse = event.getParsedResponse();
+
+      String[] usernames = parsedResponse.get(parsedResponse.size() - 1).split(" ");
+
+      for (int i = 0; i < usernames.length; i++) {
+        String nick = usernames[i];
+
+        if (nick.startsWith("@") || nick.startsWith("+")) {
+          nick = nick.substring(1);
+        }
+
+        onlineUsers.add(nick);
+      }
+    } else {
+      super.onServerResponse(event);
+    }
+  }
+
+  Set<String> getOnlineUsers() {
+    return onlineUsers;
   }
 
   // End Listeners

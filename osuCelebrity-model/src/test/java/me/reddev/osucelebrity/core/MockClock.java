@@ -10,12 +10,8 @@ public class MockClock implements Clock {
 
   @Override
   public void sleepUntil(long time) throws InterruptedException {
-    if(time > this.time) {
+    if (time > this.time) {
       this.time = time;
     }
-  }
-
-  public void setTime(long time) {
-    this.time = time;
   }
 }
