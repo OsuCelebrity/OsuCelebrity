@@ -105,4 +105,31 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
     verify(outputUser, only()).message(any());
   }
+
+  @Test
+  public void testMuting() throws Exception {
+    assertTrue(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0).isAllowsNotifications());
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!mute"));
+
+    assertFalse(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0).isAllowsNotifications());
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!unmute"));
+
+    assertTrue(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0).isAllowsNotifications());
+  }
+
+  @Test
+  public void testOpting() throws Exception {
+    assertTrue(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0).isAllowsSpectating());
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!optout"));
+
+    assertFalse(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0).isAllowsSpectating());
+    verify(spectator).removeFromQueue(any(), eq(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0)));
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!optin"));
+
+    assertTrue(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0).isAllowsSpectating());
+  }
 }

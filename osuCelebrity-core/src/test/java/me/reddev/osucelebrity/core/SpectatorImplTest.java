@@ -341,6 +341,9 @@ public class SpectatorImplTest extends AbstractJDOTest {
     
     for (int i = 1; i <= 5; i++) {
       OsuUser user = api.getUser("rank" + i, pm, 0);
+      if(i == 3) {
+        user.setAllowsSpectating(false);
+      }
       ApiUser apiUser = api.getUserData(user.getUserId(), GameModes.OSU, pm, 0);
       apiUser.setRank(i);
       pm.makePersistent(new PlayerActivity(apiUser, Long.MAX_VALUE, 0));
@@ -350,8 +353,14 @@ public class SpectatorImplTest extends AbstractJDOTest {
       spectator.loop(pm);
       clock.sleepUntil(clock.getTime() + settings.getAutoSpecTime() / 2);
     }
-    
-    verify(osu, times(5)).startSpectate(any());
+
+    // rank 1 is actually spectated twice
+    verify(osu, times(2)).startSpectate(api.getUser("rank1", pm, 0));
+    verify(osu).startSpectate(api.getUser("rank2", pm, 0));
+    // rank 3 is skipped
+    verify(osu).startSpectate(api.getUser("rank4", pm, 0));
+    verify(osu).startSpectate(api.getUser("rank5", pm, 0));
+    verify(osu, times(9)).getClientStatus();
   }
 
   void testAutoQueueDistribution() throws Exception {

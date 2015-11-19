@@ -55,4 +55,12 @@ public interface Spectator {
    * @return true if the vote will count, false otherwise.
    */
   boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType);
+  
+  /**
+   * Removes the given player from the queue.
+   * 
+   * @param pm the current request's persistence manager
+   * @param player the player to be deleted from the queue. does not need to be in the queue.
+   */
+  void removeFromQueue(PersistenceManager pm, OsuUser player);
 }

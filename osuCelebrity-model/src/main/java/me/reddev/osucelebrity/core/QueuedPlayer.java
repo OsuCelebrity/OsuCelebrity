@@ -42,12 +42,6 @@ public class QueuedPlayer {
 
   @Index
   int state = 2;
-  
-  /**
-   * Whether or not to notify a player of their upcoming turn via the osu chat.
-   */
-  @Column(defaultValue = "false")
-  boolean notify = false;
 
   /**
    * When the player received their heads-up that they're on in a couple of seconds.
@@ -85,5 +79,9 @@ public class QueuedPlayer {
 
   public enum QueueSource {
     TWITCH, OSU, AUTO
+  }
+  
+  public boolean isNotify() {
+    return queueSource != QueueSource.AUTO && player.isAllowsNotifications();
   }
 }

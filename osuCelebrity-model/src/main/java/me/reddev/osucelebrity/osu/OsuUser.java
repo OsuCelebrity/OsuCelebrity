@@ -4,10 +4,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import me.reddev.osucelebrity.Priviledge;
-
 import org.tillerino.osuApiModel.OsuApiUser;
 import org.tillerino.osuApiModel.types.UserId;
 
+import javax.jdo.annotations.Column;
 import javax.jdo.annotations.Index;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.PrimaryKey;
@@ -28,6 +28,15 @@ public class OsuUser {
 
   @Setter
   private Priviledge priviledge = Priviledge.PLAYER;
+
+  @Setter
+  @Column(defaultValue = "true")
+  private boolean allowsNotifications = true;
+  
+  @Setter
+  @Column(defaultValue = "true")
+  @Index
+  private boolean allowsSpectating = true;
 
   /**
    * Creates a new user object copying all relevant data from the api user object.
