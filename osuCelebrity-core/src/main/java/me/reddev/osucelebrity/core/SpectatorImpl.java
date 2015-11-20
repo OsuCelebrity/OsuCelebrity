@@ -191,7 +191,7 @@ public class SpectatorImpl implements Spectator, Runnable {
       query
           .select(vote)
           .from(vote)
-          .where(vote.referece.eq(queuedPlayer),
+          .where(vote.reference.eq(queuedPlayer),
               vote.voteTime.goe(clock.getTime() - settings.getVoteWindow()))
           .orderBy(vote.voteTime.asc());
 
@@ -301,7 +301,7 @@ public class SpectatorImpl implements Spectator, Runnable {
       return false;
     }
     Vote vote = new Vote();
-    vote.setReferece(currentlySpectating.get());
+    vote.setReference(currentlySpectating.get());
     vote.setVoteType(voteType);
     vote.setVoteTime(clock.getTime());
     vote.setTwitchUser(twitchIrcNick);

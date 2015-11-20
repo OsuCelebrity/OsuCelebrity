@@ -87,7 +87,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   @Test
   public void testSkip() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
-    osuApi.getUser("osuIrcUser", pm, 0).setPriviledge(Priviledge.MOD);
+    osuApi.getUser("osuIrcUser", pm, 0).setPrivilege(Priviledge.MOD);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!forceskip x"));
 

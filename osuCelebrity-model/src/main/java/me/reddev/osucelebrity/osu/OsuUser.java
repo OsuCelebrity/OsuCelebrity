@@ -27,7 +27,7 @@ public class OsuUser {
   private long downloaded;
 
   @Setter
-  private Priviledge priviledge = Priviledge.PLAYER;
+  private Priviledge privilege = Priviledge.PLAYER;
 
   @Setter
   @Column(defaultValue = "true")

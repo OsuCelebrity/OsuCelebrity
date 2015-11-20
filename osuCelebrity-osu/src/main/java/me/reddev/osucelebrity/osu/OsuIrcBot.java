@@ -208,7 +208,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     if (!StringUtils.startsWithIgnoreCase(message, "forceskip ")) {
       return false;
     }
-    if (!user.getPriviledge().canSkip) {
+    if (!user.getPrivilege().canSkip) {
       throw new UserException("Unauthorized to skip.");
     }
     message = message.substring("forceskip ".length());
