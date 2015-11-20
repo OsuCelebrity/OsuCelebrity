@@ -22,9 +22,11 @@ import me.reddev.osucelebrity.twitch.Twitch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.ToDoubleFunction;
 
 import javax.inject.Inject;
@@ -221,11 +223,13 @@ public class SpectatorImpl implements Spectator, Runnable {
    */
   @Override
   public synchronized EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user) {
+    if (!user.getPlayer().isAllowsSpectating()) {
+      return EnqueueResult.DENIED;
+    }
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
     if (queue.contains(user)) {
       return EnqueueResult.FAILURE;
     }
-    user.setNotify(true);
     pm.makePersistent(user);
     log.info("Queued " + user.getPlayer().getUserName());
     // wake spectator in the case that the queue was empty.
@@ -314,6 +318,7 @@ public class SpectatorImpl implements Spectator, Runnable {
   Optional<QueuedPlayer> pickAutoPlayer(PersistenceManager pm, QueuedPlayer currentPlayer) {
     List<ApiUser> recentlyActive = getRecentlyActive(pm);
     Map<Integer, Long> lastPlayTime = getLastPlayTimes(pm);
+    Set<Integer> spectatingNotAllowed = getSpectateNotAllowed(pm);
     long time = clock.getTime();
     ToDoubleFunction<ApiUser> sortingProperty =
         user -> Math.pow(user.getRank() + 50, 2)
@@ -322,6 +327,9 @@ public class SpectatorImpl implements Spectator, Runnable {
     ApiUser minArg = null;
     for (ApiUser apiUser : recentlyActive) {
       if (currentPlayer != null && currentPlayer.getPlayer().getUserId() == apiUser.getUserId()) {
+        continue;
+      }
+      if (spectatingNotAllowed.contains(apiUser.getUserId())) {
         continue;
       }
       double val = sortingProperty.applyAsDouble(apiUser);
@@ -338,6 +346,14 @@ public class SpectatorImpl implements Spectator, Runnable {
             .where(osuUser.userId.eq(minArg.getUserId()))) {
       return Optional.of(pm.makePersistent(new QueuedPlayer(query.fetchOne(), QueueSource.AUTO,
           clock.getTime())));
+    }
+  }
+
+  Set<Integer> getSpectateNotAllowed(PersistenceManager pm) {
+    try (JDOQuery<Integer> query =
+        new JDOQuery<>(pm).select(osuUser.userId).from(osuUser)
+            .where(osuUser.allowsSpectating.not())) {
+      return new HashSet<>(query.fetch());
     }
   }
 
@@ -367,5 +383,19 @@ public class SpectatorImpl implements Spectator, Runnable {
       recentlyActive = new ArrayList<>(query.fetch());
     }
     return recentlyActive;
+  }
+
+  @Override
+  public synchronized void removeFromQueue(PersistenceManager pm, OsuUser player) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    Optional<QueuedPlayer> current = queue.currentlySpectating();
+    if (current.isPresent()) {
+      if (current.get().getPlayer().equals(player)) {
+        advance(pm, queue);
+        return;
+      }
+    }
+    queue.queue.stream().filter(x -> x.getPlayer().equals(player))
+        .forEach(x -> x.setState(QueuedPlayer.DONE));
   }
 }

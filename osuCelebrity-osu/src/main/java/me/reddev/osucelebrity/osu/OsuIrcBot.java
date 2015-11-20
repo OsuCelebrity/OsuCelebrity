@@ -68,6 +68,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     handlers.add(this::handleQueue);
     handlers.add(this::handleSelfQueue);
     handlers.add(this::handleSkip);
+    handlers.add(this::handleMute);
+    handlers.add(this::handleOpt);
   }
 
   /**
@@ -192,7 +194,6 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       return false;
     }
     QueuedPlayer queueRequest = new QueuedPlayer(user, QueueSource.OSU, clock.getTime());
-    queueRequest.setNotify(true);
     EnqueueResult result = spectator.enqueue(pm, queueRequest);
     if (result == EnqueueResult.SUCCESS) {
       event.getUser().send().message(Responses.SELF_QUEUE_SUCCESSFUL);
@@ -220,6 +221,37 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       }
     }
     return true;
+  }
+  
+  boolean handleMute(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException {
+    if (message.equalsIgnoreCase("mute")) {
+      user.setAllowsNotifications(false);
+      event.getUser().send().message(String.format(OsuResponses.MUTED));
+      return true;
+    }
+    if (message.equalsIgnoreCase("unmute")) {
+      user.setAllowsNotifications(true);
+      event.getUser().send().message(String.format(OsuResponses.UNMUTED));
+      return true;
+    }
+    return false;
+  }
+  
+  boolean handleOpt(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException {
+    if (message.equalsIgnoreCase("optout")) {
+      user.setAllowsSpectating(false);
+      spectator.removeFromQueue(pm, user);
+      event.getUser().send().message(String.format(OsuResponses.OPTOUT));
+      return true;
+    }
+    if (message.equalsIgnoreCase("optin")) {
+      user.setAllowsSpectating(true);
+      event.getUser().send().message(String.format(OsuResponses.OPTIN));
+      return true;
+    }
+    return false;
   }
 
   OsuUser getOsuUser(GenericMessageEvent<PircBotX> event, PersistenceManager pm)

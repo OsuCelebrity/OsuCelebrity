@@ -15,5 +15,9 @@ public enum EnqueueResult {
   /**
    * User was already in the queue, but the demand was registered.
    */
-  VOTED
+  VOTED,
+  /**
+   * User does not allow spectating.
+   */
+  DENIED
 }
