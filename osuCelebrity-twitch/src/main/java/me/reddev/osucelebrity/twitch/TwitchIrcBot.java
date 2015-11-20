@@ -1,5 +1,9 @@
 package me.reddev.osucelebrity.twitch;
 
+import static me.reddev.osucelebrity.Commands.DOWNVOTE;
+import static me.reddev.osucelebrity.Commands.QUEUE;
+import static me.reddev.osucelebrity.Commands.UPVOTE;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.TwitchResponses;
@@ -12,7 +16,6 @@ import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.core.VoteType;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
-
 import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -160,8 +163,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   boolean handleQueue(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (StringUtils.startsWithIgnoreCase(message, "q ")) {
-      String targetUser = message.substring("q ".length());
+    if (StringUtils.startsWithIgnoreCase(message, QUEUE)) {
+      String targetUser = message.substring(QUEUE.length());
       OsuUser requestedUser = osuApi.getUser(targetUser, pm, 60 * 60 * 1000L);
       if (requestedUser == null) {
         throw new UserException(String.format(TwitchResponses.INVALID_USER, targetUser));
@@ -181,10 +184,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   boolean handleVote(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
     VoteType type = null;
-    if (message.equalsIgnoreCase("dank")) {
+    if (message.equalsIgnoreCase(UPVOTE)) {
       type = VoteType.UP;
     }
-    if (message.equalsIgnoreCase("skip")) {
+    if (message.equalsIgnoreCase(DOWNVOTE)) {
       type = VoteType.DOWN;
     }
     if (type == null) {

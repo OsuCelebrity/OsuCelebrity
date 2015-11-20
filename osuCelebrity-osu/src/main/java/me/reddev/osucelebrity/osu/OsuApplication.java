@@ -5,19 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 
-import org.tillerino.osuApiModel.OsuApiUser;
-
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.net.URL;
 import java.nio.charset.Charset;
-import java.text.DecimalFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,64 +51,6 @@ public class OsuApplication implements Runnable {
             String.format(OSU_COMMAND_SPECTATE, osuUser.getUserId()));
     log.debug("issued command " + command);
     osuProcess = rt.exec(command);
-  }
-
-  /**
-   * Outputs the current information about the stream.
-   * 
-   * @param currentUser User currently being spectated
-   * @param nextUser Next user to be spectated
-   */
-  public void outputInformation(OsuApiUser currentUser, OsuApiUser nextUser) {
-    String outputPath = settings.getStreamOutputPath();
-    DecimalFormat thousandsFormatter = new DecimalFormat("###,###");
-    DecimalFormat accurateFormatter = new DecimalFormat("###.##");
-
-    try {
-      outputFile(outputPath + "player.txt", currentUser.getUserName());
-      outputFile(outputPath + "country.txt", currentUser.getCountry());
-      outputFile(outputPath + "level.txt", thousandsFormatter.format(currentUser.getLevel()));
-      outputFile(outputPath + "pp.txt", accurateFormatter.format(currentUser.getPp()));
-      outputFile(outputPath + "accuracy.txt", accurateFormatter.format(currentUser.getAccuracy())
-          + "%");
-      outputFile(outputPath + "plays.txt", thousandsFormatter.format(currentUser.getPlayCount()));
-      outputFile(outputPath + "rank.txt", thousandsFormatter.format(currentUser.getRank()));
-      if (nextUser != null) {
-        outputFile(outputPath + "next.txt", nextUser.getUserName());
-      }
-
-      saveImage("https://a.ppy.sh/" + currentUser.getUserId(), outputPath + "user.png");
-      saveImage("https://s.ppy.sh/images/flags/" + currentUser.getCountry().toLowerCase() + ".gif",
-          outputPath + "flag.gif");
-    } catch (IOException ex) {
-      log.error("couldn't output information to files");
-    }
-  }
-
-  private static void saveImage(String imageUrl, String destinationFile) throws IOException {
-    URL url = new URL(imageUrl);
-    try (InputStream is = url.openStream(); OutputStream os
-      = new FileOutputStream(destinationFile)) {
-      byte[] buf = new byte[2048];
-      int length;
-
-      while ((length = is.read(buf)) != -1) {
-        os.write(buf, 0, length);
-      }
-    }
-  }
-
-  /**
-   * Outputs a message into a basic text file.
-   * 
-   * @param path The path of the output file
-   * @param message The message
-   * @throws IOException Cannot write to file
-   */
-  private void outputFile(String path, Object message) throws IOException {
-    Writer writer = new OutputStreamWriter(new FileOutputStream(path), CONSOLE_CHARSET);
-    writer.write(message.toString());
-    writer.close();
   }
 
   @CheckForNull

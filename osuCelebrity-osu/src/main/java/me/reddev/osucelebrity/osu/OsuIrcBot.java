@@ -1,5 +1,13 @@
 package me.reddev.osucelebrity.osu;
 
+import static me.reddev.osucelebrity.Commands.FORCESKIP;
+import static me.reddev.osucelebrity.Commands.MUTE;
+import static me.reddev.osucelebrity.Commands.OPTIN;
+import static me.reddev.osucelebrity.Commands.OPTOUT;
+import static me.reddev.osucelebrity.Commands.QUEUE;
+import static me.reddev.osucelebrity.Commands.SELFQUEUE;
+import static me.reddev.osucelebrity.Commands.UNMUTE;
+
 import com.google.common.collect.ImmutableList;
 
 import lombok.RequiredArgsConstructor;
@@ -166,14 +174,15 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   boolean handleQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws IOException, UserException {
-    String[] messageSplit = message.split("\\s+", 2);
-    if (!messageSplit[0].equalsIgnoreCase("q") || messageSplit.length < 2) {
+    if (!StringUtils.startsWithIgnoreCase(message, QUEUE)) {
       return false;
     }
+    
+    String queueTarget = message.substring(QUEUE.length());
 
-    OsuUser requestedUser = osuApi.getUser(messageSplit[1], pm, 60 * 60 * 1000);
+    OsuUser requestedUser = osuApi.getUser(queueTarget, pm, 60 * 60 * 1000);
     if (requestedUser == null) {
-      log.debug("requested non-existing user {}", messageSplit[1]);
+      log.debug("requested non-existing user {}", queueTarget);
       return true;
     }
     QueuedPlayer queueRequest = new QueuedPlayer(requestedUser, QueueSource.OSU, clock.getTime());
@@ -190,7 +199,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   boolean handleSelfQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) {
-    if (!message.equalsIgnoreCase("q")) {
+    if (!message.equalsIgnoreCase(SELFQUEUE)) {
       return false;
     }
     QueuedPlayer queueRequest = new QueuedPlayer(user, QueueSource.OSU, clock.getTime());
@@ -205,13 +214,13 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   boolean handleSkip(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, "forceskip ")) {
+    if (!StringUtils.startsWithIgnoreCase(message, FORCESKIP)) {
       return false;
     }
     if (!user.getPrivilege().canSkip) {
       throw new UserException("Unauthorized to skip.");
     }
-    message = message.substring("forceskip ".length());
+    message = message.substring(FORCESKIP.length());
     OsuUser ircUser = osuApi.getUser(message, pm, 0);
     if (ircUser != null) {
       if (spectator.advanceConditional(pm, ircUser)) {
@@ -225,12 +234,12 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   
   boolean handleMute(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
-    if (message.equalsIgnoreCase("mute")) {
+    if (message.equalsIgnoreCase(MUTE)) {
       user.setAllowsNotifications(false);
       event.getUser().send().message(String.format(OsuResponses.MUTED));
       return true;
     }
-    if (message.equalsIgnoreCase("unmute")) {
+    if (message.equalsIgnoreCase(UNMUTE)) {
       user.setAllowsNotifications(true);
       event.getUser().send().message(String.format(OsuResponses.UNMUTED));
       return true;
@@ -240,13 +249,13 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   
   boolean handleOpt(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
-    if (message.equalsIgnoreCase("optout")) {
+    if (message.equalsIgnoreCase(OPTOUT)) {
       user.setAllowsSpectating(false);
       spectator.removeFromQueue(pm, user);
       event.getUser().send().message(String.format(OsuResponses.OPTOUT));
       return true;
     }
-    if (message.equalsIgnoreCase("optin")) {
+    if (message.equalsIgnoreCase(OPTIN)) {
       user.setAllowsSpectating(true);
       event.getUser().send().message(String.format(OsuResponses.OPTIN));
       return true;
