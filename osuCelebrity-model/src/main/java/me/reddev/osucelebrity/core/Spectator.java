@@ -11,7 +11,7 @@ public interface Spectator {
   /**
    * Add the given player to the queue.
    * 
-   * @param the current request's persistence manager
+   * @param pm the current request's persistence manager
    * @param user a new object (not persistent).
    * @return true if the player was added to the queue. Currently the only reason why a player
    *         cannot be added to the queue is that they are already in the queue. This might change

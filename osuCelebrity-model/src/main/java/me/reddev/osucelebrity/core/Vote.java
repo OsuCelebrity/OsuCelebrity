@@ -16,7 +16,7 @@ public class Vote {
   int id;
 
   @Index
-  QueuedPlayer referece;
+  QueuedPlayer reference;
 
   long voteTime;
 
