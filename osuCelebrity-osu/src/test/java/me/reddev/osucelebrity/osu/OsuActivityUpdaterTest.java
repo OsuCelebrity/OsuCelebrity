@@ -1,10 +1,17 @@
 package me.reddev.osucelebrity.osu;
 
-import me.reddev.osucelebrity.osuapi.ApiUser;
+import static org.mockito.Mockito.only;
 
+import static org.mockito.Mockito.when;
+import org.tillerino.osuApiModel.OsuApiScore;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyInt;
+import me.reddev.osucelebrity.osuapi.ApiUser;
 import org.tillerino.osuApiModel.GameModes;
 import static org.junit.Assert.assertEquals;
 
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.querydsl.jdo.JDOQuery;
@@ -46,9 +53,24 @@ public class OsuActivityUpdaterTest extends AbstractJDOTest {
     ApiUser user = api.getUserData(0, GameModes.OSU, pm, 0);
 
     updater.createMissingActivity(pm);
-    
+
     PlayerActivity activity = pm.getExtent(PlayerActivity.class).iterator().next();
-    
+
     assertEquals(user, activity.getUser());
+  }
+
+  @Test
+  public void testUpdateActivity() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser user = api.getUser("rank100", pm, 0);
+    ApiUser data = api.getUserData(user.getUserId(), 0, pm, 0);
+    data.setRank(100);
+
+    updater.createMissingActivity(pm);
+
+    when(downloader.getUserRecent(anyInt(), anyInt(), (Class<OsuApiScore>) any())).thenReturn(
+        Collections.emptyList());
+
+    updater.updateActivity(pm);
   }
 }

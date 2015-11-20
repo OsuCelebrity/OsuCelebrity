@@ -1,5 +1,19 @@
 package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
+
+import org.pircbotx.hooks.events.MessageEvent;
+import org.pircbotx.snapshot.UserSnapshot;
+import org.pircbotx.snapshot.UserChannelDaoSnapshot;
+import org.pircbotx.hooks.events.QuitEvent;
+import org.pircbotx.hooks.events.JoinEvent;
+
+import com.google.common.collect.ImmutableList;
+
+import java.util.Arrays;
+import java.util.HashSet;
+
+import org.pircbotx.hooks.events.ServerResponseEvent;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -14,7 +28,6 @@ import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.osuapi.MockOsuApi;
 import me.reddev.osucelebrity.osuapi.OsuApi;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -112,7 +125,8 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!mute"));
 
-    assertFalse(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0).isAllowsNotifications());
+    assertFalse(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0)
+        .isAllowsNotifications());
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!unmute"));
 
@@ -126,10 +140,44 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!optout"));
 
     assertFalse(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0).isAllowsSpectating());
-    verify(spectator).removeFromQueue(any(), eq(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0)));
+    verify(spectator).removeFromQueue(any(),
+        eq(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0)));
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!optin"));
 
     assertTrue(osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0).isAllowsSpectating());
+  }
+
+  @Test
+  public void testUserNamesParser() throws Exception {
+    ircBot.onServerResponse(new ServerResponseEvent<PircBotX>(bot, 353,
+        ":irc.server.net 353 Phyre = #SomeChannel :@me +you them", ImmutableList
+            .copyOf(new String[] {"#SomeChannel", "+me @you them"})));
+
+    assertEquals(new HashSet<>(Arrays.asList("me", "you", "them")), ircBot.getOnlineUsers());
+  }
+
+  @Test
+  public void testJoinQuit() throws Exception {
+    ircBot.onJoin(new JoinEvent<PircBotX>(bot, channel, user));
+
+    assertTrue(ircBot.getOnlineUsers().contains("osuIrcUser"));
+
+    ircBot.onQuit(new QuitEvent<PircBotX>(bot, new UserChannelDaoSnapshot(bot, null, null, null,
+        null, null, null), new UserSnapshot(user), "no reason"));
+
+    assertFalse(ircBot.getOnlineUsers().contains("osuIrcUser"));
+  }
+
+  @Test
+  public void testQueue() throws Exception {
+    when(spectator.enqueue(any(), any())).thenReturn(EnqueueResult.SUCCESS);
+    
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!q thatguy"));
+    
+    verify(spectator, only()).enqueue(
+        any(),
+        eq(new QueuedPlayer(osuApi.getUser("thatguy", pmf.getPersistenceManager(), 0),
+            QueueSource.OSU, 0)));
   }
 }

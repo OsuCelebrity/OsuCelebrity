@@ -1,6 +1,5 @@
 package me.reddev.osucelebrity.osu;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
@@ -35,8 +34,6 @@ public class OsuApplication implements Runnable {
 
   public static final String OSU_COMMAND_SPECTATE = "osu://spectate/%d";
 
-  @Getter
-  private Process osuProcess;
 
   /**
    * Sends a message to Bancho to start spectating a given user.
@@ -50,7 +47,7 @@ public class OsuApplication implements Runnable {
         String.format("\"%s\" \"%s\"", settings.getOsuPath(),
             String.format(OSU_COMMAND_SPECTATE, osuUser.getUserId()));
     log.debug("issued command " + command);
-    osuProcess = rt.exec(command);
+    rt.exec(command);
   }
 
   @CheckForNull

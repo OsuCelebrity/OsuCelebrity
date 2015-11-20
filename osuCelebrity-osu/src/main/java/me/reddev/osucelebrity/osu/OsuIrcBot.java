@@ -33,8 +33,6 @@ import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.ServerResponseEvent;
-import org.pircbotx.hooks.types.GenericChannelEvent;
-import org.pircbotx.hooks.types.GenericMessageEvent;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -113,25 +111,12 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   }
 
   /**
-   * Sends a message to the current IRC channel.
-   * 
-   * @param message The message to send to the channel
-   */
-  public void sendMessage(GenericChannelEvent<PircBotX> event, String message) {
-    event.getBot().sendIRC().message(event.getChannel().getName(), message);
-  }
-
-  public void sendCommand(String message) {
-    bot.sendIRC().message(ircSettings.getOsuCommandUser(), message);
-  }
-
-  /**
    * Notify the next player their turn will be up soon.
    * 
    * @param user The username of the next player
    */
-  public void notifyStartingPlayer(OsuUser user) {
-    bot.sendIRC().message(user.getUserName().replace(' ', '_'), OsuResponses.STARTING_SESSION);
+  public void messagePlayer(OsuUser user, String message) {
+    bot.sendIRC().message(user.getUserName().replace(' ', '_'), message);
   }
 
   // Listeners
@@ -182,6 +167,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
     OsuUser requestedUser = osuApi.getUser(queueTarget, pm, 60 * 60 * 1000);
     if (requestedUser == null) {
+      event.getUser().send().message(String.format(OsuResponses.INVALID_USER, requestedUser));
       log.debug("requested non-existing user {}", queueTarget);
       return true;
     }
@@ -261,15 +247,6 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       return true;
     }
     return false;
-  }
-
-  OsuUser getOsuUser(GenericMessageEvent<PircBotX> event, PersistenceManager pm)
-      throws IOException, UserException {
-    final OsuUser user = osuApi.getUser(event.getUser().getNick(), pm, 60 * 60 * 1000);
-    if (user == null) {
-      throw new UserException(String.format(Responses.INVALID_USER, event.getUser().getNick()));
-    }
-    return user;
   }
 
   void handleException(Exception ex, User user) {
