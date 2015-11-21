@@ -12,4 +12,6 @@ public class TwitchResponses extends Responses {
   public static final String SKIPPED_IDLE = "%s isn't doing anything. Let's move on.";
 
   public static final String SKIPPED_FORCE = "%s was skipped by %s.";
+
+  public static final String SPECTATE_FORCE = "%s has force spectated %s";
 }

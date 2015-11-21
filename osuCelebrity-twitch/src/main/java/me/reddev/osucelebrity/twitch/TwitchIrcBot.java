@@ -67,7 +67,13 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   {
     handlers.add(this::handleQueue);
     handlers.add(this::handleVote);
-    handlers.add(this::handleAdvance);
+  }
+  
+  private final List<CommandHandler> modHandlers = new ArrayList<>();
+  
+  {
+    modHandlers.add(this::handleAdvance);
+    modHandlers.add(this::handleSpec);
   }
 
   @Override
@@ -149,9 +155,22 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
     PersistenceManager pm = pmf.getPersistenceManager();
     try {
-      for (CommandHandler commandHandler : handlers) {
-        if (commandHandler.handle(event, message, event.getUser().getNick(), pm)) {
-          break;
+      boolean handled = false;
+      
+      if (event.getChannel().isOp(event.getUser())) {
+        for (CommandHandler commandHandler : modHandlers) {
+          if (commandHandler.handle(event, message, event.getUser().getNick(), pm)) {
+            handled = true;
+            break;
+          }
+        }
+      }
+      
+      if (!handled) {
+        for (CommandHandler commandHandler : handlers) {
+          if (commandHandler.handle(event, message, event.getUser().getNick(), pm)) {
+            break;
+          }
         }
       }
     } catch (Exception e) {
@@ -203,19 +222,35 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       return false;
     }
     message = message.substring("forceskip ".length());
-    if (event.getChannel().isOp(event.getUser())) {
-      OsuUser ircUser = osuApi.getUser(message, pm, 0);
-      if (ircUser != null) {
-        if (spectator.advanceConditional(pm, ircUser)) {
-          sendMessage(String.format(TwitchResponses.SKIPPED_FORCE, message, event.getUser()
-              .getNick()));
-        }
+    
+    OsuUser ircUser = osuApi.getUser(message, pm, 0);
+    if (ircUser != null) {
+      if (spectator.advanceConditional(pm, ircUser)) {
+        sendMessage(String.format(TwitchResponses.SKIPPED_FORCE, message, event.getUser()
+            .getNick()));
+      }
+    }
+    return true;
+  }
+  
+  boolean handleSpec(MessageEvent<PircBotX> event, String message, String twitchUserName,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, "forcespec ")) {
+      return false;
+    }
+    message = message.substring("forcespec ".length());
+    
+    OsuUser ircUser = osuApi.getUser(message, pm, 0);
+    if (ircUser != null) {
+      if (spectator.promote(pm, ircUser)) {
+        sendMessage(String.format(TwitchResponses.SPECTATE_FORCE, 
+            event.getUser().getNick(), message));
       }
     }
     return true;
   }
 
-  @Override
+  @Override 
   public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
     String message = event.getMessage();
     Pattern specialUserRegex = Pattern.compile("SPECIALUSER ([^ ]+) (subscriber|turbo)");

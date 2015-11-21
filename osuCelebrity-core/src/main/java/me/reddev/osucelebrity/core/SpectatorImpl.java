@@ -249,6 +249,29 @@ public class SpectatorImpl implements Spectator, Runnable {
     }
     return advance(pm, queue);
   }
+  
+  @Override
+  public synchronized boolean promote(PersistenceManager pm, OsuUser ircUser) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    Optional<QueuedPlayer> nextUser = queue.spectatingNext();
+    QueuedPlayer queueRequest = new QueuedPlayer(ircUser, QueueSource.TWITCH, clock.getTime());
+    
+    //Don't force spectate a denied player
+    if (enqueue(pm, queueRequest) != EnqueueResult.DENIED) {
+      //Revert the next player
+      if (nextUser.isPresent()) {
+        nextUser.get().setState(QueuedPlayer.QUEUED);
+      }
+      
+      queueRequest.setState(QueuedPlayer.NEXT);
+      queue = PlayerQueue.loadQueue(pm);
+      advance(pm, queue);
+      
+      return true;
+    }
+    
+    return false;
+  }
 
   boolean advance(PersistenceManager pm, PlayerQueue queue) {
     Optional<QueuedPlayer> next = queue.spectatingNext();

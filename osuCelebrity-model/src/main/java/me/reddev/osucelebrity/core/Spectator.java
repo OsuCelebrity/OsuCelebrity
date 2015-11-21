@@ -29,6 +29,14 @@ public interface Spectator {
   boolean advanceConditional(PersistenceManager pm, OsuUser expected);
 
   /**
+   * Promotes a player to the front of the queue.
+   * @param pm the current request's persistence manager.
+   * @param ircUser the user to promote.
+   * @return true if the player was successfully promoted.
+   */
+  boolean promote(PersistenceManager pm, OsuUser ircUser);
+  
+  /**
    * Gets all information about the player currently being spectated.
    * 
    * @param pm the current request's persistence manager

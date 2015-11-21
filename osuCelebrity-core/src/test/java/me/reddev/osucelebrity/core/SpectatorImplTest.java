@@ -115,6 +115,24 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertEquals(user2, queue.currentlySpectating().get());
     assertFalse(queue.spectatingNext().isPresent());
   }
+  
+  @Test
+  public void testPromote() throws Exception {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+    
+    PersistenceManager pm = pmf.getPersistenceManager();
+    spectator
+         .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
+    
+    spectator.loop(pm);
+    
+    OsuUser user2 = api.getUser("someplayer2", pm, 0);
+    
+    spectator.promote(pm, user2);
+    
+    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    assertEquals(user2, queue.currentlySpectating().get().getPlayer());
+  }
 
   @Test
   public void testApprovalUnique() throws Exception {

@@ -101,8 +101,17 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testForceSkipUnauthorized() throws Exception {
-    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip"));
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip x"));
 
     verifyNoMoreInteractions(spectator);
+  }
+  
+  @Test
+  public void testForceSpec() throws Exception {
+    when(channel.isOp(user)).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forcespec x"));
+    
+    verify(spectator).promote(any(), 
+        eq(api.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
   }
 }
