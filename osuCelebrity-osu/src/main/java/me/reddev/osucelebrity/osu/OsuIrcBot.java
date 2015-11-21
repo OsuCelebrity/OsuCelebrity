@@ -142,12 +142,15 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
         return;
       }
 
-      OsuUser user = osuApi.getUser(event.getUser().getNick(), pm, 60 * 60 * 1000L);
-
+      OsuIrcUser ircUser = osuApi.getIrcUser(event.getUser().getNick(), pm, 0);
+      if (ircUser == null || ircUser.getUser() == null) {
+        throw new UserException("unrecognized user name");
+      }
+      
       String message = event.getMessage().substring(ircSettings.getOsuIrcCommand().length());
 
       for (CommandHandler commandHandler : handlers) {
-        if (commandHandler.handle(event, message, user, pm)) {
+        if (commandHandler.handle(event, message, ircUser.getUser(), pm)) {
           break;
         }
       }
