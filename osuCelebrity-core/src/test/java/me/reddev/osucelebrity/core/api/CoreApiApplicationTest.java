@@ -101,6 +101,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     assertThat(result, new Contains("\"name\":\"that player\""));
     assertThat(result, new Contains("\"nextPlayer\":\"next player\""));
     assertThat(result, new Contains("\"beatmap\":\"that beatmap\""));
+    assertThat(result, new Contains("\"source\":\"queue\""));
     
     apiServer.stop();
   }
