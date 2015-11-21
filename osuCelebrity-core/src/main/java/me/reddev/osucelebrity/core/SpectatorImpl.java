@@ -157,15 +157,21 @@ public class SpectatorImpl implements Spectator, Runnable {
 
     double approval = getApproval(pm, current);
     long time = clock.getTime();
-    if (approval > .7) {
-      long lastRemainingTime = current.getStoppingAt() - current.getLastRemainingTimeUpdate();
+    long lastRemainingTime = current.getStoppingAt() - current.getLastRemainingTimeUpdate();
+    if (approval > .75) {
       long newRemainingTime =
           Math.min(settings.getDefaultSpecDuration(),
               lastRemainingTime + time - current.getLastRemainingTimeUpdate());
       current.setStoppingAt(time + newRemainingTime);
-    } else if (approval > .4) {
+    } else if (approval >= .5) {
       current.setStoppingAt(time + current.getStoppingAt() - current.getLastRemainingTimeUpdate());
+    } else if (approval < .25) {
+      long newRemainingTime =
+          Math.min(settings.getDefaultSpecDuration(),
+              lastRemainingTime - 2 * (time - current.getLastRemainingTimeUpdate()));
+      current.setStoppingAt(time + newRemainingTime);
     }
+    // no votes are NaN, don't fall into
 
     current.setLastRemainingTimeUpdate(time);
   }

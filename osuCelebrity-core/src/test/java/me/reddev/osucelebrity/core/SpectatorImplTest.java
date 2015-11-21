@@ -292,6 +292,27 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.loop(pm);
     assertEquals(70000, spectator.getCurrentPlayer(pm).getStoppingAt());
   }
+  
+  @Test
+  public void testFastDrain() throws Exception {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser user = api.getUser("someplayer", pm, 0);
+    QueuedPlayer queued = new QueuedPlayer(user, null, clock.getTime());
+    spectator.enqueue(pm, queued);
+
+    spectator.loop(pm);
+    
+    assertEquals(30000, queued.getStoppingAt());
+    
+    spectator.vote(pm, "negativeNancy", VoteType.DOWN);
+    
+    clock.sleepUntil(10000);
+    spectator.loop(pm);
+    
+    assertEquals(20000, queued.getStoppingAt());
+  }
 
   @Test
   public void testTimeRefill() throws Exception {
