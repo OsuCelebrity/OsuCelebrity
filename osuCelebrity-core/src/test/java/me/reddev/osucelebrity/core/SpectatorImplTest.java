@@ -115,21 +115,52 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertEquals(user2, queue.currentlySpectating().get());
     assertFalse(queue.spectatingNext().isPresent());
   }
-  
+
   @Test
   public void testPromote() throws Exception {
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
-    
+
     PersistenceManager pm = pmf.getPersistenceManager();
     spectator
-         .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
-    
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
+
     spectator.loop(pm);
-    
+
     OsuUser user2 = api.getUser("someplayer2", pm, 0);
-    
+
     spectator.promote(pm, user2);
+
+    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    assertEquals(user2, queue.currentlySpectating().get().getPlayer());
+  }
+
+  @Test
+  public void testPromote2() throws Exception {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    spectator
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
+
+    spectator.loop(pm);
+    clock.sleepUntil(1000);
+
+    spectator
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer3", pm, 0), null, clock.getTime()));
+
+    spectator.loop(pm);
+    clock.sleepUntil(2000);
     
+    spectator
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer2", pm, 0), null, clock.getTime()));
+
+    spectator.loop(pm);
+    clock.sleepUntil(3000);
+
+    OsuUser user2 = api.getUser("someplayer2", pm, 0);
+
+    spectator.promote(pm, user2);
+
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
     assertEquals(user2, queue.currentlySpectating().get().getPlayer());
   }
@@ -207,15 +238,15 @@ public class SpectatorImplTest extends AbstractJDOTest {
             new QueuedPlayer(api.getUser("someplayer2", pm, 0), null, clock.getTime())));
 
     spectator.loop(pm);
-    
+
     assertTrue(spectator.vote(pm, "me", VoteType.UP));
-    
+
     clock.sleepUntil(settings.getDefaultSpecDuration() - settings.getNextPlayerNotifyTime());
 
     spectator.loop(pm);
-    
+
     verify(osu).notifySoon(any());
-    
+
     assertFalse(spectator.vote(pm, "me", VoteType.UP));
   }
 
@@ -243,16 +274,16 @@ public class SpectatorImplTest extends AbstractJDOTest {
     clock.sleepUntil(20000);
     spectator.loop(pm);
     assertEquals(50000, spectator.getCurrentPlayer(pm).getStoppingAt());
-    
+
     clock.sleepUntil(40000);
     spectator.loop(pm);
     assertEquals(70000, spectator.getCurrentPlayer(pm).getStoppingAt());
-    
+
     clock.sleepUntil(60000);
     spectator.loop(pm);
     assertEquals(70000, spectator.getCurrentPlayer(pm).getStoppingAt());
   }
-  
+
   @Test
   public void testTimeRefill() throws Exception {
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
@@ -351,22 +382,22 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     verify(twitch).announcePlayerSkipped(SkipReason.IDLE, player1.getPlayer());
   }
-  
+
   @Test
   public void testAutoQueue() throws Exception {
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
     PersistenceManager pm = pmf.getPersistenceManager();
-    
+
     for (int i = 1; i <= 5; i++) {
       OsuUser user = api.getUser("rank" + i, pm, 0);
-      if(i == 3) {
+      if (i == 3) {
         user.setAllowsSpectating(false);
       }
       ApiUser apiUser = api.getUserData(user.getUserId(), GameModes.OSU, pm, 0);
       apiUser.setRank(i);
       pm.makePersistent(new PlayerActivity(apiUser, Long.MAX_VALUE, 0));
     }
-    
+
     for (int i = 0; i < 10; i++) {
       spectator.loop(pm);
       clock.sleepUntil(clock.getTime() + settings.getAutoSpecTime() / 2);
