@@ -10,4 +10,5 @@ public class Commands {
   public static final String MUTE = "mute";
   public static final String DOWNVOTE = "skip";
   public static final String UPVOTE = "dank";
+  public static final String FORCESPEC = "forcespec ";
 }
