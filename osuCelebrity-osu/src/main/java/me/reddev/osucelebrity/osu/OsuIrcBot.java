@@ -117,6 +117,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
    */
   public void messagePlayer(OsuUser user, String message) {
     bot.sendIRC().message(user.getUserName().replace(' ', '_'), message);
+    log.debug("messaged {}: {}", user.getUserName(), message);
   }
 
   // Listeners
