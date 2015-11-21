@@ -155,11 +155,6 @@ public class SpectatorImpl implements Spectator, Runnable {
     }
     QueuedPlayer current = currentlySpectating.get();
 
-    if (queue.spectatingNext().isPresent()) {
-      current.setLastRemainingTimeUpdate(clock.getTime());
-      return;
-    }
-
     double approval = getApproval(pm, current);
     long time = clock.getTime();
     if (approval > .7) {
