@@ -257,20 +257,25 @@ public class SpectatorImpl implements Spectator, Runnable {
     QueuedPlayer queueRequest = new QueuedPlayer(ircUser, QueueSource.TWITCH, clock.getTime());
     
     //Don't force spectate a denied player
-    if (enqueue(pm, queueRequest) != EnqueueResult.DENIED) {
-      //Revert the next player
-      if (nextUser.isPresent()) {
-        nextUser.get().setState(QueuedPlayer.QUEUED);
-      }
-      
-      queueRequest.setState(QueuedPlayer.NEXT);
-      queue = PlayerQueue.loadQueue(pm);
-      advance(pm, queue);
-      
-      return true;
+    EnqueueResult enqueueResult = enqueue(pm, queueRequest);
+    if (enqueueResult == EnqueueResult.DENIED) {
+      return false;
+    }
+    if (enqueueResult == EnqueueResult.FAILURE || enqueueResult == EnqueueResult.VOTED) {
+      QueuedPlayer original = queueRequest;
+      queueRequest = queue.queue.stream().filter(x -> x.equals(original)).findFirst().get();
     }
     
-    return false;
+    //Revert the next player
+    if (nextUser.isPresent()) {
+      nextUser.get().setState(QueuedPlayer.QUEUED);
+    }
+    
+    queueRequest.setState(QueuedPlayer.NEXT);
+    queue = PlayerQueue.loadQueue(pm);
+    advance(pm, queue);
+    
+    return true;
   }
 
   boolean advance(PersistenceManager pm, PlayerQueue queue) {
