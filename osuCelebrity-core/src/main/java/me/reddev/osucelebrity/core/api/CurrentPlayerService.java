@@ -6,13 +6,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.QueuedPlayer;
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
+import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
-
 import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
@@ -69,6 +70,8 @@ public class CurrentPlayerService {
     String country;
 
     String nextPlayer;
+    
+    String source;
   }
 
   private final PersistenceManagerFactory pmf;
@@ -92,17 +95,19 @@ public class CurrentPlayerService {
     PersistenceManager pm = pmf.getPersistenceManager();
     try {
       CurrentPlayer response = new CurrentPlayer();
-      QueuedPlayer player = spectator.getCurrentPlayer(pm);
-      if (player != null) {
-        response.setName(player.getPlayer().getUserName());
+      QueuedPlayer queued = spectator.getCurrentPlayer(pm);
+      if (queued != null) {
+        OsuUser player = queued.getPlayer();
+        response.setName(player.getUserName());
         {
-          Duration duration = Duration.ofMillis(System.currentTimeMillis() - player.getStartedAt());
+          Duration duration = Duration.ofMillis(System.currentTimeMillis() - queued.getStartedAt());
           LocalTime localTime = LocalTime.MIDNIGHT.plus(duration);
           response.setPlayingFor(DateTimeFormatter.ofPattern("m:ss").format(localTime));
         }
-        long timeLeft = Math.max(0, player.getStoppingAt() - player.getLastRemainingTimeUpdate());
+        long timeLeft = Math.max(0, queued.getStoppingAt() - queued.getLastRemainingTimeUpdate());
         response.setHealth(timeLeft / (double) coreSettings.getDefaultSpecDuration());
-        response.setId(player.getPlayer().getUserId());
+        response.setId(player.getUserId());
+        response.setSource(queued.getQueueSource() == QueueSource.AUTO ? "auto" : "queue");
 
         ApiUser apiUser = getApiUser(response);
 
