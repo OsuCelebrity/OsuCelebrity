@@ -26,7 +26,7 @@ public interface Spectator {
    * @param expected only advances if this player is currently being spectated.
    * @return true if the current player was skipped.
    */
-  boolean advanceConditional(PersistenceManager pm, OsuUser expected);
+  boolean advanceConditional(PersistenceManager pm, String expected);
 
   /**
    * Promotes a player to the front of the queue.

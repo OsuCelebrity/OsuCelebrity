@@ -211,13 +211,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       throw new UserException("Unauthorized to skip.");
     }
     message = message.substring(FORCESKIP.length());
-    OsuUser ircUser = osuApi.getUser(message, pm, 0);
-    if (ircUser != null) {
-      if (spectator.advanceConditional(pm, ircUser)) {
-        event.getUser().send().message("Skipped.");
-      } else {
-        event.getUser().send().message("Not skipped.");
-      }
+    if (spectator.advanceConditional(pm, message)) {
+      event.getUser().send().message("Skipped.");
+    } else {
+      event.getUser().send().message("Not skipped.");
     }
     return true;
   }

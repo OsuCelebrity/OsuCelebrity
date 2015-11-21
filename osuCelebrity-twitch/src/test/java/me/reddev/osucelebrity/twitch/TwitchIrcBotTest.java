@@ -96,7 +96,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip x"));
 
     verify(spectator).advanceConditional(any(),
-        eq(api.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
+        eq("x"));
   }
 
   @Test

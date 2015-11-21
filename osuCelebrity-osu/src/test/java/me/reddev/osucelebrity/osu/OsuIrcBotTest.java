@@ -105,7 +105,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!forceskip x"));
 
     verify(spectator, only()).advanceConditional(any(),
-        eq(osuApi.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
+        eq("x"));
 
     verify(outputUser, only()).message(any());
   }

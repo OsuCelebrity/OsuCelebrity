@@ -495,4 +495,22 @@ public class SpectatorImplTest extends AbstractJDOTest {
     
     assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, new QueuedPlayer(user, QueueSource.TWITCH, 0)));
   }
+  
+  @Test
+  public void testSkipTolerance() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    spectator.enqueue(pm, getUser(pm, "thatname"));
+    spectator.loop(pm);
+    spectator.enqueue(pm, getUser(pm, "someotherguy"));
+    assertTrue(spectator.advanceConditional(pm, "thname"));
+  }
+  
+  @Test
+  public void testSkipToleranceFail() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    spectator.enqueue(pm, getUser(pm, "thatname"));
+    spectator.loop(pm);
+    spectator.enqueue(pm, getUser(pm, "someotherguy"));
+    assertFalse(spectator.advanceConditional(pm, "thatotherguy"));
+  }
 }

@@ -225,12 +225,9 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
     message = message.substring(FORCESKIP.length());
     
-    OsuUser ircUser = osuApi.getUser(message, pm, 0);
-    if (ircUser != null) {
-      if (spectator.advanceConditional(pm, ircUser)) {
-        sendMessage(String.format(TwitchResponses.SKIPPED_FORCE, message, event.getUser()
-            .getNick()));
-      }
+    if (spectator.advanceConditional(pm, message)) {
+      sendMessage(String.format(TwitchResponses.SKIPPED_FORCE, message, event.getUser()
+          .getNick()));
     }
     return true;
   }

@@ -9,6 +9,7 @@ import com.google.common.base.Objects;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.Twitch;
+import org.apache.commons.lang3.StringUtils;
 import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
@@ -54,7 +56,7 @@ public class SpectatorImpl implements Spectator, Runnable {
   final CoreSettings settings;
 
   final PersistenceManagerFactory pmf;
-  
+
   final OsuApi osuApi;
 
   boolean run = true;
@@ -206,7 +208,7 @@ public class SpectatorImpl implements Spectator, Runnable {
       spectatingNext = queue.poll();
       if (spectatingNext.isPresent()) {
         spectatingNext.get().setState(QueuedPlayer.NEXT);
-        if (spectatingNext.get().isNotify() && queue.currentlySpectating().isPresent() 
+        if (spectatingNext.get().isNotify() && queue.currentlySpectating().isPresent()
             && queue.currentlySpectating().get().getStoppingAt() > clock.getTime()) {
           osu.notifyNext(spectatingNext.get().getPlayer());
         }
@@ -251,25 +253,27 @@ public class SpectatorImpl implements Spectator, Runnable {
   }
 
   @Override
-  public synchronized boolean advanceConditional(PersistenceManager pm, OsuUser expectedUser) {
+  public synchronized boolean advanceConditional(PersistenceManager pm, String expectedUser) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
     Optional<QueuedPlayer> currentUser = queue.currentlySpectating();
     if (!currentUser.isPresent()) {
       return false;
     }
-    if (!currentUser.get().getPlayer().equals(expectedUser)) {
+    String userName = currentUser.get().getPlayer().getUserName();
+    int distance = StringUtils.getLevenshteinDistance(userName, expectedUser);
+    if (distance >= userName.length() / 2) {
       return false;
     }
     return advance(pm, queue);
   }
-  
+
   @Override
   public synchronized boolean promote(PersistenceManager pm, OsuUser ircUser) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
     Optional<QueuedPlayer> nextUser = queue.spectatingNext();
     QueuedPlayer queueRequest = new QueuedPlayer(ircUser, QueueSource.TWITCH, clock.getTime());
-    
-    //Don't force spectate a denied player
+
+    // Don't force spectate a denied player
     EnqueueResult enqueueResult = enqueue(pm, queueRequest);
     if (enqueueResult == EnqueueResult.DENIED) {
       return false;
@@ -278,16 +282,16 @@ public class SpectatorImpl implements Spectator, Runnable {
       QueuedPlayer original = queueRequest;
       queueRequest = queue.queue.stream().filter(x -> x.equals(original)).findFirst().get();
     }
-    
-    //Revert the next player
+
+    // Revert the next player
     if (nextUser.isPresent()) {
       nextUser.get().setState(QueuedPlayer.QUEUED);
     }
-    
+
     queueRequest.setState(QueuedPlayer.NEXT);
     queue = PlayerQueue.loadQueue(pm);
     advance(pm, queue);
-    
+
     return true;
   }
 
@@ -390,8 +394,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     try (JDOQuery<OsuUser> query =
         new JDOQuery<OsuUser>(pm).select(osuUser).from(osuUser)
             .where(osuUser.userId.eq(minArg.getUserId()))) {
-      return Optional.of(new QueuedPlayer(query.fetchOne(), QueueSource.AUTO,
-          clock.getTime()));
+      return Optional.of(new QueuedPlayer(query.fetchOne(), QueueSource.AUTO, clock.getTime()));
     }
   }
 
@@ -444,7 +447,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     queue.queue.stream().filter(x -> x.getPlayer().equals(player))
         .forEach(x -> x.setState(QueuedPlayer.DONE));
   }
-  
+
   @Override
   public int getQueueSize(PersistenceManager pm) {
     return PlayerQueue.loadQueue(pm).getSize();
