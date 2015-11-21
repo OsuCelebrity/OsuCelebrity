@@ -63,7 +63,8 @@ public class OsuApiImpl implements OsuApi {
   @Override
   public OsuUser getUser(String userName, PersistenceManager pm, long maxAge) throws IOException {
     try (JDOQuery<OsuUser> query = new JDOQuery<>(pm).select(osuUser).from(osuUser)) {
-      final OsuUser saved = query.where(osuUser.userName.eq(userName)).fetchOne();
+      final OsuUser saved =
+          query.where(osuUser.userName.lower().eq(userName.toLowerCase())).fetchOne();
 
       if (saved != null && (maxAge <= 0 || saved.getDownloaded() >= clock.getTime() - maxAge)) {
         return saved;
@@ -119,7 +120,8 @@ public class OsuApiImpl implements OsuApi {
   public OsuIrcUser getIrcUser(String ircUserName, PersistenceManager pm, long maxAge)
       throws IOException {
     try (JDOQuery<OsuIrcUser> query = new JDOQuery<>(pm).select(osuIrcUser).from(osuIrcUser)) {
-      OsuIrcUser saved = query.where(osuIrcUser.ircName.eq(ircUserName)).fetchOne();
+      OsuIrcUser saved =
+          query.where(osuIrcUser.ircName.lower().eq(ircUserName.toLowerCase())).fetchOne();
       if (saved == null) {
         OsuUser user = getUser(ircUserName, pm, maxAge);
         saved = new OsuIrcUser(ircUserName, user, clock.getTime());
