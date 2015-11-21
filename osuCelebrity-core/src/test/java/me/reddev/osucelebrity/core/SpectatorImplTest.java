@@ -466,4 +466,21 @@ public class SpectatorImplTest extends AbstractJDOTest {
     test.initMocks();
     test.testAutoQueueDistribution();
   }
+
+  @Test
+  public void testGetQueueSize() throws Exception {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+    PersistenceManager pm = pmf.getPersistenceManager();
+    assertEquals(0, spectator.getQueueSize(pm));
+    spectator.enqueue(pm, getUser(pm, "player1"));
+    assertEquals(1, spectator.getQueueSize(pm));
+    spectator.loop(pm);
+    assertEquals(0, spectator.getQueueSize(pm));
+    spectator.enqueue(pm, getUser(pm, "player2"));
+    spectator.enqueue(pm, getUser(pm, "player3"));
+    spectator.enqueue(pm, getUser(pm, "player4"));
+    spectator.enqueue(pm, getUser(pm, "player5"));
+    spectator.loop(pm);
+    assertEquals(4, spectator.getQueueSize(pm));
+  }
 }

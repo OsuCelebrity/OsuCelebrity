@@ -71,4 +71,11 @@ public interface Spectator {
    * @param player the player to be deleted from the queue. does not need to be in the queue.
    */
   void removeFromQueue(PersistenceManager pm, OsuUser player);
+  
+  /**
+   * Returns the current queue size.
+   * @param pm the current request's persistence manager
+   * @return does not include the current player
+   */
+  int getQueueSize(PersistenceManager pm);
 }

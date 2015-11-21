@@ -423,4 +423,9 @@ public class SpectatorImpl implements Spectator, Runnable {
     queue.queue.stream().filter(x -> x.getPlayer().equals(player))
         .forEach(x -> x.setState(QueuedPlayer.DONE));
   }
+  
+  @Override
+  public int getQueueSize(PersistenceManager pm) {
+    return PlayerQueue.loadQueue(pm).getSize();
+  }
 }

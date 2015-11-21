@@ -76,4 +76,8 @@ public class PlayerQueue {
     pm.makePersistent(user);
     queue.add(user);
   }
+
+  public int getSize() {
+    return (int) queue.stream().filter(x -> x.getState() != QueuedPlayer.SPECTATING).count();
+  }
 }

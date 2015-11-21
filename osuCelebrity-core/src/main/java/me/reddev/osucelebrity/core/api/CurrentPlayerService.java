@@ -72,6 +72,8 @@ public class CurrentPlayerService {
     String nextPlayer;
     
     String source;
+    
+    int queueSize;
   }
 
   private final PersistenceManagerFactory pmf;
@@ -128,6 +130,7 @@ public class CurrentPlayerService {
       if (nextPlayer != null) {
         response.nextPlayer = nextPlayer.getPlayer().getUserName();
       }
+      response.setQueueSize(spectator.getQueueSize(pm));
       return response;
     } finally {
       pm.close();
