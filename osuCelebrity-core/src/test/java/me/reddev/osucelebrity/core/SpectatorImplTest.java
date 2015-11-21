@@ -74,6 +74,25 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, user));
 
     spectator.loop(pm);
+    
+    QueuedPlayer user2 = getUser(pm, "someplayer2");
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user2));
+
+    spectator.loop(pm);
+    
+    QueuedPlayer user3 = getUser(pm, "someplayer3");
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user3));
+    
+    // we don't want this player to receive a queue or next message, since they are spectated instantly
+    verify(osu, times(0)).notifyQueued(user.getPlayer());
+    verify(osu, times(0)).notifyNext(user.getPlayer());
+    verify(osu).notifyStarting(user.getPlayer());
+    
+    // we don't want the second player to receive a queue message, since they are already next
+    verify(osu, times(0)).notifyQueued(user2.getPlayer());
+    verify(osu).notifyNext(user2.getPlayer());
+    
+    verify(osu).notifyQueued(user3.getPlayer());
 
     verify(osu).startSpectate(user.getPlayer());
     // currently being spectated
@@ -221,8 +240,9 @@ public class SpectatorImplTest extends AbstractJDOTest {
   }
 
   @Test
-  public void testNoVotingWhenNextPlayerNotified() throws Exception {
+  public void testNoVotingDuringStreamDelay() throws Exception {
     SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
+    when(settings.getStreamDelay()).thenReturn(10000L);
 
     PersistenceManager pm = pmf.getPersistenceManager();
     assertEquals(
@@ -232,22 +252,11 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     spectator.loop(pm);
 
-    assertEquals(
-        EnqueueResult.SUCCESS,
-        spectator.enqueue(pm,
-            new QueuedPlayer(api.getUser("someplayer2", pm, 0), null, clock.getTime())));
-
-    spectator.loop(pm);
+    assertFalse(spectator.vote(pm, "me", VoteType.UP));
+    
+    clock.sleepUntil(settings.getStreamDelay());
 
     assertTrue(spectator.vote(pm, "me", VoteType.UP));
-
-    clock.sleepUntil(settings.getDefaultSpecDuration() - settings.getNextPlayerNotifyTime());
-
-    spectator.loop(pm);
-
-    verify(osu).notifySoon(any());
-
-    assertFalse(spectator.vote(pm, "me", VoteType.UP));
   }
 
   @Test

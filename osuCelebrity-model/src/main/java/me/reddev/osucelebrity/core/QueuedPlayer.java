@@ -42,12 +42,6 @@ public class QueuedPlayer {
 
   @Index
   int state = 2;
-
-  /**
-   * When the player received their heads-up that they're on in a couple of seconds.
-   */
-  @Column(defaultValue = "-1")
-  long notifiedAt = Long.MAX_VALUE;
   
   /**
    * Creates a new queued player object. This alone won't enqueue this player.

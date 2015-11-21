@@ -5,10 +5,12 @@ import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 import com.querydsl.jdo.JDOQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.OsuResponses;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
 
@@ -34,14 +36,23 @@ public class OsuImpl implements Osu {
   }
 
   @Override
-  public void notifyStarting(OsuUser user) {
-    // TODO enable after alpha
-    // bot.notifyStartingPlayer(user);
+  public void notifyStarting(OsuUser player) {
+    bot.messagePlayer(player, String.format(OsuResponses.SPECTATING_NOW));
   }
-
+  
   @Override
-  public void notifySoon(OsuUser player) {
-    // TODO enable after alpha
+  public void notifyNext(OsuUser player) {
+    bot.messagePlayer(player, String.format(OsuResponses.SPECTATING_NEXT));
+  }
+  
+  @Override
+  public void notifyDone(OsuUser player) {
+    bot.messagePlayer(player, String.format(OsuResponses.DONE_SPECTATING));
+  }
+  
+  @Override
+  public void notifyQueued(OsuUser player) {
+    bot.messagePlayer(player, String.format(OsuResponses.QUEUED));
   }
 
   @Override

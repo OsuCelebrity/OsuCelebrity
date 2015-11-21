@@ -31,11 +31,25 @@ public interface Osu {
   public void notifyStarting(OsuUser user);
 
   /**
-   * Notifies a player that they're going to be spectated soon.
+   * Notifies a player that they're going to be spectated next.
    * 
    * @param osuUser the player to be notified.
    */
-  public void notifySoon(OsuUser osuUser);
+  public void notifyNext(OsuUser osuUser);
+
+  /**
+   * Notifies a player that they've been added to the queue.
+   * 
+   * @param osuUser the player to be notified.
+   */
+  public void notifyQueued(OsuUser osuUser);
+
+  /**
+   * Notifies a player that they've been added to the queue.
+   * 
+   * @param osuUser the player to be notified.
+   */
+  public void notifyDone(OsuUser osuUser);
 
   /**
    * Retrieves the client status.

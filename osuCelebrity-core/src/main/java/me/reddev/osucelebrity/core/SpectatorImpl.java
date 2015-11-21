@@ -91,16 +91,6 @@ public class SpectatorImpl implements Spectator, Runnable {
     Optional<QueuedPlayer> next = lockNext(queue);
     long time = clock.getTime();
 
-    if (current.isPresent() && next.isPresent()) {
-      QueuedPlayer currentPlayer = current.get();
-      QueuedPlayer nextPlayer = next.get();
-      if (nextPlayer.isNotify() && nextPlayer.getNotifiedAt() == Long.MAX_VALUE
-          && clock.getTime() >= currentPlayer.getStoppingAt()
-          - settings.getNextPlayerNotifyTime()) {
-        osu.notifySoon(nextPlayer.getPlayer());
-        nextPlayer.setNotifiedAt(clock.getTime());
-      }
-    }
     if (current.isPresent()) {
       SkipReason shouldSkip = status.shouldSkip();
       if (shouldSkip != null) {
@@ -210,6 +200,10 @@ public class SpectatorImpl implements Spectator, Runnable {
       spectatingNext = queue.poll();
       if (spectatingNext.isPresent()) {
         spectatingNext.get().setState(QueuedPlayer.NEXT);
+        if (spectatingNext.get().isNotify() && queue.currentlySpectating().isPresent() 
+            && queue.currentlySpectating().get().getStoppingAt() > clock.getTime()) {
+          osu.notifyNext(spectatingNext.get().getPlayer());
+        }
       }
     }
     return spectatingNext;
@@ -230,8 +224,11 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (queue.contains(user)) {
       return EnqueueResult.FAILURE;
     }
-    pm.makePersistent(user);
+    queue.add(pm, user);
     log.info("Queued " + user.getPlayer().getUserName());
+    if (user.isNotify() && !user.equals(lockNext(queue).orElse(null))) {
+      osu.notifyQueued(user.getPlayer());
+    }
     // wake spectator in the case that the queue was empty.
     wake();
     return EnqueueResult.SUCCESS;
@@ -279,17 +276,20 @@ public class SpectatorImpl implements Spectator, Runnable {
   }
 
   boolean advance(PersistenceManager pm, PlayerQueue queue) {
+    Optional<QueuedPlayer> current = queue.currentlySpectating();
     Optional<QueuedPlayer> next = queue.spectatingNext();
     if (!next.isPresent()) {
       next = queue.poll();
     }
     if (!next.isPresent()) {
-      next = pickAutoPlayer(pm, queue.currentlySpectating().orElse(null));
+      next = pickAutoPlayer(pm, current.orElse(null));
+      if (next.isPresent()) {
+        queue.add(pm, next.get());
+      }
     }
     if (!next.isPresent()) {
       return false;
     }
-    // TODO say good-bye to the player currently being spectated
     startSpectating(queue, next.get());
     status = new Status();
     return true;
@@ -299,6 +299,9 @@ public class SpectatorImpl implements Spectator, Runnable {
     Optional<QueuedPlayer> spectating = queue.currentlySpectating();
     if (spectating.isPresent()) {
       spectating.get().setState(QueuedPlayer.DONE);
+      if (spectating.get().isNotify()) {
+        osu.notifyDone(spectating.get().getPlayer());
+      }
     }
     long time = clock.getTime();
     next.setState(QueuedPlayer.SPECTATING);
@@ -324,8 +327,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (!currentlySpectating.isPresent()) {
       return false;
     }
-    Optional<QueuedPlayer> next = queue.spectatingNext();
-    if (next.isPresent() && next.get().getNotifiedAt() < Long.MAX_VALUE) {
+    if (currentlySpectating.get().getStartedAt() > clock.getTime() - settings.getStreamDelay()) {
       return false;
     }
     Vote vote = new Vote();
@@ -372,8 +374,8 @@ public class SpectatorImpl implements Spectator, Runnable {
     try (JDOQuery<OsuUser> query =
         new JDOQuery<OsuUser>(pm).select(osuUser).from(osuUser)
             .where(osuUser.userId.eq(minArg.getUserId()))) {
-      return Optional.of(pm.makePersistent(new QueuedPlayer(query.fetchOne(), QueueSource.AUTO,
-          clock.getTime())));
+      return Optional.of(new QueuedPlayer(query.fetchOne(), QueueSource.AUTO,
+          clock.getTime()));
     }
   }
 

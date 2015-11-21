@@ -65,4 +65,15 @@ public class PlayerQueue {
   public boolean contains(QueuedPlayer user) {
     return queue.contains(user);
   }
+  
+  void add(PersistenceManager pm, QueuedPlayer user) {
+    if (user.getState() != QueuedPlayer.QUEUED) {
+      throw new IllegalArgumentException();
+    }
+    if (queue.contains(user)) {
+      throw new IllegalStateException();
+    }
+    pm.makePersistent(user);
+    queue.add(user);
+  }
 }

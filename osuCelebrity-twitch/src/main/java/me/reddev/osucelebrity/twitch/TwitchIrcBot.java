@@ -1,9 +1,11 @@
 package me.reddev.osucelebrity.twitch;
 
-import me.reddev.osucelebrity.Commands;
 import static me.reddev.osucelebrity.Commands.DOWNVOTE;
+import static me.reddev.osucelebrity.Commands.FORCESKIP;
+import static me.reddev.osucelebrity.Commands.FORCESPEC;
 import static me.reddev.osucelebrity.Commands.QUEUE;
 import static me.reddev.osucelebrity.Commands.UPVOTE;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.TwitchResponses;
@@ -218,10 +220,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   boolean handleAdvance(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, Commands.FORCESKIP)) {
+    if (!StringUtils.startsWithIgnoreCase(message, FORCESKIP)) {
       return false;
     }
-    message = message.substring(Commands.FORCESKIP.length());
+    message = message.substring(FORCESKIP.length());
     
     OsuUser ircUser = osuApi.getUser(message, pm, 0);
     if (ircUser != null) {
@@ -235,10 +237,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   
   boolean handleSpec(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, Commands.FORCESPEC)) {
+    if (!StringUtils.startsWithIgnoreCase(message, FORCESPEC)) {
       return false;
     }
-    message = message.substring(Commands.FORCESPEC.length());
+    message = message.substring(FORCESPEC.length());
     
     OsuUser ircUser = osuApi.getUser(message, pm, 0);
     if (ircUser != null) {
