@@ -67,7 +67,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   public void testQueue() throws Exception {
     when(spectator.enqueue(any(), any())).thenReturn(EnqueueResult.SUCCESS);
 
-    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!q someone"));
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!spec someone"));
 
     verify(spectator).enqueue(
         any(),
