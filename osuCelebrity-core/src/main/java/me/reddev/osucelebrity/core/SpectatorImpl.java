@@ -18,8 +18,11 @@ import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.ApiUser;
+import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.Twitch;
+import org.tillerino.osuApiModel.GameModes;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,6 +54,8 @@ public class SpectatorImpl implements Spectator, Runnable {
   final CoreSettings settings;
 
   final PersistenceManagerFactory pmf;
+  
+  final OsuApi osuApi;
 
   boolean run = true;
 
@@ -220,6 +225,16 @@ public class SpectatorImpl implements Spectator, Runnable {
   public synchronized EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user) {
     if (!user.getPlayer().isAllowsSpectating()) {
       return EnqueueResult.DENIED;
+    }
+    ApiUser userData;
+    try {
+      userData = osuApi.getUserData(user.getPlayer().getUserId(), GameModes.OSU, pm, 0);
+    } catch (IOException e) {
+      // this shouldn't happen since the data should be cached
+      throw new RuntimeException(e);
+    }
+    if (userData == null || userData.getPlayCount() < 100) {
+      return EnqueueResult.FAILURE;
     }
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
     if (queue.contains(user)) {

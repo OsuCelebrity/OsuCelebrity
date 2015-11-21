@@ -1,7 +1,8 @@
 package me.reddev.osucelebrity.core;
 
-import me.reddev.osucelebrity.osu.PlayerActivity;
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 
+import me.reddev.osucelebrity.osu.PlayerActivity;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import me.reddev.osucelebrity.AbstractJDOTest;
@@ -39,6 +40,8 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   Clock clock = new MockClock();
   OsuApi api = new MockOsuApi();
+  
+  private SpectatorImpl spectator;
 
   @Before
   public void initMocks() throws IOException {
@@ -53,6 +56,8 @@ public class SpectatorImplTest extends AbstractJDOTest {
     when(settings.getAutoSpecMaxRank()).thenReturn(1000L);
     when(settings.getAutoSpecMaxLastActivity()).thenReturn(300000L);
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, ""));
+    
+    spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, api);
   }
 
   QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
@@ -63,8 +68,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
   @Test
   public void testEnqueue() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
-
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     assertFalse(spectator.advance(pm, PlayerQueue.loadQueue(pm)));
 
@@ -103,8 +106,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testTiming() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
 
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
-
     spectator.loop(pm);
 
     QueuedPlayer user1 = getUser(pm, "someplayer");
@@ -137,8 +138,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testPromote() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
-
     PersistenceManager pm = pmf.getPersistenceManager();
     spectator
         .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
@@ -155,8 +154,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testPromote2() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
-
     PersistenceManager pm = pmf.getPersistenceManager();
     spectator
         .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
@@ -186,8 +183,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testApprovalUnique() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
-
     PersistenceManager pm = pmf.getPersistenceManager();
     spectator
         .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
@@ -212,8 +207,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testApprovalLast() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
-
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
     spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
@@ -228,8 +221,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testApprovalNoVotes() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
-
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
     spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
@@ -241,7 +232,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testNoVotingDuringStreamDelay() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
     when(settings.getStreamDelay()).thenReturn(10000L);
 
     PersistenceManager pm = pmf.getPersistenceManager();
@@ -261,7 +251,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testRemainingTime() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
@@ -295,7 +284,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
   
   @Test
   public void testFastDrain() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
@@ -316,7 +304,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testTimeRefill() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
 
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
@@ -340,8 +327,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testPlayerOffline() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
-
     PersistenceManager pm = pmf.getPersistenceManager();
 
     spectator.enqueue(pm, getUser(pm, "user1"));
@@ -391,8 +376,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testPlayerIdle() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
-
     PersistenceManager pm = pmf.getPersistenceManager();
 
     QueuedPlayer player1 = getUser(pm, "user1");
@@ -415,7 +398,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testAutoQueue() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
     PersistenceManager pm = pmf.getPersistenceManager();
 
     for (int i = 1; i <= 5; i++) {
@@ -445,7 +427,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   void testAutoQueueDistribution() throws Exception {
     List<ApiUser> recentlyActive = new ArrayList<>();
     Map<Integer, Long> lastQueueTime = new HashMap<>();
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf) {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, api) {
       @Override
       List<ApiUser> getRecentlyActive(PersistenceManager pm) {
         return recentlyActive;
@@ -490,7 +472,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testGetQueueSize() throws Exception {
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf);
     PersistenceManager pm = pmf.getPersistenceManager();
     assertEquals(0, spectator.getQueueSize(pm));
     spectator.enqueue(pm, getUser(pm, "player1"));
@@ -503,5 +484,15 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.enqueue(pm, getUser(pm, "player5"));
     spectator.loop(pm);
     assertEquals(4, spectator.getQueueSize(pm));
+  }
+  
+  @Test
+  public void testMinPLayCount() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+
+    OsuUser user = api.getUser("player", pm, 0);
+    api.getUserData(user.getUserId(), 0, pm, 0).setPlayCount(50);
+    
+    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, new QueuedPlayer(user, QueueSource.TWITCH, 0)));
   }
 }

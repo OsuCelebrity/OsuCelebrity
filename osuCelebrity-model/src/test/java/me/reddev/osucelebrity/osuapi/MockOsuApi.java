@@ -79,6 +79,7 @@ public class MockOsuApi implements OsuApi {
     OsuApiUser apiUser = new OsuApiUser();
     apiUser.setUserId(userid);
     apiUser.setMode(gameMode);
+    apiUser.setPlayCount(1000);
     return pm.makePersistent(new ApiUser(apiUser, System.currentTimeMillis()));
   }
 }
