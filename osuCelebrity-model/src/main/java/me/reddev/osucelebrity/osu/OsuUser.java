@@ -3,7 +3,7 @@ package me.reddev.osucelebrity.osu;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import me.reddev.osucelebrity.Priviledge;
+import me.reddev.osucelebrity.Privilege;
 import org.tillerino.osuApiModel.OsuApiUser;
 import org.tillerino.osuApiModel.types.UserId;
 
@@ -27,7 +27,7 @@ public class OsuUser {
   private long downloaded;
 
   @Setter
-  private Priviledge privilege = Priviledge.PLAYER;
+  private Privilege privilege = Privilege.PLAYER;
 
   @Setter
   @Column(defaultValue = "true")

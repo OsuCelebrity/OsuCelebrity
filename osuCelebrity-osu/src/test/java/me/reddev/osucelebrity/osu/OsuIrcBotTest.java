@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 import javax.jdo.PersistenceManager;
 
 import me.reddev.osucelebrity.AbstractJDOTest;
-import me.reddev.osucelebrity.Priviledge;
+import me.reddev.osucelebrity.Privilege;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.core.EnqueueResult;
 import me.reddev.osucelebrity.core.MockClock;
@@ -100,7 +100,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   @Test
   public void testSkip() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
-    osuApi.getUser("osuIrcUser", pm, 0).setPrivilege(Priviledge.MOD);
+    osuApi.getUser("osuIrcUser", pm, 0).setPrivilege(Privilege.MOD);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!forceskip x"));
 

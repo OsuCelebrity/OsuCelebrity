@@ -7,7 +7,7 @@ import me.reddev.osucelebrity.core.Spectator;
  * Simple class for user priviledge levels.
  */
 @RequiredArgsConstructor
-public enum Priviledge {
+public enum Privilege {
   ADMIN(true, true),
   MOD(false, true),
   PLAYER(false, false);
