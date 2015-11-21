@@ -45,6 +45,18 @@ public class OsuApplication implements Runnable {
     Runtime rt = Runtime.getRuntime();
     String command =
         String.format("\"%s\" \"%s\"", settings.getOsuPath(),
+            String.format(OSU_COMMAND_SPECTATE, 6854947)); // TODO externalize
+    log.debug("issued command " + command);
+    rt.exec(command);
+    
+    try {
+      Thread.sleep(100);
+    } catch (InterruptedException e) {
+      return;
+    }
+    
+    command =
+        String.format("\"%s\" \"%s\"", settings.getOsuPath(),
             String.format(OSU_COMMAND_SPECTATE, osuUser.getUserId()));
     log.debug("issued command " + command);
     rt.exec(command);
