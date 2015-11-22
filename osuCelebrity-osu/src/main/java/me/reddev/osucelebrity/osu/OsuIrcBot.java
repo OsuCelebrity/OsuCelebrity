@@ -1,6 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
 import static me.reddev.osucelebrity.Commands.FORCESKIP;
+import static me.reddev.osucelebrity.Commands.FORCESPEC;
 import static me.reddev.osucelebrity.Commands.MUTE;
 import static me.reddev.osucelebrity.Commands.OPTIN;
 import static me.reddev.osucelebrity.Commands.OPTOUT;
@@ -76,6 +77,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     handlers.add(this::handleSkip);
     handlers.add(this::handleMute);
     handlers.add(this::handleOpt);
+    handlers.add(this::handleSpec);
   }
 
   /**
@@ -183,6 +185,27 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     } else if (result == EnqueueResult.FAILURE) {
       event.getUser().send()
           .message(String.format(Responses.QUEUE_UNSUCCESSFUL, requestedUser.getUserName()));
+    }
+    return true;
+  }
+
+  boolean handleSpec(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, FORCESPEC)) {
+      return false;
+    }
+    message = message.substring(FORCESPEC.length());
+    
+    if (!user.getPrivilege().canSkip) {
+      event.getUser().send().message("not allowed");
+      return true;
+    }
+    
+    OsuUser target = osuApi.getUser(message, pm, 0);
+    if (target != null) {
+      if (spectator.promote(pm, target)) {
+        event.getUser().send().message("spectating " + target.getUserName());
+      }
     }
     return true;
   }

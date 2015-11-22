@@ -1,7 +1,11 @@
 package me.reddev.osucelebrity.osu;
 
-import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.snapshot.UserSnapshot;
 import org.pircbotx.snapshot.UserChannelDaoSnapshot;
@@ -179,5 +183,25 @@ public class OsuIrcBotTest extends AbstractJDOTest {
         any(),
         eq(new QueuedPlayer(osuApi.getUser("thatguy", pmf.getPersistenceManager(), 0),
             QueueSource.OSU, 0)));
+  }
+  
+  @Test
+  public void testForceSpec() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    
+    osuApi.getUser("osuIrcUser", pm, 0).setPrivilege(Privilege.MOD);
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!forcespec x"));
+    
+    verify(spectator).promote(any(), 
+        eq(osuApi.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
+  }
+  
+  @Test
+  public void testForceSpecUnauthorized() throws Exception {
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!forcespec x"));
+    
+    verify(spectator, times(0)).promote(any(), 
+        eq(osuApi.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
   }
 }
