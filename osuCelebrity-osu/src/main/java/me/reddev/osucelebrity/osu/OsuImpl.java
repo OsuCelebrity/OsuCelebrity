@@ -51,8 +51,8 @@ public class OsuImpl implements Osu {
   }
   
   @Override
-  public void notifyQueued(OsuUser player) {
-    bot.messagePlayer(player, String.format(OsuResponses.QUEUED));
+  public void notifyQueued(OsuUser player, int queuePosition) {
+    bot.messagePlayer(player, String.format(OsuResponses.QUEUED, queuePosition));
   }
 
   @Override

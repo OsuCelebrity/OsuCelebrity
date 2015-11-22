@@ -41,8 +41,9 @@ public interface Osu {
    * Notifies a player that they've been added to the queue.
    * 
    * @param osuUser the player to be notified.
+   * @param queuePosition TODO
    */
-  public void notifyQueued(OsuUser osuUser);
+  public void notifyQueued(OsuUser osuUser, int queuePosition);
 
   /**
    * Notifies a player that they've been added to the queue.

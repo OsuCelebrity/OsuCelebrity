@@ -16,8 +16,8 @@ public class OsuResponses extends Responses {
       + "Send !optin to allow us to spectate you again.";
   public static final String OPTIN = "You're now allowing us to spectate you.";
   
-  static final String commands = "If you don't want to be spectated, send !optout. "
-      + "If you don't want to receive these notifications, send !mute.";
+  static final String commands = "Disallow spectating: !optout. "
+      + "Turn off notifications: !mute.";
   
   /*
    * Command response notifications
@@ -33,15 +33,16 @@ public class OsuResponses extends Responses {
   /**
    * To the player who was queued.
    */
-  public static final String QUEUED = "Someone has requested to spectate you "
+  public static final String QUEUED = "Someone has REQUESTED to spectate you "
       + "on [http://www.twitch.tv/osucelebrity OsuCelebrity]. "
-      + "I will notify you when you're next. "
+      + "Your current position in line is %d. "
+      + "I will notify you when you're next. Check position: !position. "
       + commands;
   
   /**
    * To the player who will be spectated next.
    */
-  public static final String SPECTATING_NEXT = "You're next in line to be spectated "
+  public static final String SPECTATING_NEXT = "You're NEXT in line to be spectated "
       + "on [http://www.twitch.tv/osucelebrity OsuCelebrity]. "
       + commands;
   
@@ -49,7 +50,7 @@ public class OsuResponses extends Responses {
    * To the player who is being spectated now.
    */
   public static final String SPECTATING_NOW = "[http://www.twitch.tv/osucelebrity OsuCelebrity] "
-      + "is now spectating you. "
+      + "is now SPECTATING you. "
       + commands;
   
   /**

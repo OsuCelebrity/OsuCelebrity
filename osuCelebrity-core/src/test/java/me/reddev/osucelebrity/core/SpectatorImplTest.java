@@ -88,15 +88,15 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user3));
     
     // we don't want this player to receive a queue or next message, since they are spectated instantly
-    verify(osu, times(0)).notifyQueued(user.getPlayer());
+    verify(osu, times(0)).notifyQueued(eq(user.getPlayer()), anyInt());
     verify(osu, times(0)).notifyNext(user.getPlayer());
     verify(osu).notifyStarting(user.getPlayer());
     
     // we don't want the second player to receive a queue message, since they are already next
-    verify(osu, times(0)).notifyQueued(user2.getPlayer());
+    verify(osu, times(0)).notifyQueued(eq(user2.getPlayer()), anyInt());
     verify(osu).notifyNext(user2.getPlayer());
     
-    verify(osu).notifyQueued(user3.getPlayer());
+    verify(osu).notifyQueued(user3.getPlayer(), 2);
 
     verify(osu).startSpectate(user.getPlayer());
     // currently being spectated

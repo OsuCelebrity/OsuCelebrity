@@ -247,7 +247,7 @@ public class SpectatorImpl implements Spectator, Runnable {
       queue.add(pm, user);
       log.info("Queued " + user.getPlayer().getUserName());
       if (user.isNotify() && !user.equals(lockNext(queue).orElse(null))) {
-        osu.notifyQueued(user.getPlayer());
+        osu.notifyQueued(user.getPlayer(), queue.playerAt(user));
       }
       // wake spectator in the case that the queue was empty.
       wake();
