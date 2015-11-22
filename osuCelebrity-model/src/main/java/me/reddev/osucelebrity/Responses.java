@@ -20,4 +20,17 @@ public class Responses {
   public static final String QUEUE_DENIED = "%s has opted out of being spectated.";
   public static final String QUEUE_VOTED =
       "%s was already in the queue, but we'll make sure to see them soon.";
+  
+  /*
+   * EXCEPTIONS
+   */
+  /**
+   * I tried to be all weeb, but I'm not even convincing myself. Can someone make this weeb harder?
+   * -Tillerino
+   */
+  public static final String EXCEPTION_INTERNAL = "Baka! This isn't working at all.";
+  public static final String EXCEPTION_IO = "Error while accessing the osu! api. "
+      + "Please try again later.";
+  public static final String EXCEPTION_TIMEOUT = "Timeout while accessing the osu! api. "
+      + "Please try again later!";
 }

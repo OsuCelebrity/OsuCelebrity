@@ -10,6 +10,7 @@ import static me.reddev.osucelebrity.Commands.UPVOTE;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.Clock;
@@ -20,10 +21,10 @@ import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.core.VoteType;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
+
 import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
-import org.pircbotx.User;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.ConnectEvent;
 import org.pircbotx.hooks.events.DisconnectEvent;
@@ -34,6 +35,7 @@ import org.pircbotx.hooks.events.PrivateMessageEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -118,21 +120,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     bot.sendIRC().message(settings.getTwitchIrcChannel(), message);
   }
 
-  // TODO make this Twitch specific
-  void handleException(Exception ex, User user) {
-    try {
-      throw ex;
-    } catch (UserException e) {
-      // no need to log this
-      user.send().message(e.getMessage());
-    } catch (IOException e) {
-      log.error("external error", e);
-      user.send().message("external error");
-    } catch (Exception e) {
-      log.error("internal error", e);
-      user.send().message("internal error");
-    }
-  }
+  
 
   // Listeners
   // http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
@@ -179,7 +167,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
         }
       }
     } catch (Exception e) {
-      handleException(e, event.getUser());
+      Consumer<String> messager =
+          x -> event.getChannel().send()
+              .message(String.format("@%s: %s", event.getUser().getNick(), x));
+      UserException.handleException(log, e, messager);
     } finally {
       pm.close();
     }
@@ -245,11 +236,12 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     message = message.substring(FORCESPEC.length());
     
     OsuUser ircUser = osuApi.getUser(message, pm, 0);
-    if (ircUser != null) {
-      if (spectator.promote(pm, ircUser)) {
-        sendMessage(String.format(TwitchResponses.SPECTATE_FORCE, 
-            event.getUser().getNick(), message));
-      }
+    if (ircUser == null) {
+      throw new UserException(String.format(Responses.INVALID_USER, message));
+    }
+    if (spectator.promote(pm, ircUser)) {
+      sendMessage(String.format(TwitchResponses.SPECTATE_FORCE,
+          event.getUser().getNick(), message));
     }
     return true;
   }

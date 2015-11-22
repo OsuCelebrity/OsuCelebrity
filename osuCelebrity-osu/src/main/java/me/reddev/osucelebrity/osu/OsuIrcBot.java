@@ -160,7 +160,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
         }
       }
     } catch (Exception e) {
-      handleException(e, event.getUser());
+      UserException.handleException(log, e, event.getUser().send()::message);
     } finally {
       pm.close();
     }
@@ -176,9 +176,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
     OsuUser requestedUser = osuApi.getUser(queueTarget, pm, 60 * 60 * 1000);
     if (requestedUser == null) {
-      event.getUser().send().message(String.format(OsuResponses.INVALID_USER, requestedUser));
-      log.debug("requested non-existing user {}", queueTarget);
-      return true;
+      throw new UserException(String.format(OsuResponses.INVALID_USER, queueTarget));
     }
     QueuedPlayer queueRequest = new QueuedPlayer(requestedUser, QueueSource.OSU, clock.getTime());
     EnqueueResult result = spectator.enqueue(pm, queueRequest, false);
@@ -313,21 +311,6 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
           user.getUserName()));
     }
     return true;
-  }
-
-  void handleException(Exception ex, User user) {
-    try {
-      throw ex;
-    } catch (UserException e) {
-      // no need to log this
-      user.send().message(e.getMessage());
-    } catch (IOException e) {
-      log.error("external error", e);
-      user.send().message("external error");
-    } catch (Exception e) {
-      log.error("internal error", e);
-      user.send().message("internal error");
-    }
   }
 
   @Override
