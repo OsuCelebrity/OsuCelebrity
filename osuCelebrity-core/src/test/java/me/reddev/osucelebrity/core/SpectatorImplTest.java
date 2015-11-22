@@ -487,7 +487,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   }
   
   @Test
-  public void testMinPLayCount() throws Exception {
+  public void testMinPlayCount() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
 
     OsuUser user = api.getUser("player", pm, 0);
@@ -512,5 +512,22 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.loop(pm);
     spectator.enqueue(pm, getUser(pm, "someotherguy"));
     assertFalse(spectator.advanceConditional(pm, "thatotherguy"));
+  }
+  
+  @Test
+  public void testQueuePosition() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    spectator.enqueue(pm, getUser(pm, "player1"));
+    spectator.enqueue(pm, getUser(pm, "player2"));
+    spectator.enqueue(pm, getUser(pm, "player3"));
+    assertEquals(2, spectator.getQueuePosition(pm, api.getUser("player2", pm, 0)));
+  }
+  
+  @Test
+  public void testQueuePositionNotInQueue() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    spectator.enqueue(pm, getUser(pm, "player1"));
+    spectator.enqueue(pm, getUser(pm, "player3"));
+    assertEquals(-1, spectator.getQueuePosition(pm, api.getUser("player2", pm, 0)));
   }
 }

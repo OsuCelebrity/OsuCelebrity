@@ -53,7 +53,7 @@ public interface OsuApi {
   OsuIrcUser getIrcUser(String ircUserName, PersistenceManager pm, long maxAge) throws IOException;
 
   /**
-   * Get a user's data for a specific mod.
+   * Get a user's data for a specific mode.
    * 
    * @param userid user id
    * @param gameMode game mode

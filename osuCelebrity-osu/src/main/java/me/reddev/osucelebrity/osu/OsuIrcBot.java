@@ -5,6 +5,7 @@ import static me.reddev.osucelebrity.Commands.FORCESPEC;
 import static me.reddev.osucelebrity.Commands.MUTE;
 import static me.reddev.osucelebrity.Commands.OPTIN;
 import static me.reddev.osucelebrity.Commands.OPTOUT;
+import static me.reddev.osucelebrity.Commands.POSITION;
 import static me.reddev.osucelebrity.Commands.QUEUE;
 import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
@@ -72,6 +73,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   private final List<CommandHandler> handlers = new ArrayList<>();
 
   {
+    handlers.add(this::handlePosition);
     handlers.add(this::handleQueue);
     handlers.add(this::handleSelfQueue);
     handlers.add(this::handleSkip);
@@ -270,6 +272,28 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       event.getUser().send().message(String.format(OsuResponses.OPTIN));
       return true;
     }
+    return false;
+  }
+  
+  boolean handlePosition(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, POSITION)) {
+      return false;
+    }
+    message = message.substring(POSITION.length());
+    OsuUser requestedUser = osuApi.getUser(message, pm, 60 * 60 * 1000);
+    if (requestedUser != null) {
+      int position = spectator.getQueuePosition(pm, requestedUser);
+      if (position != -1) {
+        event.getUser().send().message(String.format(OsuResponses.POSITION, 
+            requestedUser.getUserName(), position));
+      } else {
+        event.getUser().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
+            requestedUser.getUserName()));
+      }
+      return true;
+    }
+    
     return false;
   }
 

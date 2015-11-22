@@ -35,6 +35,10 @@ public class PlayerQueue {
         .orElseThrow(() -> new IllegalStateException("not spectating anybody"))
         .getStoppingAt();
   }
+  
+  int playerAt(QueuedPlayer player) {
+    return queue.indexOf(player);
+  }
 
   Optional<QueuedPlayer> spectatingNext() {
     return queue.stream()

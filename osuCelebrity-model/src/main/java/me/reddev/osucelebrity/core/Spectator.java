@@ -78,4 +78,12 @@ public interface Spectator {
    * @return does not include the current player
    */
   int getQueueSize(PersistenceManager pm);
+  
+  /**
+   * Returns the position of a player in the queue.
+   * @param pm the current request's persistence manager
+   * @param player the player to get the position of
+   * @return the position of the player in the queue or -1 if not in queue
+   */
+  int getQueuePosition(PersistenceManager pm, OsuUser player);
 }

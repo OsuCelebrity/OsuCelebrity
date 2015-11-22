@@ -3,11 +3,13 @@ package me.reddev.osucelebrity.twitch;
 import static me.reddev.osucelebrity.Commands.DOWNVOTE;
 import static me.reddev.osucelebrity.Commands.FORCESKIP;
 import static me.reddev.osucelebrity.Commands.FORCESPEC;
+import static me.reddev.osucelebrity.Commands.POSITION;
 import static me.reddev.osucelebrity.Commands.QUEUE;
 import static me.reddev.osucelebrity.Commands.UPVOTE;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.Clock;
@@ -69,6 +71,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   {
     handlers.add(this::handleQueue);
     handlers.add(this::handleVote);
+    handlers.add(this::handlePosition);
   }
   
   private final List<CommandHandler> modHandlers = new ArrayList<>();
@@ -247,6 +250,29 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       }
     }
     return true;
+  }
+  
+  boolean handlePosition(MessageEvent<PircBotX> event, String message, String twitchUserName,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, POSITION)) {
+      return false;
+    }
+    message = message.substring(POSITION.length());
+    
+    OsuUser ircUser = osuApi.getUser(message, pm, 0);
+    if (ircUser != null) {
+      int position = spectator.getQueuePosition(pm, ircUser);
+      if (position != -1) {
+        event.getUser().send().message(String.format(OsuResponses.POSITION, 
+            ircUser.getUserName(), position));
+      } else {
+        event.getUser().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
+            ircUser.getUserName()));
+      }
+      return true;
+    }
+    
+    return false;
   }
 
   @Override 
