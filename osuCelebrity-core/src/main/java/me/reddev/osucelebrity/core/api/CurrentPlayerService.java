@@ -14,14 +14,12 @@ import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
+import org.apache.commons.lang3.StringUtils;
 import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -101,11 +99,9 @@ public class CurrentPlayerService {
       if (queued != null) {
         OsuUser player = queued.getPlayer();
         response.setName(player.getUserName());
-        {
-          Duration duration = Duration.ofMillis(System.currentTimeMillis() - queued.getStartedAt());
-          LocalTime localTime = LocalTime.MIDNIGHT.plus(duration);
-          response.setPlayingFor(DateTimeFormatter.ofPattern("m:ss").format(localTime));
-        }
+
+        response.setPlayingFor(formatDuration(System.currentTimeMillis() - queued.getStartedAt()));
+
         long timeLeft = Math.max(0, queued.getStoppingAt() - queued.getLastRemainingTimeUpdate());
         response.setHealth(timeLeft / (double) coreSettings.getDefaultSpecDuration());
         response.setId(player.getUserId());
@@ -135,6 +131,27 @@ public class CurrentPlayerService {
     } finally {
       pm.close();
     }
+  }
+
+  /**
+   * Format duration as a human-readable time string.
+   * @param millis duration in milliseconds.
+   * @return hh:mm:ss or mm:ss
+   */
+  public static String formatDuration(long millis) {
+    millis /= 1000;
+    long seconds = millis % 60;
+    millis /= 60;
+    long minutes = millis % 60;
+    millis /= 60;
+    long hours = millis;
+    
+    String formatted = ":" + StringUtils.leftPad(String.valueOf(seconds), 2, '0');
+    String stringMinutes = String.valueOf(minutes);
+    if (hours > 0) {
+      return hours + ":" + StringUtils.leftPad(stringMinutes, 2, '0') + formatted;
+    }
+    return stringMinutes + formatted;
   }
 
   private ApiUser getApiUser(CurrentPlayer currentPlayer) {

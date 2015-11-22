@@ -1,7 +1,8 @@
 package me.reddev.osucelebrity;
 
-import me.reddev.osucelebrity.osu.OsuIrcUser;
+import me.reddev.osucelebrity.core.QueueVote;
 
+import me.reddev.osucelebrity.osu.OsuIrcUser;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.core.Vote;
@@ -14,9 +15,11 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
+
 import org.junit.After;
 
 
@@ -44,6 +47,7 @@ public abstract class AbstractJDOTest {
   public void truncate() {
     PersistenceManager pm = pmf.getPersistenceManager();
     pm.getExtent(Vote.class).forEach(pm::deletePersistent);
+    pm.getExtent(QueueVote.class).forEach(pm::deletePersistent);
     pm.getExtent(QueuedPlayer.class).forEach(pm::deletePersistent);
     pm.getExtent(PlayerActivity.class).forEach(pm::deletePersistent);
     pm.getExtent(OsuIrcUser.class).forEach(pm::deletePersistent);

@@ -1,7 +1,6 @@
 package me.reddev.osucelebrity.core;
 
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
-
 import me.reddev.osucelebrity.osu.PlayerActivity;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -22,6 +21,7 @@ import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -71,22 +71,26 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testEnqueue() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
 
-    assertFalse(spectator.advance(pm, PlayerQueue.loadQueue(pm)));
+    assertFalse(spectator.advance(pm, PlayerQueue.loadQueue(pm, clock)));
 
     QueuedPlayer user = getUser(pm, "someplayer");
-    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user, false));
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user, false, "twitchuser"));
     // already in queue
-    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, user, false));
+    assertEquals(EnqueueResult.NEXT, spectator.enqueue(pm, user, false, "twitchuser"));
 
     spectator.loop(pm);
     
     QueuedPlayer user2 = getUser(pm, "someplayer2");
     assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user2, false));
+    assertEquals(EnqueueResult.NEXT, spectator.enqueue(pm, user2, false, "twitchuser"));
 
     spectator.loop(pm);
     
     QueuedPlayer user3 = getUser(pm, "someplayer3");
     assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user3, false));
+    assertEquals(EnqueueResult.VOTED, spectator.enqueue(pm, user3, false, "twitchuser"));
+    assertEquals(EnqueueResult.NOT_VOTED, spectator.enqueue(pm, user3, false, "twitchuser"));
+    assertEquals(EnqueueResult.VOTED, spectator.enqueue(pm, user3, false, "twitchuser2"));
     
     // we don't want this player to receive a queue or next message, since they are spectated instantly
     verify(osu, times(0)).notifyQueued(eq(user.getPlayer()), anyInt());
@@ -101,7 +105,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     verify(osu).startSpectate(user.getPlayer());
     // currently being spectated
-    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, user, false));
+    assertEquals(EnqueueResult.CURRENT, spectator.enqueue(pm, user, false));
   }
 
   @Test
@@ -116,11 +120,11 @@ public class SpectatorImplTest extends AbstractJDOTest {
     QueuedPlayer user2 = getUser(pm, "someplayer2");
     spectator.enqueue(pm, user2, false);
 
-    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
 
     spectator.loop(pm);
 
-    queue = PlayerQueue.loadQueue(pm);
+    queue = PlayerQueue.loadQueue(pm, clock);
     assertEquals(user1, queue.currentlySpectating().get());
     assertFalse(queue.spectatingNext().isPresent());
     assertEquals(queue.spectatingUntil(), 30001);
@@ -150,7 +154,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     spectator.promote(pm, user2);
 
-    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     assertEquals(user2, queue.currentlySpectating().get().getPlayer());
   }
 
@@ -179,7 +183,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     spectator.promote(pm, user2);
 
-    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     assertEquals(user2, queue.currentlySpectating().get().getPlayer());
   }
 
@@ -551,5 +555,63 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertEquals(EnqueueResult.DENIED, spectator.enqueue(pm, user, false));
     // self-queue is fine
     assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user, true));
+  }
+
+  @Test
+  public void testVoteQueue() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    QueuedPlayer user = getUser(pm, "player");
+    assertTrue(spectator.voteQueue(pm, user, "voter"));
+    assertFalse(spectator.voteQueue(pm, user, "voter"));
+  }
+  
+  @Test
+  public void testQueueVoting() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    QueuedPlayer user1 = getUser(pm, "player");
+    
+    spectator.enqueue(pm, user1, false);
+
+    clock.sleepUntil(1000);
+    QueuedPlayer user2 = getUser(pm, "player2");
+    spectator.enqueue(pm, user2, false);
+    clock.sleepUntil(2000);
+    QueuedPlayer user3 = getUser(pm, "player3");
+    spectator.enqueue(pm, user3, false);
+    clock.sleepUntil(3000);
+    QueuedPlayer user4 = getUser(pm, "player4");
+    spectator.enqueue(pm, user4, false);
+    
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+    queue.doSort(pm);
+    assertEquals(Arrays.asList(user1, user2, user3, user4), queue.queue);
+    
+    assertTrue(spectator.voteQueue(pm, user3, "twitch1"));
+    queue.doSort(pm);
+    assertEquals(Arrays.asList(user1, user3, user2, user4), queue.queue);
+
+    assertTrue(spectator.voteQueue(pm, user2, "twitch1"));
+    queue.doSort(pm);
+    assertEquals(Arrays.asList(user1, user2, user3, user4), queue.queue);
+
+    assertTrue(spectator.voteQueue(pm, user3, "twitch2"));
+    queue.doSort(pm);
+    assertEquals(Arrays.asList(user1, user3, user2, user4), queue.queue);
+
+    assertTrue(spectator.voteQueue(pm, user4, "twitch1"));
+    queue.doSort(pm);
+    assertEquals(Arrays.asList(user1, user3, user2, user4), queue.queue);
+
+    assertTrue(spectator.voteQueue(pm, user4, "twitch2"));
+    queue.doSort(pm);
+    assertEquals(Arrays.asList(user1, user3, user2, user4), queue.queue);
+
+    assertTrue(spectator.voteQueue(pm, user4, "twitch3"));
+    queue.doSort(pm);
+    assertEquals(Arrays.asList(user1, user2, user3, user4), queue.queue);
+
+    assertTrue(spectator.voteQueue(pm, user4, "twitch4"));
+    queue.doSort(pm);
+    assertEquals(Arrays.asList(user1, user4, user2, user3), queue.queue);
   }
 }

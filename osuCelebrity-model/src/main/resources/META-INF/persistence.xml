@@ -9,6 +9,7 @@
 		<class>me.reddev.osucelebrity.osu.OsuUser</class>
 		<class>me.reddev.osucelebrity.osu.OsuIrcUser</class>
 		<class>me.reddev.osucelebrity.core.QueuedPlayer</class>
+		<class>me.reddev.osucelebrity.core.QueueVote</class>
 		<class>me.reddev.osucelebrity.core.Vote</class>
 		<class>me.reddev.osucelebrity.osuapi.ApiUser</class>
 		<class>me.reddev.osucelebrity.osu.PlayerActivity</class>

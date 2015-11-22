@@ -1,9 +1,11 @@
 package me.reddev.osucelebrity.core;
 
 import me.reddev.osucelebrity.PassAndReturnNonnull;
+import me.reddev.osucelebrity.core.api.DisplayQueuePlayer;
 import me.reddev.osucelebrity.osu.OsuUser;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.annotation.CheckForNull;
 import javax.jdo.PersistenceManager;
@@ -16,11 +18,25 @@ public interface Spectator {
    * 
    * @param pm the current request's persistence manager
    * @param user a new object (not persistent).
-   * @param selfqueue TODO
+   * @param selfqueue if this is a self-queue some checks are skipped.
    * @return the result of the operation. See {@link EnqueueResult}
    */
-  EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue)
-      throws IOException;
+  default EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue)
+      throws IOException {
+    return enqueue(pm, user, selfqueue, null);
+  }
+
+  /**
+   * Performs some checks and adds the given player to the queue.
+   * 
+   * @param pm the current request's persistence manager
+   * @param user a new object (not persistent).
+   * @param selfqueue if this is a self-queue some checks are skipped.
+   * @param twitchUser the twitch user's name or null if queued from somewhere else
+   * @return the result of the operation. See {@link EnqueueResult}
+   */
+  EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue,
+      @CheckForNull String twitchUser) throws IOException;
 
   /**
    * Stops spectating the current player and advances to the next player.
@@ -89,4 +105,10 @@ public interface Spectator {
    * @return the position of the player in the queue or -1 if not in queue
    */
   int getQueuePosition(PersistenceManager pm, OsuUser player);
+
+  /**
+   * returns the current top of the queue excluding the current and the next player.
+   * @return the full queue
+   */
+  List<DisplayQueuePlayer> getCurrentQueue(PersistenceManager pm);
 }

@@ -186,7 +186,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       }
       QueuedPlayer queueRequest =
           new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
-      EnqueueResult result = spectator.enqueue(pm, queueRequest, false);
+      EnqueueResult result = spectator.enqueue(pm, queueRequest, false, event.getUser().getNick());
       if (result == EnqueueResult.SUCCESS) {
         event.getChannel().send()
             .message(String.format(TwitchResponses.QUEUE_SUCCESSFUL, requestedUser.getUserName()));

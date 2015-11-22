@@ -1,6 +1,7 @@
 package me.reddev.osucelebrity.core;
 
 import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
+import static me.reddev.osucelebrity.core.QQueueVote.queueVote;
 import static me.reddev.osucelebrity.core.QVote.vote;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
@@ -12,6 +13,8 @@ import com.querydsl.jdo.JDOQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.core.api.CurrentPlayerService;
+import me.reddev.osucelebrity.core.api.DisplayQueuePlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
@@ -34,6 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.ToDoubleFunction;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
@@ -93,9 +97,9 @@ public class SpectatorImpl implements Spectator, Runnable {
   }
 
   synchronized long loop(PersistenceManager pm) {
-    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     Optional<QueuedPlayer> current = queue.currentlySpectating();
-    Optional<QueuedPlayer> next = lockNext(queue);
+    Optional<QueuedPlayer> next = lockNext(pm, queue);
     long time = clock.getTime();
 
     if (current.isPresent()) {
@@ -202,10 +206,10 @@ public class SpectatorImpl implements Spectator, Runnable {
     return approval;
   }
 
-  synchronized Optional<QueuedPlayer> lockNext(PlayerQueue queue) {
+  synchronized Optional<QueuedPlayer> lockNext(PersistenceManager pm, PlayerQueue queue) {
     Optional<QueuedPlayer> spectatingNext = queue.spectatingNext();
     if (!spectatingNext.isPresent()) {
-      spectatingNext = queue.poll();
+      spectatingNext = queue.poll(pm);
       if (spectatingNext.isPresent()) {
         spectatingNext.get().setState(QueuedPlayer.NEXT);
         if (spectatingNext.get().isNotify() && queue.currentlySpectating().isPresent()
@@ -218,8 +222,8 @@ public class SpectatorImpl implements Spectator, Runnable {
   }
 
   @Override
-  public EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue)
-      throws IOException {
+  public EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue,
+      String twitchUser) throws IOException {
     ApiUser userData = osuApi.getUserData(user.getPlayer().getUserId(), GameModes.OSU, pm, 0L);
     if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
       return EnqueueResult.FAILURE;
@@ -229,35 +233,56 @@ public class SpectatorImpl implements Spectator, Runnable {
         - settings.getMaxLastActivity()) {
       return EnqueueResult.FAILURE;
     }
-    return doEnqueue(pm, user, selfqueue);
+    return doEnqueue(pm, user, selfqueue, twitchUser);
   }
 
   /**
    * enqueue without activity/rank checks.
+   * @param twitchUser the enqueueing twitch user's name or null if queued from somewhere else
    */
-  EnqueueResult doEnqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue) {
+  EnqueueResult doEnqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue,
+      String twitchUser) {
     if (!selfqueue && !user.getPlayer().isAllowsSpectating()) {
       return EnqueueResult.DENIED;
     }
     synchronized (this) {
-      PlayerQueue queue = PlayerQueue.loadQueue(pm);
+      PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+      Optional<QueuedPlayer> current = queue.currentlySpectating();
       if (queue.contains(user)) {
-        return EnqueueResult.FAILURE;
+        if (current.isPresent() && current.get().equals(user)) {
+          return EnqueueResult.CURRENT;
+        }
+        Optional<QueuedPlayer> next = queue.spectatingNext();
+        if (next.isPresent() && next.get().equals(user)) {
+          return EnqueueResult.NEXT;
+        }
+        if (twitchUser == null) {
+          return EnqueueResult.FAILURE;
+        }
+        if (voteQueue(pm, user, twitchUser)) {
+          return EnqueueResult.VOTED;
+        } else {
+          return EnqueueResult.NOT_VOTED;
+        }
       }
       queue.add(pm, user);
-      log.info("Queued " + user.getPlayer().getUserName());
-      if (user.isNotify() && !user.equals(lockNext(queue).orElse(null))) {
-        osu.notifyQueued(user.getPlayer(), queue.playerAt(user));
+      if (twitchUser != null) {
+        voteQueue(pm, user, twitchUser);
       }
-      // wake spectator in the case that the queue was empty.
-      wake();
+      log.info("Queued " + user.getPlayer().getUserName());
+      if (user.isNotify() && !user.equals(lockNext(pm, queue).orElse(null))) {
+        osu.notifyQueued(user.getPlayer(), queue.playerAt(pm, user));
+      }
+      if (!current.isPresent()) {
+        wake();
+      }
       return EnqueueResult.SUCCESS;
     }
   }
 
   @Override
   public synchronized boolean advanceConditional(PersistenceManager pm, String expectedUser) {
-    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     Optional<QueuedPlayer> currentUser = queue.currentlySpectating();
     if (!currentUser.isPresent()) {
       return false;
@@ -272,18 +297,18 @@ public class SpectatorImpl implements Spectator, Runnable {
 
   @Override
   public synchronized boolean promote(PersistenceManager pm, OsuUser ircUser) {
-    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     Optional<QueuedPlayer> nextUser = queue.spectatingNext();
     QueuedPlayer queueRequest = new QueuedPlayer(ircUser, QueueSource.TWITCH, clock.getTime());
 
     // Don't force spectate a denied player
-    EnqueueResult enqueueResult = doEnqueue(pm, queueRequest, false);
+    EnqueueResult enqueueResult = doEnqueue(pm, queueRequest, false, null);
     if (enqueueResult == EnqueueResult.DENIED) {
       return false;
     }
     if (enqueueResult == EnqueueResult.FAILURE || enqueueResult == EnqueueResult.VOTED) {
       QueuedPlayer original = queueRequest;
-      queueRequest = queue.queue.stream().filter(x -> x.equals(original)).findFirst().get();
+      queueRequest = queue.stream().filter(x -> x.equals(original)).findFirst().get();
     }
 
     // Revert the next player
@@ -292,7 +317,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     }
 
     queueRequest.setState(QueuedPlayer.NEXT);
-    queue = PlayerQueue.loadQueue(pm);
+    queue = PlayerQueue.loadQueue(pm, clock);
     advance(pm, queue);
 
     return true;
@@ -302,7 +327,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     Optional<QueuedPlayer> current = queue.currentlySpectating();
     Optional<QueuedPlayer> next = queue.spectatingNext();
     if (!next.isPresent()) {
-      next = queue.poll();
+      next = queue.poll(pm);
     }
     if (!next.isPresent()) {
       next = pickAutoPlayer(pm, current.orElse(null));
@@ -340,12 +365,12 @@ public class SpectatorImpl implements Spectator, Runnable {
 
   @Override
   public synchronized QueuedPlayer getCurrentPlayer(PersistenceManager pm) {
-    return PlayerQueue.loadQueue(pm).currentlySpectating().orElse(null);
+    return PlayerQueue.loadQueue(pm, clock).currentlySpectating().orElse(null);
   }
 
   @Override
   public synchronized boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType) {
-    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     Optional<QueuedPlayer> currentlySpectating = queue.currentlySpectating();
     if (!currentlySpectating.isPresent()) {
       return false;
@@ -361,10 +386,22 @@ public class SpectatorImpl implements Spectator, Runnable {
     pm.makePersistent(vote);
     return true;
   }
+  
+  boolean voteQueue(PersistenceManager pm, QueuedPlayer player, @Nonnull String twitchUser) {
+    try (JDOQuery<QueueVote> query =
+        new JDOQuery<>(pm).select(queueVote).from(queueVote)
+            .where(queueVote.reference.eq(player), queueVote.twitchUser.eq(twitchUser))) {
+      if (query.fetchOne() != null) {
+        return false;
+      }
+      pm.makePersistent(new QueueVote(player, twitchUser));
+      return true;
+    }
+  }
 
   @Override
   public synchronized QueuedPlayer getNextPlayer(PersistenceManager pm) {
-    PlayerQueue loadQueue = PlayerQueue.loadQueue(pm);
+    PlayerQueue loadQueue = PlayerQueue.loadQueue(pm, clock);
     return loadQueue.spectatingNext().orElse(null);
   }
 
@@ -439,7 +476,7 @@ public class SpectatorImpl implements Spectator, Runnable {
 
   @Override
   public synchronized void removeFromQueue(PersistenceManager pm, OsuUser player) {
-    PlayerQueue queue = PlayerQueue.loadQueue(pm);
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     Optional<QueuedPlayer> current = queue.currentlySpectating();
     if (current.isPresent()) {
       if (current.get().getPlayer().equals(player)) {
@@ -447,19 +484,37 @@ public class SpectatorImpl implements Spectator, Runnable {
         return;
       }
     }
-    queue.queue.stream().filter(x -> x.getPlayer().equals(player))
+    queue.stream().filter(x -> x.getPlayer().equals(player))
         .forEach(x -> x.setState(QueuedPlayer.CANCELLED));
   }
 
   @Override
   public int getQueueSize(PersistenceManager pm) {
-    return PlayerQueue.loadQueue(pm).getSize();
+    return PlayerQueue.loadQueue(pm, clock).getSize();
   }
   
   @Override
   public int getQueuePosition(PersistenceManager pm, OsuUser player) {
-    int pos = PlayerQueue.loadQueue(pm)
-        .playerAt(new QueuedPlayer(player, QueueSource.AUTO, clock.getTime())); 
+    int pos = PlayerQueue.loadQueue(pm, clock)
+        .playerAt(pm, new QueuedPlayer(player, QueueSource.AUTO, clock.getTime())); 
     return pos == -1 ? -1 : pos + 1;
+  }
+  
+  @Override
+  public List<DisplayQueuePlayer> getCurrentQueue(PersistenceManager pm) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+    queue.ensureSorted(pm);
+    Map<QueuedPlayer, Long> votes = queue.getVotes(pm);
+    List<DisplayQueuePlayer> result = new ArrayList<>();
+    for (QueuedPlayer player : queue.queue) {
+      if (player.getState() < QueuedPlayer.QUEUED) {
+        continue;
+      }
+      long timeInQueue = clock.getTime() - player.getQueuedAt();
+      String timeString = CurrentPlayerService.formatDuration(timeInQueue);
+      result.add(new DisplayQueuePlayer(player.getPlayer().getUserName(), timeString, votes
+          .getOrDefault(player, 0L).intValue()));
+    }
+    return result;
   }
 }

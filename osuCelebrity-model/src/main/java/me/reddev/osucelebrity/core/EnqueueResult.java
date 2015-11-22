@@ -21,7 +21,19 @@ public enum EnqueueResult {
   /**
    * User does not allow spectating.
    */
-  DENIED(Responses.QUEUE_DENIED);
+  DENIED(Responses.QUEUE_DENIED),
+  /**
+   * User was already in the queue, but requester has already voted.
+   */
+  NOT_VOTED(Responses.QUEUE_NOT_VOTED),
+  /**
+   * User is next in line.
+   */
+  NEXT(Responses.QUEUE_NEXT),
+  /**
+   * User is currently being spectated.
+   */
+  CURRENT(Responses.QUEUE_SPECTATING);
   
   private final String response;
 

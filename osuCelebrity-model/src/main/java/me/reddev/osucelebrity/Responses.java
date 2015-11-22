@@ -19,7 +19,10 @@ public class Responses {
   public static final String QUEUE_UNSUCCESSFUL = "%s could not be added to the queue.";
   public static final String QUEUE_DENIED = "%s has opted out of being spectated.";
   public static final String QUEUE_VOTED =
-      "%s was already in the queue, but we'll make sure to see them soon.";
+      "Voted for %s.";
+  public static final String QUEUE_NOT_VOTED = "You already voted for %s.";
+  public static final String QUEUE_SPECTATING = "%s is currently being spectated.";
+  public static final String QUEUE_NEXT = "%s is next.";
   
   /*
    * EXCEPTIONS

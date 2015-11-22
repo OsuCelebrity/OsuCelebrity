@@ -66,14 +66,14 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testQueue() throws Exception {
-    when(spectator.enqueue(any(), any(), eq(false))).thenReturn(EnqueueResult.SUCCESS);
+    when(spectator.enqueue(any(), any(), eq(false), eq("twitchIrcUser"))).thenReturn(EnqueueResult.SUCCESS);
 
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!spec someone"));
 
     verify(spectator).enqueue(
         any(),
         eq(new QueuedPlayer(api.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
-            QueueSource.TWITCH, 0)), eq(false));
+            QueueSource.TWITCH, 0)), eq(false), eq("twitchIrcUser"));
     verify(outputChannel).message(anyString());
   }
 
