@@ -65,8 +65,8 @@ public class SpectatorImpl implements Spectator, Runnable {
 
   @Override
   public void run() {
-    try {
-      for (; run;) {
+    for (; run;) {
+      try {
         PersistenceManager pm = pmf.getPersistenceManager();
         try {
           long sleepUntil = loop(pm);
@@ -77,9 +77,9 @@ public class SpectatorImpl implements Spectator, Runnable {
         } finally {
           pm.close();
         }
+      } catch (Exception e) {
+        log.error("Exception in spectator", e);
       }
-    } catch (Exception e) {
-      log.error("Exception in spectator", e);
     }
   }
 
@@ -445,7 +445,7 @@ public class SpectatorImpl implements Spectator, Runnable {
       }
     }
     queue.queue.stream().filter(x -> x.getPlayer().equals(player))
-        .forEach(x -> x.setState(QueuedPlayer.DONE));
+        .forEach(x -> x.setState(QueuedPlayer.CANCELLED));
   }
 
   @Override

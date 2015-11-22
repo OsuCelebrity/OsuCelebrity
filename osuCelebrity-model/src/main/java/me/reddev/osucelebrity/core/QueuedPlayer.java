@@ -18,6 +18,7 @@ import javax.jdo.annotations.PrimaryKey;
 @Data
 @PersistenceCapable
 public class QueuedPlayer {
+  public static final int CANCELLED = -2;
   public static final int DONE = -1;
   public static final int SPECTATING = 0;
   public static final int NEXT = 1;
