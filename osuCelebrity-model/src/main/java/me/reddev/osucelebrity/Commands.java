@@ -12,4 +12,5 @@ public class Commands {
   public static final String UPVOTE = "dank";
   public static final String FORCESPEC = "forcespec ";
   public static final String POSITION = "position ";
+  public static final String SELFPOSITION = "position";
 }

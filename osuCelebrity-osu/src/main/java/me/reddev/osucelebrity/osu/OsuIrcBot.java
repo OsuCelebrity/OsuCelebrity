@@ -7,6 +7,7 @@ import static me.reddev.osucelebrity.Commands.OPTIN;
 import static me.reddev.osucelebrity.Commands.OPTOUT;
 import static me.reddev.osucelebrity.Commands.POSITION;
 import static me.reddev.osucelebrity.Commands.QUEUE;
+import static me.reddev.osucelebrity.Commands.SELFPOSITION;
 import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
 
@@ -295,6 +296,23 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     }
     
     return false;
+  }
+  
+  boolean handleSelfPosition(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, SELFPOSITION)) {
+      return false;
+    }
+    
+    int position = spectator.getQueuePosition(pm, user);
+    if (position != -1) {
+      event.getUser().send().message(String.format(OsuResponses.POSITION, 
+          user.getUserName(), position));
+    } else {
+      event.getUser().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
+          user.getUserName()));
+    }
+    return true;
   }
 
   void handleException(Exception ex, User user) {
