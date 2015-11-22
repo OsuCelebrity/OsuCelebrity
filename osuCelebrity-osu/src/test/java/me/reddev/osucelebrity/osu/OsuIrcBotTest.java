@@ -86,13 +86,13 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testSelfQueue() throws Exception {
-    when(spectator.enqueue(any(), any())).thenReturn(EnqueueResult.SUCCESS);
+    when(spectator.enqueue(any(), any(), eq(true))).thenReturn(EnqueueResult.SUCCESS);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!spec"));
 
     ArgumentCaptor<QueuedPlayer> captor = ArgumentCaptor.forClass(QueuedPlayer.class);
 
-    verify(spectator, only()).enqueue(any(), captor.capture());
+    verify(spectator, only()).enqueue(any(), captor.capture(), eq(true));
 
     QueuedPlayer request = captor.getValue();
     assertEquals("osuIrcUser", request.getPlayer().getUserName());
@@ -175,14 +175,14 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testQueue() throws Exception {
-    when(spectator.enqueue(any(), any())).thenReturn(EnqueueResult.SUCCESS);
+    when(spectator.enqueue(any(), any(), eq(false))).thenReturn(EnqueueResult.SUCCESS);
     
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!spec thatguy"));
     
     verify(spectator, only()).enqueue(
         any(),
         eq(new QueuedPlayer(osuApi.getUser("thatguy", pmf.getPersistenceManager(), 0),
-            QueueSource.OSU, 0)));
+            QueueSource.OSU, 0)), eq(false));
   }
   
   @Test

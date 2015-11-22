@@ -3,13 +3,14 @@ package me.reddev.osucelebrity.osuapi;
 import me.reddev.osucelebrity.PassAndReturnNonnull;
 import me.reddev.osucelebrity.osu.OsuIrcUser;
 import me.reddev.osucelebrity.osu.OsuUser;
-
+import me.reddev.osucelebrity.osu.PlayerActivity;
 import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
 
 import java.io.IOException;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import javax.jdo.PersistenceManager;
 
 @PassAndReturnNonnull
@@ -65,4 +66,17 @@ public interface OsuApi {
   @CheckForNull
   ApiUser getUserData(@UserId int userid, @GameMode int gameMode, PersistenceManager pm, 
       long maxAge) throws IOException;
+  
+  /**
+   * Get a user's recent activity.
+   * 
+   * @param user target user. game mode is taken into account.
+   * @param pm the requests's persistence manager
+   * @param maxAge maximum age of the returned object. If there is a cached object which is younger
+   *        than maximum age or maxAge is <= 0, it may be returned.
+   * @return the game mode specific recent activity
+   */
+  @Nonnull
+  PlayerActivity getPlayerActivity(ApiUser user, PersistenceManager pm, long maxAge)
+      throws IOException;
 }

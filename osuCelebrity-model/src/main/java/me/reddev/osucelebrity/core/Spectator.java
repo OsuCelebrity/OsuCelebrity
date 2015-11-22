@@ -3,21 +3,24 @@ package me.reddev.osucelebrity.core;
 import me.reddev.osucelebrity.PassAndReturnNonnull;
 import me.reddev.osucelebrity.osu.OsuUser;
 
+import java.io.IOException;
+
 import javax.annotation.CheckForNull;
 import javax.jdo.PersistenceManager;
+
 
 @PassAndReturnNonnull
 public interface Spectator {
   /**
-   * Add the given player to the queue.
+   * Performs some checks and adds the given player to the queue.
    * 
    * @param pm the current request's persistence manager
    * @param user a new object (not persistent).
-   * @return true if the player was added to the queue. Currently the only reason why a player
-   *         cannot be added to the queue is that they are already in the queue. This might change
-   *         in the future.
+   * @param selfqueue TODO
+   * @return the result of the operation. See {@link EnqueueResult}
    */
-  EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user);
+  EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue)
+      throws IOException;
 
   /**
    * Stops spectating the current player and advances to the next player.

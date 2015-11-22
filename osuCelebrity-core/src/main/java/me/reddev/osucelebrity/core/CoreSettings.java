@@ -22,4 +22,6 @@ public interface CoreSettings {
   long getAutoSpecMaxLastActivity();
 
   int getMinPlayCount();
+
+  long getMaxLastActivity();
 }

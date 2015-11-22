@@ -1,15 +1,16 @@
 package me.reddev.osucelebrity.osuapi;
 
+import me.reddev.osucelebrity.osu.PlayerActivity;
+
 import static me.reddev.osucelebrity.osu.QOsuIrcUser.osuIrcUser;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osuapi.QApiUser.apiUser;
+import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 
 import com.querydsl.jdo.JDOQuery;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import me.reddev.osucelebrity.osu.OsuIrcUser;
 import me.reddev.osucelebrity.osu.OsuUser;
-
 import org.tillerino.osuApiModel.OsuApiUser;
 
 import java.io.IOException;
@@ -81,5 +82,17 @@ public class MockOsuApi implements OsuApi {
     apiUser.setMode(gameMode);
     apiUser.setPlayCount(1000);
     return pm.makePersistent(new ApiUser(apiUser, System.currentTimeMillis()));
+  }
+
+  @Override
+  public PlayerActivity getPlayerActivity(ApiUser user, PersistenceManager pm, long maxAge)
+      throws IOException {
+    PlayerActivity activity = new JDOQuery<>(pm).select(playerActivity).from(playerActivity).where(playerActivity.user.eq(user)).fetchOne();
+    
+    if(activity == null) {
+      activity = pm.makePersistent(new PlayerActivity(user, 0, 0));
+    }
+    
+    return activity;
   }
 }

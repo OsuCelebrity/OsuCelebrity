@@ -56,6 +56,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     when(settings.getAutoSpecMaxRank()).thenReturn(1000L);
     when(settings.getAutoSpecMaxLastActivity()).thenReturn(300000L);
     when(settings.getMinPlayCount()).thenReturn(1000);
+    when(settings.getMaxLastActivity()).thenReturn(24L * 60 * 60 * 1000);
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, ""));
     
     spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, api);
@@ -73,19 +74,19 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertFalse(spectator.advance(pm, PlayerQueue.loadQueue(pm)));
 
     QueuedPlayer user = getUser(pm, "someplayer");
-    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user));
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user, false));
     // already in queue
-    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, user));
+    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, user, false));
 
     spectator.loop(pm);
     
     QueuedPlayer user2 = getUser(pm, "someplayer2");
-    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user2));
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user2, false));
 
     spectator.loop(pm);
     
     QueuedPlayer user3 = getUser(pm, "someplayer3");
-    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user3));
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user3, false));
     
     // we don't want this player to receive a queue or next message, since they are spectated instantly
     verify(osu, times(0)).notifyQueued(eq(user.getPlayer()), anyInt());
@@ -100,7 +101,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     verify(osu).startSpectate(user.getPlayer());
     // currently being spectated
-    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, user));
+    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, user, false));
   }
 
   @Test
@@ -110,10 +111,10 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.loop(pm);
 
     QueuedPlayer user1 = getUser(pm, "someplayer");
-    spectator.enqueue(pm, user1);
+    spectator.enqueue(pm, user1, false);
     clock.sleepUntil(1);
     QueuedPlayer user2 = getUser(pm, "someplayer2");
-    spectator.enqueue(pm, user2);
+    spectator.enqueue(pm, user2, false);
 
     PlayerQueue queue = PlayerQueue.loadQueue(pm);
 
@@ -141,7 +142,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testPromote() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     spectator
-        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()), false);
 
     spectator.loop(pm);
 
@@ -157,19 +158,19 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testPromote2() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     spectator
-        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()), false);
 
     spectator.loop(pm);
     clock.sleepUntil(1000);
 
     spectator
-        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer3", pm, 0), null, clock.getTime()));
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer3", pm, 0), null, clock.getTime()), false);
 
     spectator.loop(pm);
     clock.sleepUntil(2000);
     
     spectator
-        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer2", pm, 0), null, clock.getTime()));
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer2", pm, 0), null, clock.getTime()), false);
 
     spectator.loop(pm);
     clock.sleepUntil(3000);
@@ -186,12 +187,12 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testApprovalUnique() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     spectator
-        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()));
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()), false);
 
     spectator.loop(pm);
 
     spectator.enqueue(pm,
-        new QueuedPlayer(api.getUser("someplayer2", pm, 0), null, clock.getTime()));
+        new QueuedPlayer(api.getUser("someplayer2", pm, 0), null, clock.getTime()), false);
 
     spectator.loop(pm);
 
@@ -210,7 +211,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testApprovalLast() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
-    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()), false);
 
     spectator.loop(pm);
 
@@ -224,7 +225,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testApprovalNoVotes() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
-    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()), false);
 
     spectator.loop(pm);
 
@@ -239,7 +240,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertEquals(
         EnqueueResult.SUCCESS,
         spectator.enqueue(pm,
-            new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime())));
+            new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()), false));
 
     spectator.loop(pm);
 
@@ -255,7 +256,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
-    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()), false);
 
     spectator.loop(pm);
 
@@ -289,7 +290,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
     QueuedPlayer queued = new QueuedPlayer(user, null, clock.getTime());
-    spectator.enqueue(pm, queued);
+    spectator.enqueue(pm, queued, false);
 
     spectator.loop(pm);
     
@@ -308,7 +309,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser user = api.getUser("someplayer", pm, 0);
-    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()));
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()), false);
 
     spectator.loop(pm);
 
@@ -330,10 +331,10 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testPlayerOffline() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
 
-    spectator.enqueue(pm, getUser(pm, "user1"));
+    spectator.enqueue(pm, getUser(pm, "user1"), false);
     QueuedPlayer player2 = getUser(pm, "user2");
-    spectator.enqueue(pm, player2);
-    spectator.enqueue(pm, getUser(pm, "user3"));
+    spectator.enqueue(pm, player2, false);
+    spectator.enqueue(pm, getUser(pm, "user3"), false);
 
     when(osu.getClientStatus()).thenReturn(null);
     spectator.loop(pm);
@@ -380,8 +381,8 @@ public class SpectatorImplTest extends AbstractJDOTest {
     PersistenceManager pm = pmf.getPersistenceManager();
 
     QueuedPlayer player1 = getUser(pm, "user1");
-    spectator.enqueue(pm, player1);
-    spectator.enqueue(pm, getUser(pm, "user2"));
+    spectator.enqueue(pm, player1, false);
+    spectator.enqueue(pm, getUser(pm, "user2"), false);
     spectator.loop(pm);
 
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.WATCHING, ""));
@@ -475,14 +476,14 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testGetQueueSize() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     assertEquals(0, spectator.getQueueSize(pm));
-    spectator.enqueue(pm, getUser(pm, "player1"));
+    spectator.enqueue(pm, getUser(pm, "player1"), false);
     assertEquals(1, spectator.getQueueSize(pm));
     spectator.loop(pm);
     assertEquals(0, spectator.getQueueSize(pm));
-    spectator.enqueue(pm, getUser(pm, "player2"));
-    spectator.enqueue(pm, getUser(pm, "player3"));
-    spectator.enqueue(pm, getUser(pm, "player4"));
-    spectator.enqueue(pm, getUser(pm, "player5"));
+    spectator.enqueue(pm, getUser(pm, "player2"), false);
+    spectator.enqueue(pm, getUser(pm, "player3"), false);
+    spectator.enqueue(pm, getUser(pm, "player4"), false);
+    spectator.enqueue(pm, getUser(pm, "player5"), false);
     spectator.loop(pm);
     assertEquals(4, spectator.getQueueSize(pm));
   }
@@ -494,41 +495,61 @@ public class SpectatorImplTest extends AbstractJDOTest {
     OsuUser user = api.getUser("player", pm, 0);
     api.getUserData(user.getUserId(), 0, pm, 0).setPlayCount(50);
     
-    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, new QueuedPlayer(user, QueueSource.TWITCH, 0)));
+    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, new QueuedPlayer(user, QueueSource.TWITCH, 0), false));
   }
   
   @Test
   public void testSkipTolerance() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
-    spectator.enqueue(pm, getUser(pm, "thatname"));
+    spectator.enqueue(pm, getUser(pm, "thatname"), false);
     spectator.loop(pm);
-    spectator.enqueue(pm, getUser(pm, "someotherguy"));
+    spectator.enqueue(pm, getUser(pm, "someotherguy"), false);
     assertTrue(spectator.advanceConditional(pm, "thname"));
   }
   
   @Test
   public void testSkipToleranceFail() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
-    spectator.enqueue(pm, getUser(pm, "thatname"));
+    spectator.enqueue(pm, getUser(pm, "thatname"), false);
     spectator.loop(pm);
-    spectator.enqueue(pm, getUser(pm, "someotherguy"));
+    spectator.enqueue(pm, getUser(pm, "someotherguy"), false);
     assertFalse(spectator.advanceConditional(pm, "thatotherguy"));
   }
   
   @Test
   public void testQueuePosition() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
-    spectator.enqueue(pm, getUser(pm, "player1"));
-    spectator.enqueue(pm, getUser(pm, "player2"));
-    spectator.enqueue(pm, getUser(pm, "player3"));
+    spectator.enqueue(pm, getUser(pm, "player1"), false);
+    spectator.enqueue(pm, getUser(pm, "player2"), false);
+    spectator.enqueue(pm, getUser(pm, "player3"), false);
     assertEquals(2, spectator.getQueuePosition(pm, api.getUser("player2", pm, 0)));
   }
   
   @Test
   public void testQueuePositionNotInQueue() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
-    spectator.enqueue(pm, getUser(pm, "player1"));
-    spectator.enqueue(pm, getUser(pm, "player3"));
+    spectator.enqueue(pm, getUser(pm, "player1"), false);
+    spectator.enqueue(pm, getUser(pm, "player3"), false);
     assertEquals(-1, spectator.getQueuePosition(pm, api.getUser("player2", pm, 0)));
+  }
+  
+  @Test
+  public void testLastActivity() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, getUser(pm, "player1"), false));
+    clock.sleepUntil(30L * 60 * 60 * 1000);
+    assertEquals(EnqueueResult.FAILURE, spectator.enqueue(pm, getUser(pm, "player3"), false));
+    // self-queue is fine
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, getUser(pm, "player3"), true));
+  }
+  
+  @Test
+  public void testSpectatingDenied() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    QueuedPlayer user = getUser(pm, "player3");
+    user.getPlayer().setAllowsSpectating(false);
+    assertEquals(EnqueueResult.DENIED, spectator.enqueue(pm, user, false));
+    // self-queue is fine
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user, true));
   }
 }

@@ -9,7 +9,6 @@ import com.google.common.base.Objects;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +17,7 @@ import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
+import me.reddev.osucelebrity.osu.PlayerActivity;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.Twitch;
@@ -217,27 +217,27 @@ public class SpectatorImpl implements Spectator, Runnable {
     return spectatingNext;
   }
 
-  /**
-   * Adds a player to the queue.
-   * 
-   * @return true if the player was added, false if they are already in the queue or currently being
-   *         spectated.
-   */
   @Override
-  public EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user) {
-    if (!user.getPlayer().isAllowsSpectating()) {
-      return EnqueueResult.DENIED;
-    }
-    ApiUser userData;
-    try {
-      userData =
-          osuApi.getUserData(user.getPlayer().getUserId(), GameModes.OSU, pm, 0L);
-    } catch (IOException e) {
-      // this shouldn't happen since the data should be cached
-      throw new RuntimeException(e);
-    }
+  public EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue)
+      throws IOException {
+    ApiUser userData = osuApi.getUserData(user.getPlayer().getUserId(), GameModes.OSU, pm, 0L);
     if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
       return EnqueueResult.FAILURE;
+    }
+    PlayerActivity activity = osuApi.getPlayerActivity(userData, pm, 1L);
+    if (!selfqueue && activity.getLastActivity() < clock.getTime()
+        - settings.getMaxLastActivity()) {
+      return EnqueueResult.FAILURE;
+    }
+    return doEnqueue(pm, user, selfqueue);
+  }
+
+  /**
+   * enqueue without activity/rank checks.
+   */
+  EnqueueResult doEnqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue) {
+    if (!selfqueue && !user.getPlayer().isAllowsSpectating()) {
+      return EnqueueResult.DENIED;
     }
     synchronized (this) {
       PlayerQueue queue = PlayerQueue.loadQueue(pm);
@@ -277,7 +277,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     QueuedPlayer queueRequest = new QueuedPlayer(ircUser, QueueSource.TWITCH, clock.getTime());
 
     // Don't force spectate a denied player
-    EnqueueResult enqueueResult = enqueue(pm, queueRequest);
+    EnqueueResult enqueueResult = doEnqueue(pm, queueRequest, false);
     if (enqueueResult == EnqueueResult.DENIED) {
       return false;
     }

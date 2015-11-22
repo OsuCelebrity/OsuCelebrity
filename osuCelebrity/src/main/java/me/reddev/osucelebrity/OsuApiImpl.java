@@ -2,26 +2,26 @@ package me.reddev.osucelebrity;
 
 import static me.reddev.osucelebrity.osu.QOsuIrcUser.osuIrcUser;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
+import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 import static me.reddev.osucelebrity.osuapi.QApiUser.apiUser;
 
 import com.querydsl.jdo.JDOQuery;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import lombok.RequiredArgsConstructor;
-
 import me.reddev.osucelebrity.core.Clock;
 import me.reddev.osucelebrity.osu.OsuIrcUser;
 import me.reddev.osucelebrity.osu.OsuUser;
+import me.reddev.osucelebrity.osu.PlayerActivity;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
-
 import org.tillerino.osuApiModel.Downloader;
 import org.tillerino.osuApiModel.GameModes;
+import org.tillerino.osuApiModel.OsuApiScore;
 import org.tillerino.osuApiModel.OsuApiUser;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
@@ -173,6 +173,26 @@ public class OsuApiImpl implements OsuApi {
         }
         throw e;
       }
+    }
+  }
+  
+  @Override
+  public PlayerActivity getPlayerActivity(ApiUser user, PersistenceManager pm, long maxAge)
+      throws IOException {
+    try (JDOQuery<PlayerActivity> userQuery =
+        new JDOQuery<PlayerActivity>(pm).select(playerActivity).from(playerActivity)
+            .where(playerActivity.user.eq(user))) {
+      PlayerActivity activity = userQuery.fetchFirst();
+      if (activity == null) {
+        activity = pm.makePersistent(new PlayerActivity(user, 0, 0));
+      } else if (maxAge <= 0 || activity.getLastChecked() >= clock.getTime() - maxAge) {
+        return activity;
+      }
+      List<OsuApiScore> userRecent =
+          downloader.getUserRecent(activity.getUser().getUserId(),
+              activity.getUser().getGameMode(), OsuApiScore.class);
+      activity.update(userRecent, clock.getTime());
+      return activity;
     }
   }
 }

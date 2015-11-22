@@ -195,10 +195,12 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       }
       QueuedPlayer queueRequest =
           new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
-      EnqueueResult result = spectator.enqueue(pm, queueRequest);
+      EnqueueResult result = spectator.enqueue(pm, queueRequest, false);
       if (result == EnqueueResult.SUCCESS) {
         event.getChannel().send()
             .message(String.format(TwitchResponses.QUEUE_SUCCESSFUL, requestedUser.getUserName()));
+      } else {
+        event.getChannel().send().message(result.formatResponse(requestedUser.getUserName()));
       }
       return true;
     }
@@ -263,10 +265,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (ircUser != null) {
       int position = spectator.getQueuePosition(pm, ircUser);
       if (position != -1) {
-        event.getUser().send().message(String.format(OsuResponses.POSITION, 
+        event.getChannel().send().message(String.format(OsuResponses.POSITION, 
             ircUser.getUserName(), position));
       } else {
-        event.getUser().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
+        event.getChannel().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
             ircUser.getUserName()));
       }
       return true;

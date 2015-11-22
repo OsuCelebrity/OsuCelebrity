@@ -181,7 +181,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       return true;
     }
     QueuedPlayer queueRequest = new QueuedPlayer(requestedUser, QueueSource.OSU, clock.getTime());
-    EnqueueResult result = spectator.enqueue(pm, queueRequest);
+    EnqueueResult result = spectator.enqueue(pm, queueRequest, false);
     if (result == EnqueueResult.SUCCESS) {
       event.getUser().send()
           .message(String.format(Responses.QUEUE_SUCCESSFUL, requestedUser.getUserName()));
@@ -214,12 +214,12 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   }
 
   boolean handleSelfQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
-      PersistenceManager pm) {
+      PersistenceManager pm) throws IOException {
     if (!message.equalsIgnoreCase(SELFQUEUE)) {
       return false;
     }
     QueuedPlayer queueRequest = new QueuedPlayer(user, QueueSource.OSU, clock.getTime());
-    EnqueueResult result = spectator.enqueue(pm, queueRequest);
+    EnqueueResult result = spectator.enqueue(pm, queueRequest, true);
     if (result == EnqueueResult.SUCCESS) {
       event.getUser().send().message(Responses.SELF_QUEUE_SUCCESSFUL);
     } else if (result == EnqueueResult.FAILURE) {

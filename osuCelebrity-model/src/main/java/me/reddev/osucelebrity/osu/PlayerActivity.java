@@ -20,7 +20,7 @@ public class PlayerActivity {
   @PrimaryKey
   private ApiUser user;
 
-  @Setter(AccessLevel.PACKAGE)
+  @Setter
   private long lastActivity;
 
   @Setter(AccessLevel.PACKAGE)
