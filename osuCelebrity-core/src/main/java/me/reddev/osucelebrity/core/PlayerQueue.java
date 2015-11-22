@@ -134,4 +134,8 @@ public class PlayerQueue {
   public Stream<QueuedPlayer> stream() {
     return queue.stream();
   }
+
+  public Optional<QueuedPlayer> find(QueuedPlayer user) {
+    return stream().filter(user::equals).findFirst();
+  }
 }

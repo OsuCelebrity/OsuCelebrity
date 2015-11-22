@@ -249,6 +249,7 @@ public class SpectatorImpl implements Spectator, Runnable {
       PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
       Optional<QueuedPlayer> current = queue.currentlySpectating();
       if (queue.contains(user)) {
+        user = queue.find(user).get();
         if (current.isPresent() && current.get().equals(user)) {
           return EnqueueResult.CURRENT;
         }
