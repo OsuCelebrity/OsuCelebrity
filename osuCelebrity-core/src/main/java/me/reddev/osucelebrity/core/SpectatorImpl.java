@@ -457,6 +457,6 @@ public class SpectatorImpl implements Spectator, Runnable {
   public int getQueuePosition(PersistenceManager pm, OsuUser player) {
     int pos = PlayerQueue.loadQueue(pm)
         .playerAt(new QueuedPlayer(player, QueueSource.AUTO, clock.getTime())); 
-    return pos == -1 ? -1 : pos;
+    return pos == -1 ? -1 : pos + 1;
   }
 }
