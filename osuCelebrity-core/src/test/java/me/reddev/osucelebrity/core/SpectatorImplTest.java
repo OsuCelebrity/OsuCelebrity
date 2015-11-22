@@ -55,6 +55,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     when(settings.getAutoSpecTime()).thenReturn(300000L);
     when(settings.getAutoSpecMaxRank()).thenReturn(1000L);
     when(settings.getAutoSpecMaxLastActivity()).thenReturn(300000L);
+    when(settings.getMinPlayCount()).thenReturn(1000);
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, ""));
     
     spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, api);

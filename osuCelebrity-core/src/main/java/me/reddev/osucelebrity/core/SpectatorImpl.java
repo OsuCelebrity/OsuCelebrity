@@ -224,32 +224,35 @@ public class SpectatorImpl implements Spectator, Runnable {
    *         spectated.
    */
   @Override
-  public synchronized EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user) {
+  public EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user) {
     if (!user.getPlayer().isAllowsSpectating()) {
       return EnqueueResult.DENIED;
     }
     ApiUser userData;
     try {
-      userData = osuApi.getUserData(user.getPlayer().getUserId(), GameModes.OSU, pm, 0);
+      userData =
+          osuApi.getUserData(user.getPlayer().getUserId(), GameModes.OSU, pm, 0L);
     } catch (IOException e) {
       // this shouldn't happen since the data should be cached
       throw new RuntimeException(e);
     }
-    if (userData == null || userData.getPlayCount() < 100) {
+    if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
       return EnqueueResult.FAILURE;
     }
-    PlayerQueue queue = PlayerQueue.loadQueue(pm);
-    if (queue.contains(user)) {
-      return EnqueueResult.FAILURE;
+    synchronized (this) {
+      PlayerQueue queue = PlayerQueue.loadQueue(pm);
+      if (queue.contains(user)) {
+        return EnqueueResult.FAILURE;
+      }
+      queue.add(pm, user);
+      log.info("Queued " + user.getPlayer().getUserName());
+      if (user.isNotify() && !user.equals(lockNext(queue).orElse(null))) {
+        osu.notifyQueued(user.getPlayer());
+      }
+      // wake spectator in the case that the queue was empty.
+      wake();
+      return EnqueueResult.SUCCESS;
     }
-    queue.add(pm, user);
-    log.info("Queued " + user.getPlayer().getUserName());
-    if (user.isNotify() && !user.equals(lockNext(queue).orElse(null))) {
-      osu.notifyQueued(user.getPlayer());
-    }
-    // wake spectator in the case that the queue was empty.
-    wake();
-    return EnqueueResult.SUCCESS;
   }
 
   @Override

@@ -67,6 +67,7 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   private long idleTimeout;
   private long autoSpecMaxLastActivity;
   private long autoSpecMaxRank;
+  private int minPlayCount;
 
   /**
    * Creates a new settings object using a given property list.

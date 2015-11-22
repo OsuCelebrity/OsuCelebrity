@@ -20,4 +20,6 @@ public interface CoreSettings {
   long getAutoSpecMaxRank();
   
   long getAutoSpecMaxLastActivity();
+
+  int getMinPlayCount();
 }
