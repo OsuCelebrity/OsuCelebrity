@@ -356,7 +356,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, ""));
 
-    for (; clock.getTime() < settings.getDefaultSpecDuration(); clock
+    for (; clock.getTime() < settings.getDefaultSpecDuration() + 9000; clock
         .sleepUntil(clock.getTime() + 1000)) {
       spectator.loop(pm);
       assertEquals("user1", spectator.getCurrentPlayer(pm).getPlayer().getUserName());
@@ -367,8 +367,8 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     when(osu.getClientStatus()).thenReturn(null);
 
-    for (; clock.getTime() < settings.getDefaultSpecDuration() + settings.getOfflineTimeout(); clock
-        .sleepUntil(clock.getTime() + 1000)) {
+    for (; clock.getTime() < settings.getDefaultSpecDuration() + settings.getOfflineTimeout()
+        + 9000; clock.sleepUntil(clock.getTime() + 1000)) {
       spectator.loop(pm);
       assertEquals("user2", spectator.getCurrentPlayer(pm).getPlayer().getUserName());
     }

@@ -169,12 +169,16 @@ public class SpectatorImpl implements Spectator, Runnable {
     double approval = getApproval(pm, current);
     long time = clock.getTime();
     long lastRemainingTime = current.getStoppingAt() - current.getLastRemainingTimeUpdate();
+    long timePlayed = clock.getTime() - current.getStartedAt();
+    OsuStatus readStatus = status.lastStatus;
+    boolean playing = readStatus != null && readStatus.getType() == Type.PLAYING;
     if (approval > .75) {
       long newRemainingTime =
           Math.min(settings.getDefaultSpecDuration(),
               lastRemainingTime + time - current.getLastRemainingTimeUpdate());
       current.setStoppingAt(time + newRemainingTime);
-    } else if (approval >= .5) {
+    } else if (approval >= .5
+        || (!playing && timePlayed < settings.getDefaultSpecDuration())) {
       current.setStoppingAt(time + current.getStoppingAt() - current.getLastRemainingTimeUpdate());
     } else if (approval < .25) {
       long newRemainingTime =
@@ -182,7 +186,7 @@ public class SpectatorImpl implements Spectator, Runnable {
               lastRemainingTime - 2 * (time - current.getLastRemainingTimeUpdate()));
       current.setStoppingAt(time + newRemainingTime);
     }
-    // no votes are NaN, don't fall into
+    // no votes are NaN => regular drain
 
     current.setLastRemainingTimeUpdate(time);
   }
