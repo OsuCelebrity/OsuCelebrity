@@ -5,6 +5,7 @@ import lombok.Setter;
 import lombok.ToString;
 import me.reddev.osucelebrity.Privilege;
 import org.tillerino.osuApiModel.OsuApiUser;
+import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
 
 import javax.jdo.annotations.Column;
@@ -37,6 +38,12 @@ public class OsuUser {
   @Column(defaultValue = "true")
   @Index
   private boolean allowsSpectating = true;
+  
+  @Setter(onParam = @__(@GameMode))
+  @Getter(onMethod = @__(@GameMode))
+  @Column(defaultValue = "0")
+  @GameMode
+  private int gameMode = 0;
 
   /**
    * Creates a new user object copying all relevant data from the api user object.

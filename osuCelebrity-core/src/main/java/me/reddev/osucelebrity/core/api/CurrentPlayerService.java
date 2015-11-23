@@ -15,7 +15,6 @@ import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import org.apache.commons.lang3.StringUtils;
-import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
 
@@ -107,7 +106,7 @@ public class CurrentPlayerService {
         response.setId(player.getUserId());
         response.setSource(queued.getQueueSource() == QueueSource.AUTO ? "auto" : "queue");
 
-        ApiUser apiUser = getApiUser(response);
+        ApiUser apiUser = getApiUser(response, queued.getPlayer());
 
         if (apiUser != null) {
           response.rank = apiUser.getRank();
@@ -154,13 +153,15 @@ public class CurrentPlayerService {
     return stringMinutes + formatted;
   }
 
-  private ApiUser getApiUser(CurrentPlayer currentPlayer) {
+  private ApiUser getApiUser(CurrentPlayer currentPlayer, OsuUser osuUser) {
     Future<ApiUser> request =
-        exec.submit(() -> getApiUserTransient(currentPlayer.getId(), GameModes.OSU, 60 * 1000L));
+        exec.submit(() -> getApiUserTransient(currentPlayer.getId(), osuUser.getGameMode(),
+            60 * 1000L));
     try {
       return request.get(500, TimeUnit.MILLISECONDS);
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      request = exec.submit(() -> getApiUserTransient(currentPlayer.getId(), GameModes.OSU, 0));
+      request =
+          exec.submit(() -> getApiUserTransient(currentPlayer.getId(), osuUser.getGameMode(), 0));
       try {
         return request.get(500, TimeUnit.MILLISECONDS);
       } catch (InterruptedException | ExecutionException | TimeoutException e1) {

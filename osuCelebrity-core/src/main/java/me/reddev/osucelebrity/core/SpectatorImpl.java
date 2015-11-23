@@ -25,7 +25,6 @@ import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.Twitch;
 import org.apache.commons.lang3.StringUtils;
-import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -228,7 +227,8 @@ public class SpectatorImpl implements Spectator, Runnable {
   @Override
   public EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue,
       String twitchUser) throws IOException {
-    ApiUser userData = osuApi.getUserData(user.getPlayer().getUserId(), GameModes.OSU, pm, 0L);
+    ApiUser userData =
+        osuApi.getUserData(user.getPlayer().getUserId(), user.getPlayer().getGameMode(), pm, 0L);
     if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
       return EnqueueResult.FAILURE;
     }

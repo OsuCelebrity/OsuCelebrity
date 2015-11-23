@@ -2,6 +2,7 @@ package me.reddev.osucelebrity.osu;
 
 import static me.reddev.osucelebrity.Commands.FORCESKIP;
 import static me.reddev.osucelebrity.Commands.FORCESPEC;
+import static me.reddev.osucelebrity.Commands.GAME_MODE;
 import static me.reddev.osucelebrity.Commands.MUTE;
 import static me.reddev.osucelebrity.Commands.OPTIN;
 import static me.reddev.osucelebrity.Commands.OPTOUT;
@@ -35,6 +36,7 @@ import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.ServerResponseEvent;
+import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -80,6 +82,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     handlers.add(this::handleMute);
     handlers.add(this::handleOpt);
     handlers.add(this::handleSpec);
+    handlers.add(this::handleGameMode);
   }
 
   /**
@@ -309,6 +312,30 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       event.getUser().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
           user.getUserName()));
     }
+    return true;
+  }
+  
+  boolean handleGameMode(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, GAME_MODE)) {
+      return false;
+    }
+    
+    message = message.substring(GAME_MODE.length());
+    
+    if (message.equalsIgnoreCase("osu")) {
+      user.setGameMode(GameModes.OSU);
+    } else if (message.equalsIgnoreCase("taiko")) {
+      user.setGameMode(GameModes.TAIKO);
+    } else if (message.equalsIgnoreCase("ctb")) {
+      user.setGameMode(GameModes.CTB);
+    } else if (message.equalsIgnoreCase("mania")) {
+      user.setGameMode(GameModes.MANIA);
+    } else {
+      return false;
+    }
+    
+    event.getUser().send().message("game mode changed.");
     return true;
   }
 

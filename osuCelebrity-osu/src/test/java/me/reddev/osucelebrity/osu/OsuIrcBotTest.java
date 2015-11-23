@@ -1,17 +1,17 @@
 package me.reddev.osucelebrity.osu;
 
+import org.tillerino.osuApiModel.GameModes;
+
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.snapshot.UserSnapshot;
 import org.pircbotx.snapshot.UserChannelDaoSnapshot;
 import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.JoinEvent;
-
 import com.google.common.collect.ImmutableList;
 
 import java.util.Arrays;
@@ -213,5 +213,25 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     
     verify(spectator, times(0)).promote(any(), 
         eq(osuApi.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
+  }
+  
+  @Test
+  public void testGameMode() throws Exception {
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!gamemode ctb"));
+
+    assertEquals(GameModes.CTB, osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0)
+        .getGameMode());
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!gamemode taiko"));
+
+    assertEquals(GameModes.TAIKO, osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0)
+        .getGameMode());
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!gamemode mania"));
+
+    assertEquals(GameModes.MANIA, osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0)
+        .getGameMode());
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!gamemode osu"));
+
+    assertEquals(GameModes.OSU, osuApi.getUser("osuIrcUser", pmf.getPersistenceManager(), 0)
+        .getGameMode());
   }
 }
