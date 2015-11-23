@@ -59,4 +59,9 @@ public class OsuResponses extends Responses {
   public static final String DONE_SPECTATING = "[http://www.twitch.tv/osucelebrity OsuCelebrity] "
       + "has moved on to the next player. Thanks for playing! "
       + commands;
+  
+  /**
+   * After the player has finished playing.
+   */
+  public static final String STATISTICS = "Your session statistics: %d danks, %d skips.";
 }

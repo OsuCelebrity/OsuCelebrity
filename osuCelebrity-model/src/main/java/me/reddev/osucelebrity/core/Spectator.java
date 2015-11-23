@@ -108,7 +108,15 @@ public interface Spectator {
 
   /**
    * returns the current top of the queue excluding the current and the next player.
+   * @param pm the current request's persistence manager
    * @return the full queue
    */
   List<DisplayQueuePlayer> getCurrentQueue(PersistenceManager pm);
+  
+  /**
+   * Sends the user the statistics about their round, after their round is over.
+   * @param pm the current request's persistence manager
+   * @param player the player of the round
+   */
+  void sendEndStatistics(PersistenceManager pm, QueuedPlayer player);
 }

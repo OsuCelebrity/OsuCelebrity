@@ -46,11 +46,19 @@ public interface Osu {
   public void notifyQueued(OsuUser osuUser, int queuePosition);
 
   /**
-   * Notifies a player that they've been added to the queue.
+   * Notifies a player that their session is over.
    * 
    * @param osuUser the player to be notified.
    */
   public void notifyDone(OsuUser osuUser);
+  
+  /**
+   * Notifies a player of their session statistics.
+   * @param player the player to be notified.
+   * @param danks the number of danks in their session.
+   * @param skips the number of skips in their session.
+   */
+  void notifyStatistics(OsuUser osuUser, long danks, long skips);
 
   /**
    * Retrieves the client status.

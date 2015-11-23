@@ -110,6 +110,7 @@ public class SpectatorImpl implements Spectator, Runnable {
         }
       } else {
         if (queue.spectatingUntil() <= time) {
+          sendEndStatistics(pm, current.get());
           if (next.isPresent()) {
             advance(pm, queue);
           } else {
@@ -343,17 +344,19 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (!next.isPresent()) {
       return false;
     }
-    startSpectating(queue, next.get());
+    startSpectating(pm, queue, next.get());
     status = new Status();
     return true;
   }
 
-  private synchronized void startSpectating(PlayerQueue queue, QueuedPlayer next) {
+  private synchronized void startSpectating(PersistenceManager pm, 
+      PlayerQueue queue, QueuedPlayer next) {
     Optional<QueuedPlayer> spectating = queue.currentlySpectating();
     if (spectating.isPresent()) {
       spectating.get().setState(QueuedPlayer.DONE);
       if (spectating.get().isNotify()) {
         osu.notifyDone(spectating.get().getPlayer());
+        sendEndStatistics(pm, spectating.get());
       }
     }
     long time = clock.getTime();
@@ -521,5 +524,19 @@ public class SpectatorImpl implements Spectator, Runnable {
           .getOrDefault(player, 0L).intValue()));
     }
     return result;
+  }
+  
+  @Override
+  public void sendEndStatistics(PersistenceManager pm, QueuedPlayer player) {
+    try (JDOQuery<Vote> query =
+        new JDOQuery<>(pm).select(vote).from(vote)
+            .where(vote.reference.eq(player))) {
+      List<Vote> votes = query.fetchResults().getResults();
+      
+      long danks = votes.stream().filter(x -> x.getVoteType() == VoteType.UP).count();
+      long skips = votes.stream().filter(x -> x.getVoteType() == VoteType.DOWN).count();
+      
+      osu.notifyStatistics(player.getPlayer(), danks, skips); 
+    }
   }
 }
