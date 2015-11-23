@@ -160,6 +160,16 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
     assertEquals(new HashSet<>(Arrays.asList("me", "you", "them")), ircBot.getOnlineUsers());
   }
+  
+  @Test
+  public void testOfflineUser() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    ircBot.onServerResponse(new ServerResponseEvent<PircBotX>(bot, 401,
+        ":cho.ppy.sh 401 OsuCelebrity doesnotexist :No such nick", ImmutableList
+            .copyOf(new String[] {"OsuCelebrity", "doesnotexist", "No such nick"})));
+
+    verify(spectator).userOffline(any(), eq(osuApi.getIrcUser("doesnotexist", pm, 0).getUser()));
+  }
 
   @Test
   public void testJoinQuit() throws Exception {

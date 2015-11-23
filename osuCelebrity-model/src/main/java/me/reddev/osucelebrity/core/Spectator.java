@@ -119,4 +119,11 @@ public interface Spectator {
    * @param player the player of the round
    */
   void sendEndStatistics(PersistenceManager pm, QueuedPlayer player);
+
+  /**
+   * Informs the spectator that a player is offline.
+   * @param pm the current request's persistence manager
+   * @param osuUser the offline player
+   */
+  void userOffline(PersistenceManager pm, OsuUser osuUser);
 }

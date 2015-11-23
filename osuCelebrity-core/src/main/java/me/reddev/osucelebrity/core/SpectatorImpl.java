@@ -538,4 +538,12 @@ public class SpectatorImpl implements Spectator, Runnable {
       osu.notifyStatistics(player.getPlayer(), danks, skips); 
     }
   }
+  
+  @Override
+  public void userOffline(PersistenceManager pm, OsuUser osuUser) {
+    /*
+     *  Just remove them from the queue. We can refine this behaviour later. 
+     */
+    removeFromQueue(pm, osuUser);
+  }
 }

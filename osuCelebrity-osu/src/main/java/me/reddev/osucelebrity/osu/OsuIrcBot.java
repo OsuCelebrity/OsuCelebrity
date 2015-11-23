@@ -28,7 +28,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.Configuration.Builder;
 import org.pircbotx.PircBotX;
-import org.pircbotx.User;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.ConnectEvent;
 import org.pircbotx.hooks.events.DisconnectEvent;
@@ -342,6 +341,20 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
         }
 
         onlineUsers.add(nick);
+      }
+    } else if (event.getCode() == 401) {
+      ImmutableList<String> parsedResponse = event.getParsedResponse();
+      PersistenceManager pm = pmf.getPersistenceManager();
+      try {
+        OsuIrcUser ircUser = osuApi.getIrcUser(parsedResponse.get(1), pm, 0);
+        if (ircUser != null) {
+          OsuUser user = ircUser.getUser();
+          if (user != null) {
+            spectator.userOffline(pm, user);
+          }
+        }
+      } finally {
+        pm.close();
       }
     } else {
       super.onServerResponse(event);
