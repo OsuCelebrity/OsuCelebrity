@@ -169,7 +169,7 @@ public class OsuApiImpl implements OsuApi {
         return saved;
       }
       try {
-        OsuApiUser apiUser = downloader.getUser(userid, GameModes.OSU, OsuApiUser.class);
+        OsuApiUser apiUser = downloader.getUser(userid, gameMode, OsuApiUser.class);
         if (apiUser == null) {
           return null;
         }

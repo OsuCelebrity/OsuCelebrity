@@ -76,6 +76,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   {
     handlers.add(this::handlePosition);
+    handlers.add(this::handleSelfPosition);
     handlers.add(this::handleQueue);
     handlers.add(this::handleSelfQueue);
     handlers.add(this::handleSkip);
