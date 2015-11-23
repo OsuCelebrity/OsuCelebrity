@@ -76,6 +76,18 @@ public class OsuApiImpl implements OsuApi {
         }
         saveModSpecific(pm, apiUser);
         if (saved == null) {
+          if (!userName.equalsIgnoreCase(apiUser.getUserName())) {
+            // this might have come from irc with let's make sure to save
+            try (JDOQuery<OsuUser> queryRetry = new JDOQuery<>(pm).select(osuUser).from(osuUser)) {
+              final OsuUser savedRetry =
+                  query.where(osuUser.userName.lower().eq(apiUser.getUserName().toLowerCase()))
+                      .fetchOne();
+              if (savedRetry != null) {
+                savedRetry.update(apiUser, clock.getTime());
+                return savedRetry;
+              }
+            }
+          }
           return pm.makePersistent(new OsuUser(apiUser, clock.getTime()));
         }
         saved.update(apiUser, clock.getTime());
