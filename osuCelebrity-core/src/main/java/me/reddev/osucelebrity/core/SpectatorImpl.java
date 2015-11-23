@@ -110,7 +110,6 @@ public class SpectatorImpl implements Spectator, Runnable {
         }
       } else {
         if (queue.spectatingUntil() <= time) {
-          sendEndStatistics(pm, current.get());
           if (next.isPresent()) {
             advance(pm, queue);
           } else {
