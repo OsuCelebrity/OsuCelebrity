@@ -535,7 +535,16 @@ public class SpectatorImpl implements Spectator, Runnable {
       long danks = votes.stream().filter(x -> x.getVoteType() == VoteType.UP).count();
       long skips = votes.stream().filter(x -> x.getVoteType() == VoteType.DOWN).count();
       
-      osu.notifyStatistics(player.getPlayer(), danks, skips); 
+      double dankScore = 0;
+
+      if (danks + skips != 0) {
+        dankScore = (double) danks / (danks + skips);
+      }
+      
+      //Make sure it's all happy trees
+      if (dankScore >= 0.5) {
+        osu.notifyStatistics(player.getPlayer(), danks, skips);
+      }
     }
   }
   

@@ -634,4 +634,24 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     verify(osu).notifyStatistics(player.getPlayer(), 2, 1);
   }
+  
+  @Test
+  public void testEndStatisticFail() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser user = api.getUser("someplayer", pm, 0);
+    QueuedPlayer player = new QueuedPlayer(user, null, clock.getTime());
+    spectator.enqueue(pm, player, false);
+    spectator.enqueue(pm, new QueuedPlayer(api.getUser("someplayer2", pm, 0), 
+        null, clock.getTime()), false);
+
+    spectator.loop(pm);
+
+    spectator.vote(pm, "flipflopper", VoteType.UP);
+    spectator.vote(pm, "flipflopper", VoteType.DOWN);
+    spectator.vote(pm, "flipflopper", VoteType.DOWN);
+    
+    spectator.advance(pm, PlayerQueue.loadQueue(pm, clock));
+
+    verify(osu, never()).notifyStatistics(player.getPlayer(), 2, 1);
+  }
 }
