@@ -62,42 +62,43 @@ public class OsuApiImpl implements OsuApi {
   @SuppressFBWarnings("TQ")
   @Override
   public OsuUser getUser(String userName, PersistenceManager pm, long maxAge) throws IOException {
+    final OsuUser saved;
     try (JDOQuery<OsuUser> query = new JDOQuery<>(pm).select(osuUser).from(osuUser)) {
-      final OsuUser saved =
-          query.where(osuUser.userName.lower().eq(userName.toLowerCase())).fetchOne();
+      saved = query.where(osuUser.userName.lower().eq(userName.toLowerCase())).fetchOne();
+    }
 
-      if (saved != null && (maxAge <= 0 || saved.getDownloaded() >= clock.getTime() - maxAge)) {
-        return saved;
+    if (saved != null && (maxAge <= 0 || saved.getDownloaded() >= clock.getTime() - maxAge)) {
+      return saved;
+    }
+    try {
+      OsuApiUser apiUser = downloader.getUser(userName, GameModes.OSU, OsuApiUser.class);
+      if (apiUser == null) {
+        return null;
       }
-      try {
-        OsuApiUser apiUser = downloader.getUser(userName, GameModes.OSU, OsuApiUser.class);
-        if (apiUser == null) {
-          return null;
-        }
-        saveModSpecific(pm, apiUser);
-        if (saved == null) {
-          if (!userName.equalsIgnoreCase(apiUser.getUserName())) {
-            // this might have come from irc with let's make sure to save
-            try (JDOQuery<OsuUser> queryRetry = new JDOQuery<>(pm).select(osuUser).from(osuUser)) {
-              final OsuUser savedRetry =
-                  query.where(osuUser.userName.lower().eq(apiUser.getUserName().toLowerCase()))
-                      .fetchOne();
-              if (savedRetry != null) {
-                savedRetry.update(apiUser, clock.getTime());
-                return savedRetry;
-              }
-            }
+      saveModSpecific(pm, apiUser);
+      if (saved == null) {
+        if (!userName.equalsIgnoreCase(apiUser.getUserName())) {
+          // this might have come from irc with let's make sure to save
+          final OsuUser savedRetry;
+          try (JDOQuery<OsuUser> queryRetry = new JDOQuery<>(pm).select(osuUser).from(osuUser)) {
+            savedRetry =
+                queryRetry.where(osuUser.userName.lower().eq(apiUser.getUserName().toLowerCase()))
+                    .fetchOne();
           }
-          return pm.makePersistent(new OsuUser(apiUser, clock.getTime()));
+          if (savedRetry != null) {
+            savedRetry.update(apiUser, clock.getTime());
+            return savedRetry;
+          }
         }
-        saved.update(apiUser, clock.getTime());
-        return saved;
-      } catch (SocketTimeoutException e) {
-        if (saved != null) {
-          return saved;
-        }
-        throw e;
+        return pm.makePersistent(new OsuUser(apiUser, clock.getTime()));
       }
+      saved.update(apiUser, clock.getTime());
+      return saved;
+    } catch (SocketTimeoutException e) {
+      if (saved != null) {
+        return saved;
+      }
+      throw e;
     }
   }
 
