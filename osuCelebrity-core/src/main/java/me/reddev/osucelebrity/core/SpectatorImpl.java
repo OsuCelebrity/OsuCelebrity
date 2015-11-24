@@ -157,6 +157,11 @@ public class SpectatorImpl implements Spectator, Runnable {
   }
 
   Status status = new Status();
+  
+  public static double penalty(long defaultSpecDuration, long timePlayed) {
+    double quot = Math.min(1, defaultSpecDuration / (double) timePlayed);
+    return 0.4 * (1 - Math.pow(quot, 1));
+  }
 
   private void updateRemainingTime(PersistenceManager pm, PlayerQueue queue) {
     Optional<QueuedPlayer> currentlySpectating = queue.currentlySpectating();
@@ -171,6 +176,9 @@ public class SpectatorImpl implements Spectator, Runnable {
     long timePlayed = clock.getTime() - current.getStartedAt();
     OsuStatus readStatus = status.lastStatus;
     boolean playing = readStatus != null && readStatus.getType() == Type.PLAYING;
+    
+    approval -= penalty(settings.getDefaultSpecDuration(), timePlayed);
+    
     if (approval > .75) {
       long newRemainingTime =
           Math.min(settings.getDefaultSpecDuration(),

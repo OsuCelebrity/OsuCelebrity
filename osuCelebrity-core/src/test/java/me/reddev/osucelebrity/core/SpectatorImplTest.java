@@ -654,4 +654,13 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     verify(osu, never()).notifyStatistics(player.getPlayer(), 2, 1);
   }
+  
+  @Test
+  public void testPenalty() throws Exception {
+    assertEquals(0d, SpectatorImpl.penalty(10, 0), 0d);
+    assertEquals(0d, SpectatorImpl.penalty(10, 5), 0d);
+    assertEquals(0d, SpectatorImpl.penalty(10, 10), 0d);
+    assertEquals(.2, SpectatorImpl.penalty(10, 20), 0d);
+    assertEquals(.3, SpectatorImpl.penalty(10, 40), 1E-15);
+  }
 }
