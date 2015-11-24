@@ -1,4 +1,4 @@
-package me.reddev.osucelebrity;
+package me.reddev.osucelebrity.osu;
 
 import static me.reddev.osucelebrity.osu.QOsuIrcUser.osuIrcUser;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
@@ -14,6 +14,8 @@ import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osu.PlayerActivity;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
 import org.tillerino.osuApiModel.Downloader;
 import org.tillerino.osuApiModel.GameModes;
 import org.tillerino.osuApiModel.OsuApiScore;
@@ -28,6 +30,11 @@ import javax.jdo.PersistenceManager;
 
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class OsuApiImpl implements OsuApi {
+  @Mapper
+  public interface FromApiMapper {
+    void update(OsuApiUser user, @MappingTarget ApiUser target);
+  }
+
   private final Downloader downloader;
   private final Clock clock;
 
@@ -109,9 +116,13 @@ public class OsuApiImpl implements OsuApi {
               apiUser.gameMode.eq(downloaded.getMode())).fetchOne();
 
       if (saved == null) {
-        pm.makePersistent(new ApiUser(downloaded, clock.getTime()));
+        saved = new ApiUser(downloaded.getUserId(), downloaded.getMode());
+        new FromApiMapperImpl().update(downloaded, saved);
+        saved.setDownloaded(clock.getTime());
+        pm.makePersistent(saved);
       } else {
-        saved.update(downloaded, clock.getTime());
+        new FromApiMapperImpl().update(downloaded, saved);
+        saved.setDownloaded(clock.getTime());
       }
     }
   }
@@ -176,9 +187,14 @@ public class OsuApiImpl implements OsuApi {
         }
         saveGeneral(pm, apiUser);
         if (saved == null) {
-          return pm.makePersistent(new ApiUser(apiUser, clock.getTime()));
+          saved = new ApiUser(apiUser.getUserId(), apiUser.getMode());
+          new FromApiMapperImpl().update(apiUser, saved);
+          saved.setDownloaded(clock.getTime());
+          pm.makePersistent(saved);
+        } else {
+          new FromApiMapperImpl().update(apiUser, saved);
+          saved.setDownloaded(clock.getTime());
         }
-        saved.update(apiUser, clock.getTime());
         return saved;
       } catch (SocketTimeoutException e) {
         if (saved != null) {

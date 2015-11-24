@@ -1,9 +1,10 @@
 package me.reddev.osucelebrity.osuapi;
 
+import lombok.AccessLevel;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.tillerino.osuApiModel.OsuApiUser;
 import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
 
@@ -16,36 +17,32 @@ import javax.jdo.annotations.PrimaryKey;
 @PersistenceCapable(objectIdClass = ApiUser.ComposedIdKey.class)
 @Getter
 @ToString
+@Setter
 public class ApiUser {
   @PrimaryKey
   @Getter(onMethod = @__(@UserId))
+  @Setter(value = AccessLevel.PRIVATE, onParam = @__(@UserId))
   @UserId
   private int userId;
 
   @GameMode
   @Getter(onMethod = @__(@GameMode))
+  @Setter(value = AccessLevel.PRIVATE, onParam = @__(@GameMode))
   @PrimaryKey
   private int gameMode;
 
-  @Setter
   long downloaded;
 
-  @Setter
   private int rank;
 
-  @Setter
   private double pp;
 
-  @Setter
   private int playCount;
 
-  @Setter
   private double level;
 
-  @Setter
   private double accuracy;
 
-  @Setter
   private String country;
 
   /**
@@ -94,31 +91,10 @@ public class ApiUser {
 
   /**
    * Constructs a new instance copying data from an api object.
-   * 
-   * @param downloadedData The object to base all data on.
-   * @param downloaded current time
    */
-  public ApiUser(OsuApiUser downloadedData, long downloaded) {
+  public ApiUser(@UserId int userId, @GameMode int gameMode) {
     super();
-    this.userId = downloadedData.getUserId();
-    this.gameMode = downloadedData.getMode();
-    update(downloadedData, downloaded);
-  }
-
-  /**
-   * Updates the contained data copying data from an api object.
-   * 
-   * @param downloadedData The object to base all data on.
-   * @param downloaded current time
-   */
-  public void update(OsuApiUser downloadedData, long downloaded) {
-    this.downloaded = downloaded;
-
-    this.setRank(downloadedData.getRank());
-    this.setPp(downloadedData.getPp());
-    this.setPlayCount(downloadedData.getPlayCount());
-    this.setLevel(downloadedData.getLevel());
-    this.setAccuracy(downloadedData.getAccuracy());
-    this.setCountry(downloadedData.getCountry());
+    this.userId = userId;
+    this.gameMode = gameMode;
   }
 }

@@ -17,6 +17,7 @@
 		<querydsl.version>4.0.5</querydsl.version>
 		<datanucleus.core>4.1.5</datanucleus.core>
 		<datanucleus.api.jdo>4.1.1</datanucleus.api.jdo>
+		<mapstruct.version>1.0.0.CR2</mapstruct.version>
 	</properties>
 	<build>
 		<plugins>
@@ -92,6 +93,11 @@
 						<groupId>com.querydsl</groupId>
 						<artifactId>querydsl-apt</artifactId>
 						<version>${querydsl.version}</version>
+					</dependency>
+					<dependency>
+						<groupId>org.mapstruct</groupId>
+						<artifactId>mapstruct-processor</artifactId>
+						<version>${mapstruct.version}</version>
 					</dependency>
 				</dependencies>
 			</plugin>
@@ -180,6 +186,16 @@
 				<groupId>org.apache.commons</groupId>
 				<artifactId>commons-lang3</artifactId>
 				<version>3.4</version>
+			</dependency>
+					<dependency>
+						<groupId>org.mapstruct</groupId>
+						<artifactId>mapstruct-processor</artifactId>
+						<version>${mapstruct.version}</version>
+					</dependency>
+			<dependency>
+				<groupId>org.mapstruct</groupId>
+				<artifactId>mapstruct-jdk8</artifactId>
+				<version>${mapstruct.version}</version>
 			</dependency>
 			<!-- LOGGING -->
 			<dependency>

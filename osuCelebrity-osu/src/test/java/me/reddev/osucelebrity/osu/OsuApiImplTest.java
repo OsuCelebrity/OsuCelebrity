@@ -1,5 +1,9 @@
-package me.reddev.osucelebrity;
+package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.core.MockClock;
+
+import me.reddev.osucelebrity.AbstractJDOTest;
+import me.reddev.osucelebrity.osu.OsuApiImpl;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -8,9 +12,7 @@ import java.io.IOException;
 import javax.jdo.PersistenceManager;
 
 import me.reddev.osucelebrity.core.Clock;
-import me.reddev.osucelebrity.core.MockClock;
 import me.reddev.osucelebrity.osu.OsuUser;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;

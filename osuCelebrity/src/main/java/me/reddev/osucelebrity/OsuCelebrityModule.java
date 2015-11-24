@@ -8,6 +8,7 @@ import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.core.SpectatorImpl;
 import me.reddev.osucelebrity.core.SystemClock;
 import me.reddev.osucelebrity.osu.Osu;
+import me.reddev.osucelebrity.osu.OsuApiImpl;
 import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.osucelebrity.osu.OsuApplication;
 import me.reddev.osucelebrity.osu.OsuImpl;
