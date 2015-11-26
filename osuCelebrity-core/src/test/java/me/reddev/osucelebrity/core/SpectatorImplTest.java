@@ -64,7 +64,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     when(settings.getMaxLastActivity()).thenReturn(24L * 60 * 60 * 1000);
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, ""));
     
-    when(exec.submit(any())).thenAnswer(arg -> {
+    when(exec.submit(any(Runnable.class))).thenAnswer(arg -> {
       ((Runnable) arg.getArguments()[0]).run();
       return null;
     });
