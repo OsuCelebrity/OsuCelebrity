@@ -10,6 +10,7 @@ import me.reddev.osucelebrity.osu.OsuActivityUpdater;
 import me.reddev.osucelebrity.osu.OsuApplication;
 import me.reddev.osucelebrity.osu.OsuIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
+import me.reddev.osucelebrity.twitch.TwitchWhisperBot;
 
 import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
@@ -25,6 +26,7 @@ import javax.ws.rs.core.UriBuilder;
 public class OsuCelebrity {
   final SpectatorImpl spectator;
   final TwitchIrcBot twitchBot;
+  final TwitchWhisperBot twitchWhisper;
   final OsuIrcBot osuBot;
   final CoreApiApplication apiServerApp;
   final CoreSettings coreSettings;
@@ -35,6 +37,7 @@ public class OsuCelebrity {
   void start() {
     exec.submit(spectator);
     exec.submit(twitchBot);
+    exec.submit(twitchWhisper);
     exec.submit(osuBot);
     exec.submit(osuApp);
     exec.submit(osuActivityUpdater);

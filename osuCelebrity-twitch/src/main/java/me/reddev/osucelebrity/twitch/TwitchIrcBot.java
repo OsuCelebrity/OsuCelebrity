@@ -120,8 +120,6 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     bot.sendIRC().message(settings.getTwitchIrcChannel(), message);
   }
 
-  
-
   // Listeners
   // http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
 
