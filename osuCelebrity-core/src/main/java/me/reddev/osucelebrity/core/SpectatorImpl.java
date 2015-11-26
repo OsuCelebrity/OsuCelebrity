@@ -259,11 +259,13 @@ public class SpectatorImpl implements Spectator, Runnable {
     ApiUser userData =
         osuApi.getUserData(user.getPlayer().getUserId(), user.getPlayer().getGameMode(), pm, 0L);
     if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
+      log.debug("{}'s playcount is too low", user.getPlayer().getUserName());
       return EnqueueResult.FAILURE;
     }
     PlayerActivity activity = osuApi.getPlayerActivity(userData, pm, 1L);
     if (!selfqueue && activity.getLastActivity() < clock.getTime()
         - settings.getMaxLastActivity()) {
+      log.debug("{} has not been active", user.getPlayer().getUserName());
       return EnqueueResult.FAILURE;
     }
     return doEnqueue(pm, user, selfqueue, twitchUser);
