@@ -22,6 +22,7 @@ import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.core.VoteType;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
+import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 
@@ -284,13 +285,12 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     QueuedPlayer player = spectator.getCurrentPlayer(pm);
     
     OsuStatus status = osu.getClientStatus();
-    if (player != null && status != null) {
+    if (player != null && status != null && status.getType() == Type.PLAYING) {
       event.getChannel().send().message(String.format(OsuResponses.NOW_PLAYING, 
           player.getPlayer().getUserName(), status.getDetail()));
-      return true;
     }
     
-    return false;
+    return true;
   }
 
   @Override 
