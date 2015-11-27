@@ -68,7 +68,9 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   ListenerManager<PircBotX> listenerManager;
   @Mock
   OsuIrcSettings settings;
-
+  @Mock
+  Osu osu;
+  
   OsuIrcBot ircBot;
 
   @Before
@@ -83,7 +85,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     when(settings.getOsuCommandUser()).thenReturn("BanchoBot");
     when(user.send()).thenReturn(outputUser);
 
-    ircBot = new OsuIrcBot(null, osuApi, settings, pmf, spectator, clock);
+    ircBot = new OsuIrcBot(osu, osuApi, settings, pmf, spectator, clock);
   }
 
   @Test
@@ -218,6 +220,24 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     
     verify(spectator, times(0)).promote(any(), 
         eq(osuApi.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
+  }
+  
+  @Test
+  public void testFixClient() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    
+    osuApi.getUser("osuIrcUser", pm, 0).setPrivilege(Privilege.MOD);
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!fix"));
+    
+    verify(osu).restartClient();
+  }
+  
+  @Test
+  public void testFixClientUnauthorized() throws Exception {
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!fix"));
+    
+    verify(osu, times(0)).restartClient();
   }
   
   @Test

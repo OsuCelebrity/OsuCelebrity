@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.Commands;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.UserException;
@@ -60,7 +61,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   @FunctionalInterface
   interface CommandHandler {
     boolean handle(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
-        PersistenceManager pm) throws UserException, IOException;
+        PersistenceManager pm) throws UserException, IOException, InterruptedException;
   }
 
   /*
@@ -89,6 +90,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     handlers.add(this::handleOpt);
     handlers.add(this::handleSpec);
     handlers.add(this::handleGameMode);
+    handlers.add(this::handleRestartClient);
   }
 
   /**
@@ -387,6 +389,20 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     }
     
     event.getUser().send().message("game mode changed.");
+    return true;
+  }
+  
+  boolean handleRestartClient(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException, InterruptedException {
+    if (!message.equalsIgnoreCase(Commands.RESTART_CLIENT)) {
+      return false;
+    }
+    
+    if (!user.getPrivilege().canRestartClient) {
+      throw new UserException("not allowed");
+    }
+    
+    osu.restartClient();
     return true;
   }
 
