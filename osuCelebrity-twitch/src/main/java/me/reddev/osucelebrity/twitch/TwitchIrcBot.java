@@ -280,7 +280,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (!StringUtils.startsWithIgnoreCase(message, NOW_PLAYING)) {
       return false;
     }
-    
+
     QueuedPlayer player = spectator.getCurrentPlayer(pm);
     
     OsuStatus status = osu.getClientStatus();

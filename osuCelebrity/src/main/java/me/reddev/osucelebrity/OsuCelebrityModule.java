@@ -17,10 +17,10 @@ import me.reddev.osucelebrity.osu.OsuIrcSettings;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.osuapi.OsuApiSettings;
 import me.reddev.osucelebrity.twitch.Twitch;
-import me.reddev.osucelebrity.twitch.TwitchApiSettings;
 import me.reddev.osucelebrity.twitch.TwitchImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchIrcSettings;
+import me.reddev.osucelebrity.twitchapi.TwitchApiSettings;
 
 import org.tillerino.osuApiModel.Downloader;
 

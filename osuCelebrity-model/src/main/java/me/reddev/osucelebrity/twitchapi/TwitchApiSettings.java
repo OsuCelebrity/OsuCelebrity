@@ -1,4 +1,4 @@
-package me.reddev.osucelebrity.twitch;
+package me.reddev.osucelebrity.twitchapi;
 
 public interface TwitchApiSettings {
   String getTwitchClientId();

@@ -6,6 +6,7 @@ import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.core.SkipReason;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
+import me.reddev.osucelebrity.twitchapi.TwitchApiSettings;
 
 import javax.inject.Inject;
 import javax.jdo.PersistenceManagerFactory;

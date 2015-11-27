@@ -1,0 +1,26 @@
+package me.reddev.osucelebrity.twitchapi;
+
+import me.reddev.osucelebrity.PassAndReturnNonnull;
+
+import java.io.IOException;
+import java.util.List;
+
+@PassAndReturnNonnull
+public interface TwitchApi {
+  /**
+   * Gets a list of moderators currently in a channel.
+   * @param channel The name of the channel
+   * @return The list of moderator usernames in lowercase
+   * @throws IOException Could not load list
+   */
+  List<String> getOnlineMods(String channel) throws IOException;
+  
+  /**
+   * Determines whether a given user is a moderator of a channel.
+   * @param username The username of the user
+   * @param channel The channel name
+   * @return True if the user is a moderator
+   * @throws Could not load list of moderators
+   */
+  boolean isModerator(String username, String channel) throws IOException;
+}
