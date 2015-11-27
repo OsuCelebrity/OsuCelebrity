@@ -51,9 +51,6 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   private String twitchClientId;
   private String twitchClientSecret;
 
-  // Osu! Location Settings
-  private String osuPath;
-
   // Stream Output Settings
   private String streamOutputPath;
 

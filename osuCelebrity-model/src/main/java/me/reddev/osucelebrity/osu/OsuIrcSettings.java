@@ -5,8 +5,6 @@ public interface OsuIrcSettings {
 
   String getOsuIrcPassword();
 
-  String getOsuPath();
-
   String getOsuIrcHost();
 
   int getOsuIrcPort();
