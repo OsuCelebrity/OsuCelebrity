@@ -103,7 +103,7 @@ public class OsuImpl implements Osu {
   public void restartClient() throws IOException, InterruptedException {
     app.killOsu();
     
-    Thread.sleep(1000);
+    Thread.sleep(5000);
     PersistenceManager pm = pmf.getPersistenceManager();
     try {
       QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
