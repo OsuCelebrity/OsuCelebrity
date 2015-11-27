@@ -2,7 +2,9 @@ package me.reddev.osucelebrity.osu;
 
 import me.reddev.osucelebrity.PassAndReturnNonnull;
 
+import java.io.IOException;
 import java.util.List;
+
 import javax.annotation.CheckForNull;
 import javax.jdo.PersistenceManager;
 
@@ -92,4 +94,9 @@ public interface Osu {
    * @param player the target player.
    */
   public void pollIngameStatus(OsuUser player);
+  
+  /**
+   * Forcefully restarts the osu client.
+   */
+  public void restartClient() throws IOException, InterruptedException;
 }

@@ -162,4 +162,12 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     
     verify(outputChannel, never()).message(any());
   }
+  
+  @Test
+  public void testFixClient() throws Exception {
+    when(channel.isOp(user)).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!fix"));
+    
+    verify(osu).restartClient();
+  }
 }

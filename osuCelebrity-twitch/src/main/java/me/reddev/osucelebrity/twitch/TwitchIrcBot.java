@@ -10,6 +10,7 @@ import static me.reddev.osucelebrity.Commands.UPVOTE;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.Commands;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.TwitchResponses;
@@ -88,6 +89,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   {
     modHandlers.add(this::handleAdvance);
     modHandlers.add(this::handleSpec);
+    modHandlers.add(this::handleFixClient);
   }
 
   @Override
@@ -288,6 +290,21 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (player != null && status != null && status.getType() == Type.PLAYING) {
       event.getChannel().send().message(String.format(OsuResponses.NOW_PLAYING, 
           player.getPlayer().getUserName(), status.getDetail()));
+    }
+    
+    return true;
+  }
+  
+  boolean handleFixClient(MessageEvent<PircBotX> event, String message, String twitchUserName,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!message.equalsIgnoreCase(Commands.RESTART_CLIENT)) {
+      return false;
+    }
+    
+    try {
+      osu.restartClient();
+    } catch (InterruptedException e) {
+      // w/e
     }
     
     return true;

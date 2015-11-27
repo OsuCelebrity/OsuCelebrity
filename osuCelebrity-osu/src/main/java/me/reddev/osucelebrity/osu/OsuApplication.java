@@ -140,4 +140,14 @@ public class OsuApplication implements Runnable {
 
     return null;
   }
+  
+  /**
+   * kills the osu client via command line.
+   */
+  public void killOsu() throws IOException {
+    Runtime rt = Runtime.getRuntime();
+    String command = "taskkill /F /FI \"WINDOWTITLE eq osu!*\"";
+    log.debug("killing osu: " + command);
+    rt.exec(command);
+  }
 }
