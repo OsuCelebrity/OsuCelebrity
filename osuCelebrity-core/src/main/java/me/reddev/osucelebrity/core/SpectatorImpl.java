@@ -263,8 +263,8 @@ public class SpectatorImpl implements Spectator, Runnable {
       return EnqueueResult.FAILURE;
     }
     PlayerActivity activity = osuApi.getPlayerActivity(userData, pm, 1L);
-    if (!selfqueue && activity.getLastActivity() < clock.getTime()
-        - settings.getMaxLastActivity()) {
+    if (settings.getMaxLastActivity() > 0 && !selfqueue
+        && activity.getLastActivity() < clock.getTime() - settings.getMaxLastActivity()) {
       log.debug("{} has not been active", user.getPlayer().getUserName());
       return EnqueueResult.FAILURE;
     }
