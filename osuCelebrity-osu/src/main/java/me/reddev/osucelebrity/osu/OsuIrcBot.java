@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.Commands;
 import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.Privilege;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.Clock;
@@ -91,6 +92,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     handlers.add(this::handleSpec);
     handlers.add(this::handleGameMode);
     handlers.add(this::handleRestartClient);
+    handlers.add(this::handleMod);
   }
 
   /**
@@ -403,6 +405,29 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     }
     
     osu.restartClient();
+    return true;
+  }
+  
+  boolean handleMod(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException, InterruptedException {
+    if (!StringUtils.startsWithIgnoreCase(message, Commands.MOD)) {
+      return false;
+    }
+    
+    message = message.substring(Commands.MOD.length());
+    
+    if (!user.getPrivilege().canMod) {
+      throw new UserException("not allowed");
+    }
+    
+    OsuUser target = osuApi.getUser(message, pm, 0);
+    if (target == null) {
+      throw new UserException("not found: " + message);
+    }
+    target.setPrivilege(Privilege.MOD);
+    
+    event.getUser().send().message("modded");
+    
     return true;
   }
 

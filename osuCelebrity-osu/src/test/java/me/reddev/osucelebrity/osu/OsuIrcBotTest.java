@@ -301,4 +301,39 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     verify(spectator).reportStatus(any(),
         eq(new PlayerStatus(tillerino, PlayerStatusType.PLAYING, 0)));
   }
+  
+  @Test
+  public void testMod() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser admin = osuApi.getUser("admin", pm, 0);
+    admin.setPrivilege(Privilege.ADMIN);
+    {
+      OsuUser mod = osuApi.getUser("newmod", pm, 0);
+    }
+    
+    when(user.getNick()).thenReturn("admin");
+    
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!mod newmod"));
+    
+    OsuUser mod = osuApi.getUser("newmod", pmf.getPersistenceManager(), 0);
+    assertEquals(Privilege.MOD, mod.getPrivilege());
+  }
+  
+  @Test
+  public void testModFail() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser admin = osuApi.getUser("notadmin", pm, 0);
+    {
+      OsuUser mod = osuApi.getUser("newmod", pm, 0);
+    }
+    
+    when(user.getNick()).thenReturn("notadmin");
+    
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!mod newmod"));
+    
+    OsuUser mod = osuApi.getUser("newmod", pmf.getPersistenceManager(), 0);
+    assertEquals(Privilege.PLAYER, mod.getPrivilege());
+  }
 }
