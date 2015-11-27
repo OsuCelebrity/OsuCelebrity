@@ -8,9 +8,9 @@ import me.reddev.osucelebrity.core.Spectator;
  */
 @RequiredArgsConstructor
 public enum Privilege {
-  ADMIN(true, true),
-  MOD(false, true),
-  PLAYER(false, false);
+  ADMIN(true, true, true),
+  MOD(false, true, true),
+  PLAYER(false, false, false);
   
   /**
    * Can raise people's level to mod.
@@ -20,4 +20,8 @@ public enum Privilege {
    * Can skip a player (see {@link Spectator#advance(javax.jdo.PersistenceManager)}.
    */
   public final boolean canSkip;
+  /**
+   * Can skip a player (see {@link Spectator#advance(javax.jdo.PersistenceManager)}.
+   */
+  public final boolean canRestartClient;
 }

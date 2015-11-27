@@ -15,4 +15,6 @@ public class Commands {
   public static final String SELFPOSITION = "position";
   public static final String GAME_MODE = "gamemode ";
   public static final String NOW_PLAYING = "np";
+  public static final String RESTART_CLIENT = "fix";
+  public static final String MOD = "mod ";
 }

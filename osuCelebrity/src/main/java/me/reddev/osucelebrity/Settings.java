@@ -38,6 +38,7 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   private int osuIrcPort;
   private String osuCommandUser;
   private String osuIrcCommand;
+  private boolean osuIrcSilenced;
   
   // Osu! API settings
   private String osuApiKey;
@@ -49,9 +50,6 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   
   private String twitchClientId;
   private String twitchClientSecret;
-
-  // Osu! Location Settings
-  private String osuPath;
 
   // Stream Output Settings
   private String streamOutputPath;
@@ -103,6 +101,12 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
           } catch (NumberFormatException e) {
             throw new NumberFormatException(f.getName() + " must be a long");
           }
+        } else if (fieldClass == boolean.class) {
+          boolean value = Boolean.parseBoolean(property);
+          if (!String.valueOf(value).equalsIgnoreCase(property)) {
+            throw new IllegalArgumentException(f.getName() + " must be a boolean");
+          }
+          f.set(this, value);
         } else {
           throw new UnsupportedOperationException("could not parse object type " + f.getName());
         }

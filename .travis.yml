@@ -23,3 +23,6 @@ after_success:
 cache:
   directories:
     - $HOME/.m2/repository
+    
+notifications:
+  slack: osucelebrity:qK7sYUDrRp321vDlWK76KEu1

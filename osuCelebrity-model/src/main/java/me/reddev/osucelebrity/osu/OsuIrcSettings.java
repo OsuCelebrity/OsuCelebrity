@@ -5,8 +5,6 @@ public interface OsuIrcSettings {
 
   String getOsuIrcPassword();
 
-  String getOsuPath();
-
   String getOsuIrcHost();
 
   int getOsuIrcPort();
@@ -16,4 +14,6 @@ public interface OsuIrcSettings {
   String getOsuIrcCommand();
 
   String getOsuIrcAutoJoin();
+  
+  boolean isOsuIrcSilenced();
 }

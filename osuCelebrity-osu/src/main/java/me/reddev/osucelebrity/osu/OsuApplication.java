@@ -22,8 +22,6 @@ public class OsuApplication implements Runnable {
 
   public interface OsuApplicationSettings {
     String getStreamOutputPath();
-
-    Object getOsuPath();
   }
 
   private final OsuApplicationSettings settings;
@@ -33,8 +31,17 @@ public class OsuApplication implements Runnable {
   public static final Charset CONSOLE_CHARSET = Charset.forName("ISO-8859-1");
 
   public static final String OSU_COMMAND_SPECTATE = "osu://spectate/%d";
-
-
+  
+  String[] getSpecCommand(int userid) {
+    String[] cmd = {
+        "cmd.exe",
+        "/c",
+        "start",
+        String.format(OSU_COMMAND_SPECTATE, userid)
+    };
+    return cmd;
+  }
+  
   /**
    * Sends a message to Bancho to start spectating a given user.
    * 
@@ -42,12 +49,10 @@ public class OsuApplication implements Runnable {
    * @throws IOException Unable to run spectate command
    */
   public void spectate(OsuUser osuUser) throws IOException {
-    Runtime rt = Runtime.getRuntime();
-    String command =
-        String.format("\"%s\" \"%s\"", settings.getOsuPath(),
-            String.format(OSU_COMMAND_SPECTATE, 6854947)); // TODO externalize
-    log.debug("issued command " + command);
-    rt.exec(command);
+    log.debug("spectating {}" + osuUser);
+    ProcessBuilder builder = new ProcessBuilder(getSpecCommand(6854947));
+    builder.inheritIO();
+    builder.start();
     
     try {
       Thread.sleep(100);
@@ -55,11 +60,9 @@ public class OsuApplication implements Runnable {
       return;
     }
     
-    command =
-        String.format("\"%s\" \"%s\"", settings.getOsuPath(),
-            String.format(OSU_COMMAND_SPECTATE, osuUser.getUserId()));
-    log.debug("issued command " + command);
-    rt.exec(command);
+    builder = new ProcessBuilder(getSpecCommand(osuUser.getUserId()));
+    builder.inheritIO();
+    builder.start();
   }
 
   @CheckForNull
@@ -139,5 +142,15 @@ public class OsuApplication implements Runnable {
     }
 
     return null;
+  }
+  
+  /**
+   * kills the osu client via command line.
+   */
+  public void killOsu() throws IOException {
+    Runtime rt = Runtime.getRuntime();
+    String command = "taskkill /F /FI \"WINDOWTITLE eq osu!*\"";
+    log.debug("killing osu: " + command);
+    rt.exec(command);
   }
 }

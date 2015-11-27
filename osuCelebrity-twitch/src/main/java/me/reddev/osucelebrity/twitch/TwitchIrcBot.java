@@ -10,6 +10,7 @@ import static me.reddev.osucelebrity.Commands.UPVOTE;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.Commands;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.TwitchResponses;
@@ -22,6 +23,7 @@ import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.core.VoteType;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
+import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 
@@ -87,6 +89,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   {
     modHandlers.add(this::handleAdvance);
     modHandlers.add(this::handleSpec);
+    modHandlers.add(this::handleFixClient);
   }
 
   @Override
@@ -284,13 +287,27 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     QueuedPlayer player = spectator.getCurrentPlayer(pm);
     
     OsuStatus status = osu.getClientStatus();
-    if (player != null && status != null) {
+    if (player != null && status != null && status.getType() == Type.PLAYING) {
       event.getChannel().send().message(String.format(OsuResponses.NOW_PLAYING, 
           player.getPlayer().getUserName(), status.getDetail()));
-      return true;
     }
     
-    return false;
+    return true;
+  }
+  
+  boolean handleFixClient(MessageEvent<PircBotX> event, String message, String twitchUserName,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!message.equalsIgnoreCase(Commands.RESTART_CLIENT)) {
+      return false;
+    }
+    
+    try {
+      osu.restartClient();
+    } catch (InterruptedException e) {
+      // w/e
+    }
+    
+    return true;
   }
 
   @Override 

@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.core.Spectator;
+
 import static org.junit.Assert.assertEquals;
 
 import javax.jdo.PersistenceManager;
@@ -19,6 +21,9 @@ public class OsuImplTest extends AbstractJDOTest {
   
   @Mock
   OsuApplication app;
+  
+  @Mock
+  Spectator spectator;
 
   OsuApi api = new MockOsuApi();
   
@@ -28,7 +33,7 @@ public class OsuImplTest extends AbstractJDOTest {
   public void initMocks() throws Exception {
     MockitoAnnotations.initMocks(this);
     
-    osu = new OsuImpl(bot, app);
+    osu = new OsuImpl(bot, app, spectator, pmf);
   }
   
   @Test

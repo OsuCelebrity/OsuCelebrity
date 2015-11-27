@@ -14,9 +14,12 @@ import static me.reddev.osucelebrity.Commands.UNMUTE;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.Commands;
 import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.Privilege;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.Clock;
@@ -24,6 +27,7 @@ import me.reddev.osucelebrity.core.EnqueueResult;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
+import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
@@ -41,8 +45,11 @@ import org.tillerino.osuApiModel.GameModes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -55,7 +62,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   @FunctionalInterface
   interface CommandHandler {
     boolean handle(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
-        PersistenceManager pm) throws UserException, IOException;
+        PersistenceManager pm) throws UserException, IOException, InterruptedException;
   }
 
   /*
@@ -84,6 +91,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     handlers.add(this::handleOpt);
     handlers.add(this::handleSpec);
     handlers.add(this::handleGameMode);
+    handlers.add(this::handleRestartClient);
+    handlers.add(this::handleMod);
   }
 
   /**
@@ -124,8 +133,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
    * @param user The username of the next player
    */
   public void messagePlayer(OsuUser user, String message) {
-    bot.sendIRC().message(user.getUserName().replace(' ', '_'), message);
-    log.debug("messaged {}: {}", user.getUserName(), message);
+    if (!ircSettings.isOsuIrcSilenced()) {
+      bot.sendIRC().message(user.getUserName().replace(' ', '_'), message);
+      log.debug("messaged {}: {}", user.getUserName(), message);
+    }
   }
 
   // Listeners
@@ -144,11 +155,17 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   @Override
   public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
     log.debug("received message from {}: {}", event.getUser().getNick(), event.getMessage());
+
+    if (event.getUser().getNick().equals(ircSettings.getOsuCommandUser())) {
+      handleBanchoBotResponse(event.getMessage());
+      return;
+    }
+    
+    if (!event.getMessage().startsWith(ircSettings.getOsuIrcCommand())) {
+      return;
+    }
     PersistenceManager pm = pmf.getPersistenceManager();
     try {
-      if (!event.getMessage().startsWith(ircSettings.getOsuIrcCommand())) {
-        return;
-      }
 
       OsuIrcUser ircUser = osuApi.getIrcUser(event.getUser().getNick(), pm, 0);
       if (ircUser == null || ircUser.getUser() == null) {
@@ -164,6 +181,43 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       }
     } catch (Exception e) {
       UserException.handleException(log, e, event.getUser().send()::message);
+    } finally {
+      pm.close();
+    }
+  }
+
+  static Pattern statusPattern = Pattern.compile("Stats for \\(.*\\)\\[https://osu.ppy.sh/u/(\\d+)\\](?: is (Idle|Watching|Modding|Playing|Afk))?:");
+  
+  @SuppressFBWarnings("TQ")
+  Optional<PlayerStatus> parseStatus(PersistenceManager pm, String message) throws IOException {
+    Matcher matcher = statusPattern.matcher(message);
+    if (!matcher.matches()) {
+      return Optional.empty();
+    }
+    int userId = Integer.parseInt(matcher.group(1));
+    String typeString = matcher.group(2);
+    PlayerStatusType type =
+        typeString == null ? PlayerStatusType.OFFLINE : PlayerStatusType.valueOf(typeString
+            .toUpperCase());
+    // measure time early in case the api blocks
+    long time = clock.getTime();
+    OsuUser user = osuApi.getUser(userId, pm, 0);
+    if (user == null) {
+      return Optional.empty();
+    }
+    return Optional.of(new PlayerStatus(user, type, time));
+  }
+  
+  void handleBanchoBotResponse(String message) {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      Optional<PlayerStatus> status = parseStatus(pm, message);
+      if (!status.isPresent()) {
+        return;
+      }
+      spectator.reportStatus(pm, status.get());
+    } catch (Exception e) {
+      log.error("error while handling bancho response", e);
     } finally {
       pm.close();
     }
@@ -339,6 +393,43 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     event.getUser().send().message("game mode changed.");
     return true;
   }
+  
+  boolean handleRestartClient(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException, InterruptedException {
+    if (!message.equalsIgnoreCase(Commands.RESTART_CLIENT)) {
+      return false;
+    }
+    
+    if (!user.getPrivilege().canRestartClient) {
+      throw new UserException("not allowed");
+    }
+    
+    osu.restartClient();
+    return true;
+  }
+  
+  boolean handleMod(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException, InterruptedException {
+    if (!StringUtils.startsWithIgnoreCase(message, Commands.MOD)) {
+      return false;
+    }
+    
+    message = message.substring(Commands.MOD.length());
+    
+    if (!user.getPrivilege().canMod) {
+      throw new UserException("not allowed");
+    }
+    
+    OsuUser target = osuApi.getUser(message, pm, 0);
+    if (target == null) {
+      throw new UserException("not found: " + message);
+    }
+    target.setPrivilege(Privilege.MOD);
+    
+    event.getUser().send().message("modded");
+    
+    return true;
+  }
 
   @Override
   public void onJoin(JoinEvent<PircBotX> event) {
@@ -372,13 +463,15 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       }
     } else if (event.getCode() == 401) {
       ImmutableList<String> parsedResponse = event.getParsedResponse();
+      // measure time early in case the osu api blocks
+      long time = clock.getTime();
       PersistenceManager pm = pmf.getPersistenceManager();
       try {
         OsuIrcUser ircUser = osuApi.getIrcUser(parsedResponse.get(1), pm, 0);
         if (ircUser != null) {
           OsuUser user = ircUser.getUser();
           if (user != null) {
-            spectator.userOffline(pm, user);
+            spectator.reportStatus(pm, new PlayerStatus(user, PlayerStatusType.OFFLINE, time));
           }
         }
       } finally {
@@ -391,6 +484,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   Set<String> getOnlineUsers() {
     return onlineUsers;
+  }
+
+  public void pollIngameStatus(OsuUser player) {
+    bot.sendIRC().message(ircSettings.getOsuCommandUser(), "!stat " + player.getUserName());
   }
 
   // End Listeners

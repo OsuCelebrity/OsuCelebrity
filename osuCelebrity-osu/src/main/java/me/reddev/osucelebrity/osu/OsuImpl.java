@@ -6,6 +6,8 @@ import com.querydsl.jdo.JDOQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.core.QueuedPlayer;
+import me.reddev.osucelebrity.core.Spectator;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,12 +15,15 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class OsuImpl implements Osu {
   private final OsuIrcBot bot;
   private final OsuApplication app;
+  private final Spectator spectator;
+  private final PersistenceManagerFactory pmf;
 
   @Override
   public void startSpectate(OsuUser user) {
@@ -86,6 +91,27 @@ public class OsuImpl implements Osu {
         return activity.getLastActivity();
       }
       return 0;
+    }
+  }
+  
+  @Override
+  public void pollIngameStatus(OsuUser player) {
+    bot.pollIngameStatus(player);
+  }
+  
+  @Override
+  public void restartClient() throws IOException, InterruptedException {
+    app.killOsu();
+    
+    Thread.sleep(5000);
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
+      if (currentPlayer != null) {
+        startSpectate(currentPlayer.getPlayer());
+      }
+    } finally {
+      pm.close();
     }
   }
 }

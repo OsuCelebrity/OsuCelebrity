@@ -70,8 +70,6 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     when(user.getNick()).thenReturn("twitchIrcUser");
     when(user.send()).thenReturn(outputUser);
     when(channel.send()).thenReturn(outputChannel);
-    when(osu.getClientStatus()).thenReturn(
-        new OsuStatus(OsuStatus.Type.WATCHING, "Hatsune Miku - Senbonzakura (Short Ver.) [Rin]"));
     when(spectator.getCurrentPlayer(any()))
         .thenReturn(getUser(pmf.getPersistenceManagerProxy(), "testplayer"));
 
@@ -139,9 +137,22 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testNowPlaying() throws Exception {    
+    when(osu.getClientStatus()).thenReturn(
+        new OsuStatus(OsuStatus.Type.PLAYING, "Hatsune Miku - Senbonzakura (Short Ver.) [Rin]"));
+    
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!np"));
     
     verify(outputChannel).message(any());
+  }
+  
+  @Test
+  public void testNowPlayingOnlyWatching() throws Exception {    
+    when(osu.getClientStatus()).thenReturn(
+        new OsuStatus(OsuStatus.Type.WATCHING, "SomePlayer"));
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!np"));
+    
+    verify(outputChannel, never()).message(any());
   }
   
   @Test
@@ -150,5 +161,13 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!np"));
     
     verify(outputChannel, never()).message(any());
+  }
+  
+  @Test
+  public void testFixClient() throws Exception {
+    when(channel.isOp(user)).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!fix"));
+    
+    verify(osu).restartClient();
   }
 }
