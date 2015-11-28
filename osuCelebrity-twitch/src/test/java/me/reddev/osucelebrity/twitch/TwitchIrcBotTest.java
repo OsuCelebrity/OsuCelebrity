@@ -199,4 +199,12 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     
     assertEquals(60 * 60 * 1000, target.getTimeOutUntil());
   }
+  
+  @Test
+  public void testBanMap() throws Exception {
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!banmaps ban this"));
+    
+    verify(spectator).addBannedMapFilter(any(), eq("ban this"));
+  }
 }

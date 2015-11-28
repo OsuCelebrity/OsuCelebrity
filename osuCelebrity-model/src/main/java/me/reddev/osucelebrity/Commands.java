@@ -20,4 +20,5 @@ public class Commands {
   public static final String MOD = "mod ";
   public static final String BOOST = "boost ";
   public static final String TIMEOUT = "timeout ";
+  public static final String ADD_BANNED_MAPS_FILTER = "banmaps ";
 }

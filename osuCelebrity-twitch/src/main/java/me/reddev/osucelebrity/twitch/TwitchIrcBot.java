@@ -93,6 +93,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     modHandlers.add(this::handleFixClient);
     modHandlers.add(this::handleBoost);
     modHandlers.add(this::handleTimeout);
+    modHandlers.add(this::handleBannedMapsFilter);
   }
 
   @Override
@@ -337,6 +338,21 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     event.getChannel().send()
         .message(String.format(TwitchResponses.TIMEOUT, timeoutUser.getUserName(), minutes));
     
+    return true;
+  }
+  
+  boolean handleBannedMapsFilter(MessageEvent<PircBotX> event, String message,
+      String twitchUserName, PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, Commands.ADD_BANNED_MAPS_FILTER)) {
+      return false;
+    }
+
+    message = message.substring(Commands.ADD_BANNED_MAPS_FILTER.length());
+
+    spectator.addBannedMapFilter(pm, message);
+
+    event.getChannel().send().message(String.format(TwitchResponses.ADDED_BANNED_MAPS_FILTER));
+
     return true;
   }
 

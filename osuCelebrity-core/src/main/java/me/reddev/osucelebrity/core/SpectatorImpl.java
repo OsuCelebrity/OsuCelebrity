@@ -110,7 +110,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     long time = clock.getTime();
 
     if (current.isPresent()) {
-      SkipReason shouldSkip = status.shouldSkip(current.get());
+      SkipReason shouldSkip = status.shouldSkip(pm, current.get());
       if (shouldSkip != null) {
         if (advance(pm, queue)) {
           twitch.announcePlayerSkipped(shouldSkip, current.get().getPlayer());
@@ -144,11 +144,18 @@ public class SpectatorImpl implements Spectator, Runnable {
 
     @SuppressFBWarnings(value = "NP",
         justification = "lastStatus = currentStatus raises a weird bug")
-    SkipReason shouldSkip(QueuedPlayer player) {
+    SkipReason shouldSkip(PersistenceManager pm, QueuedPlayer player) {
       OsuStatus currentStatus = osu.getClientStatus();
       try {
         if (lastStatusChange == -1 || !Objects.equal(currentStatus, lastStatus)) {
           lastStatusChange = clock.getTime();
+          if (currentStatus != null && currentStatus.getType() == Type.PLAYING) {
+            for (BannedFilter filter : pm.getExtent(BannedFilter.class)) {
+              if (currentStatus.getDetail().startsWith(filter.getStartsWith())) {
+                return SkipReason.BANNED_MAP;
+              }
+            }
+          }
           return null;
         }
         if (currentStatus != null && currentStatus.getType() == Type.PLAYING) {
@@ -665,5 +672,23 @@ public class SpectatorImpl implements Spectator, Runnable {
     
     inQueue.get().setBoost(1);
     return true;
+  }
+  
+  @Override
+  public synchronized void addBannedMapFilter(PersistenceManager pm, String startsWith) {
+    BannedFilter filter = new BannedFilter(startsWith);
+
+    pm.makePersistent(filter);
+
+
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+    Optional<QueuedPlayer> current = queue.currentlySpectating();
+    if (current.isPresent() && status.lastStatus != null
+        && status.lastStatus.getType() == Type.PLAYING
+        && status.lastStatus.getDetail().startsWith(startsWith)) {
+      if (advance(pm, queue)) {
+        twitch.announcePlayerSkipped(SkipReason.BANNED_MAP, current.get().getPlayer());
+      }
+    }
   }
 }

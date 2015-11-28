@@ -151,4 +151,13 @@ public interface Spectator {
    */
   void performEnqueue(PersistenceManager persistenceManager, QueuedPlayer queueRequest,
       String requestingUser, Logger log, Consumer<String> reply) throws IOException;
+  
+  /**
+   * Adds a filter for banned maps. If the current player plays a map which matches this filter,
+   * they will be skipped.
+   * 
+   * @param persistenceManager the request's persistence manager
+   * @param startsWith beatmaps with a title that starts with this string will be banned.
+   */
+  void addBannedMapFilter(PersistenceManager persistenceManager, String startsWith);
 }

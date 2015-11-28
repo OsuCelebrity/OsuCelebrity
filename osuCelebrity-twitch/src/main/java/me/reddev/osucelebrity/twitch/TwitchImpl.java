@@ -34,5 +34,8 @@ public class TwitchImpl implements Twitch {
     if (reason == SkipReason.IDLE) {
       bot.sendMessage(String.format(TwitchResponses.SKIPPED_IDLE, player.getUserName()));
     }
+    if (reason == SkipReason.BANNED_MAP) {
+      bot.sendMessage(String.format(TwitchResponses.BANNED_MAP, player.getUserName()));
+    }
   }
 }

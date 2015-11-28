@@ -847,4 +847,59 @@ public class SpectatorImplTest extends AbstractJDOTest {
     clock.sleepUntil(2000);
     assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user1, false));
   }
+  
+  @Test
+  public void testFilterImmediateSkip() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+
+    QueuedPlayer user1 = getUser(pm , "player1");
+    QueuedPlayer user2 = getUser(pm , "player2");
+    spectator.enqueue(pm, user1, false);
+    spectator.enqueue(pm, user2, false);
+    when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, "banned shit"));
+
+    spectator.loop(pm);
+    spectator.loop(pm);
+    
+    spectator.addBannedMapFilter(pm, "banned");
+    
+    assertEquals(spectator.getCurrentPlayer(pm), user2);
+  }
+  
+  @Test
+  public void testFilterNoImmediateSkip() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+
+    QueuedPlayer user1 = getUser(pm , "player1");
+    QueuedPlayer user2 = getUser(pm , "player2");
+    spectator.enqueue(pm, user1, false);
+    spectator.enqueue(pm, user2, false);
+    when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, "not banned shit"));
+
+    spectator.loop(pm);
+    spectator.loop(pm);
+    
+    spectator.addBannedMapFilter(pm, "banned");
+    
+    assertEquals(spectator.getCurrentPlayer(pm), user1);
+  }
+  
+  @Test
+  public void testStartPlayingBannedMap() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+
+    spectator.addBannedMapFilter(pm, "banned");
+
+    QueuedPlayer user1 = getUser(pm , "player1");
+    QueuedPlayer user2 = getUser(pm , "player2");
+    spectator.enqueue(pm, user1, false);
+    spectator.enqueue(pm, user2, false);
+    
+    when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, "banned shit"));
+
+    spectator.loop(pm);
+    spectator.loop(pm);
+    
+    assertEquals(spectator.getCurrentPlayer(pm), user2);
+  }
 }

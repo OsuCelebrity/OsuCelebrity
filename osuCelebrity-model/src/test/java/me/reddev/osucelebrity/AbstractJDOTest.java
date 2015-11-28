@@ -1,7 +1,8 @@
 package me.reddev.osucelebrity;
 
-import me.reddev.osucelebrity.core.QueueVote;
+import me.reddev.osucelebrity.core.BannedFilter;
 
+import me.reddev.osucelebrity.core.QueueVote;
 import me.reddev.osucelebrity.osu.OsuIrcUser;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osu.OsuUser;
@@ -46,6 +47,7 @@ public abstract class AbstractJDOTest {
   @After
   public void truncate() {
     PersistenceManager pm = pmf.getPersistenceManager();
+    pm.getExtent(BannedFilter.class).forEach(pm::deletePersistent);
     pm.getExtent(Vote.class).forEach(pm::deletePersistent);
     pm.getExtent(QueueVote.class).forEach(pm::deletePersistent);
     pm.getExtent(QueuedPlayer.class).forEach(pm::deletePersistent);
