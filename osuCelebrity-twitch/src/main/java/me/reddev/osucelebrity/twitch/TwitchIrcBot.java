@@ -92,6 +92,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     modHandlers.add(this::handleSpec);
     modHandlers.add(this::handleFixClient);
     modHandlers.add(this::handleBoost);
+    modHandlers.add(this::handleTimeout);
   }
 
   @Override
@@ -317,6 +318,25 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
         
     spectator.boost(pm, getUserOrThrow(pm, message.substring(Commands.BOOST.length())));
+    return true;
+  }
+  
+  boolean handleTimeout(MessageEvent<PircBotX> event, String message, String twitchUserName,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, Commands.TIMEOUT)) {
+      return false;
+    }
+        
+    String[] split = message.substring(Commands.TIMEOUT.length()).split(" ", 2);
+    
+    int minutes = Math.max(0, Integer.parseInt(split[0]));
+    OsuUser timeoutUser = getUserOrThrow(pm, split[1]);
+    
+    timeoutUser.setTimeOutUntil(clock.getTime() + 60L * 1000 * minutes);
+    
+    event.getChannel().send()
+        .message(String.format(TwitchResponses.TIMEOUT, timeoutUser.getUserName(), minutes));
+    
     return true;
   }
 

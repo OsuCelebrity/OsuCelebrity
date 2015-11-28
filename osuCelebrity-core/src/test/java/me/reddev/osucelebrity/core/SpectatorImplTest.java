@@ -836,4 +836,15 @@ public class SpectatorImplTest extends AbstractJDOTest {
     // user 1 is next
     assertEquals(Arrays.asList(user1, user3, user2), queue.queue);
   }
+  
+  @Test
+  public void testTimeout() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+
+    QueuedPlayer user1 = getUser(pm , "player");
+    user1.getPlayer().setTimeOutUntil(1000);
+    assertEquals(EnqueueResult.DENIED, spectator.enqueue(pm, user1, false));
+    clock.sleepUntil(2000);
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user1, false));
+  }
 }

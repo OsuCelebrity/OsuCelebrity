@@ -19,4 +19,5 @@ public class Commands {
   public static final String RESTART_CLIENT = "fix";
   public static final String MOD = "mod ";
   public static final String BOOST = "boost ";
+  public static final String TIMEOUT = "timeout ";
 }

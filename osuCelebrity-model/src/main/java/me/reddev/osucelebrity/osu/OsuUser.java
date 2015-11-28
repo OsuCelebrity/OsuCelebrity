@@ -45,6 +45,10 @@ public class OsuUser {
   @GameMode
   private int gameMode = 0;
 
+  @Setter
+  @Column(defaultValue = "-1")
+  private long timeOutUntil = -1;
+
   /**
    * Creates a new user object copying all relevant data from the api user object.
    * 

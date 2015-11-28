@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.twitch;
 
+import static org.junit.Assert.*;
+
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import static org.mockito.Mockito.*;
 
@@ -186,5 +188,15 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!boost boosttarget"));
     
     verify(spectator).boost(any(), eq(api.getUser("boosttarget", pmf.getPersistenceManager(), 0)));
+  }
+  
+  @Test
+  public void testTimeout() throws Exception {
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!timeout 60 timeouttarget"));
+    
+    OsuUser target = api.getUser("timeouttarget", pmf.getPersistenceManager(), 0);
+    
+    assertEquals(60 * 60 * 1000, target.getTimeOutUntil());
   }
 }

@@ -288,6 +288,9 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (!selfqueue && !user.getPlayer().isAllowsSpectating()) {
       return EnqueueResult.DENIED;
     }
+    if (user.getPlayer().getTimeOutUntil() > clock.getTime()) {
+      return EnqueueResult.DENIED;
+    }
     synchronized (this) {
       PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
       Optional<QueuedPlayer> current = queue.currentlySpectating();
