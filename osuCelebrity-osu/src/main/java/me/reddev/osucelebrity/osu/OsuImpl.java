@@ -100,6 +100,11 @@ public class OsuImpl implements Osu {
   }
   
   @Override
+  public void pollIngameStatus(OsuUser player, PollStatusConsumer action) {
+    bot.pollIngameStatus(player, action);
+  }
+  
+  @Override
   public void restartClient() throws IOException, InterruptedException {
     app.killOsu();
     

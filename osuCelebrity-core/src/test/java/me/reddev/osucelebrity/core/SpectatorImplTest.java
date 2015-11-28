@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.core;
 
+import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
+import org.mockito.ArgumentCaptor;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osu.PlayerStatus;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
@@ -30,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 
 
@@ -84,23 +87,23 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertFalse(spectator.advance(pm, PlayerQueue.loadQueue(pm, clock)));
 
     QueuedPlayer user = getUser(pm, "someplayer");
-    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user, false, "twitchuser"));
+    assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user, false, "twitchuser", true));
     // already in queue
-    assertEquals(EnqueueResult.NEXT, spectator.enqueue(pm, user, false, "twitchuser"));
+    assertEquals(EnqueueResult.NEXT, spectator.enqueue(pm, user, false, "twitchuser", true));
 
     spectator.loop(pm);
     
     QueuedPlayer user2 = getUser(pm, "someplayer2");
     assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user2, false));
-    assertEquals(EnqueueResult.NEXT, spectator.enqueue(pm, user2, false, "twitchuser"));
+    assertEquals(EnqueueResult.NEXT, spectator.enqueue(pm, user2, false, "twitchuser", true));
 
     spectator.loop(pm);
     
     QueuedPlayer user3 = getUser(pm, "someplayer3");
     assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user3, false));
-    assertEquals(EnqueueResult.VOTED, spectator.enqueue(pm, user3, false, "twitchuser"));
-    assertEquals(EnqueueResult.NOT_VOTED, spectator.enqueue(pm, user3, false, "twitchuser"));
-    assertEquals(EnqueueResult.VOTED, spectator.enqueue(pm, user3, false, "twitchuser2"));
+    assertEquals(EnqueueResult.VOTED, spectator.enqueue(pm, user3, false, "twitchuser", true));
+    assertEquals(EnqueueResult.NOT_VOTED, spectator.enqueue(pm, user3, false, "twitchuser", true));
+    assertEquals(EnqueueResult.VOTED, spectator.enqueue(pm, user3, false, "twitchuser2", true));
     
     // we don't want this player to receive a queue or next message, since they are spectated instantly
     verify(osu, times(0)).notifyQueued(eq(user.getPlayer()), anyInt());
@@ -773,5 +776,30 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.loop(pm);
     
     assertEquals(next.getPlayer(), spectator.getCurrentPlayer(pm).getPlayer());
+  }
+  
+  @Test
+  public void testCheckOnline() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    QueuedPlayer queued = getUser(pm, "wontplay");
+    assertEquals(EnqueueResult.CHECK_ONLINE, spectator.enqueue(pm, queued, false, null, false));
+  }
+  
+  @Test
+  public void testPerformEnqueue() throws Exception {
+    spectator = spy(spectator);
+    
+    PersistenceManager pm = pmf.getPersistenceManager();
+    QueuedPlayer queuedPlayer = getUser(pm, "someplayer");
+    spectator.performEnqueue(pm , queuedPlayer, null, null, System.out::println);
+    
+    ArgumentCaptor<PollStatusConsumer> captor = ArgumentCaptor.forClass(PollStatusConsumer.class);
+    verify(osu).pollIngameStatus(eq(queuedPlayer.getPlayer()), captor.capture());
+    
+    assertFalse(JDOHelper.isPersistent(queuedPlayer));
+    
+    captor.getValue().accept(pm, new PlayerStatus(queuedPlayer.getPlayer(), PlayerStatusType.IDLE, 0));
+
+    assertTrue(JDOHelper.isPersistent(queuedPlayer));
   }
 }

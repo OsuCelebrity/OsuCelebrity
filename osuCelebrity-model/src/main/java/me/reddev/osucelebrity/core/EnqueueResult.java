@@ -33,7 +33,16 @@ public enum EnqueueResult {
   /**
    * User is currently being spectated.
    */
-  CURRENT(Responses.QUEUE_SPECTATING);
+  CURRENT(Responses.QUEUE_SPECTATING),
+  /**
+   * Check if the user is online and try again.
+   */
+  CHECK_ONLINE(null) {
+    @Override
+    public String formatResponse(String targetUser) {
+      throw new IllegalStateException();
+    }
+  };
   
   private final String response;
 

@@ -10,6 +10,9 @@ import javax.jdo.PersistenceManager;
 
 @PassAndReturnNonnull
 public interface Osu {
+  public interface PollStatusConsumer {
+    void accept(PersistenceManager pm, PlayerStatus status) throws IOException;
+  }
   /**
    * Starts spectating a player. TODO specify behaviour (async with callback? success/failure?)
    * 
@@ -94,6 +97,14 @@ public interface Osu {
    * @param player the target player.
    */
   public void pollIngameStatus(OsuUser player);
+  
+  /**
+   * Poll for the ingame status of a player.
+   * 
+   * @param player the target player.
+   * @param the action to be executed upon receiving the result
+   */
+  public void pollIngameStatus(OsuUser player, PollStatusConsumer action);
   
   /**
    * Forcefully restarts the osu client.

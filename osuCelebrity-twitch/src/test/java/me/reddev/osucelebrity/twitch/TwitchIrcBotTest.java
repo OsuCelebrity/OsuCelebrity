@@ -1,7 +1,6 @@
 package me.reddev.osucelebrity.twitch;
 
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
-
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -88,15 +87,12 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testQueue() throws Exception {
-    when(spectator.enqueue(any(), any(), eq(false), eq("twitchIrcUser"))).thenReturn(EnqueueResult.SUCCESS);
-
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!spec someone"));
 
-    verify(spectator).enqueue(
+    verify(spectator).performEnqueue(
         any(),
         eq(new QueuedPlayer(api.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
-            QueueSource.TWITCH, 0)), eq(false), eq("twitchIrcUser"));
-    verify(outputChannel).message(anyString());
+            QueueSource.TWITCH, 0)), eq("twitch:twitchIrcUser"), any(), any());
   }
 
   @Test

@@ -27,6 +27,7 @@ import me.reddev.osucelebrity.core.EnqueueResult;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
+import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import org.apache.commons.lang3.StringUtils;
@@ -45,9 +46,14 @@ import org.tillerino.osuApiModel.GameModes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -75,11 +81,13 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   private final Spectator spectator;
   private final Clock clock;
 
-  private PircBotX bot;
+  PircBotX bot;
 
   private Set<String> onlineUsers = new ConcurrentSkipListSet<>();
 
-  private final List<CommandHandler> handlers = new ArrayList<>();
+  final List<CommandHandler> handlers = new ArrayList<>();
+  
+  Map<Integer, BlockingQueue<PollStatusConsumer>> statusConsumers = new ConcurrentHashMap<>();
 
   {
     handlers.add(this::handlePosition);
@@ -215,7 +223,21 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       if (!status.isPresent()) {
         return;
       }
-      spectator.reportStatus(pm, status.get());
+      boolean handled = false;
+      Queue<PollStatusConsumer> consumers = statusConsumers.get(status.get().getUser().getUserId());
+      if (consumers != null) {
+        for (PollStatusConsumer consumer; (consumer = consumers.poll()) != null; ) {
+          handled = true;
+          try {
+            consumer.accept(pm, status.get());
+          } catch (Exception e) {
+            log.error("error while handling status", e);
+          }
+        }
+      }
+      if (!handled) {
+        spectator.reportStatus(pm, status.get());
+      }
     } catch (Exception e) {
       log.error("error while handling bancho response", e);
     } finally {
@@ -236,14 +258,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       throw new UserException(String.format(OsuResponses.INVALID_USER, queueTarget));
     }
     QueuedPlayer queueRequest = new QueuedPlayer(requestedUser, QueueSource.OSU, clock.getTime());
-    EnqueueResult result = spectator.enqueue(pm, queueRequest, false);
-    if (result == EnqueueResult.SUCCESS) {
-      event.getUser().send()
-          .message(String.format(Responses.QUEUE_SUCCESSFUL, requestedUser.getUserName()));
-    } else if (result == EnqueueResult.FAILURE) {
-      event.getUser().send()
-          .message(String.format(Responses.QUEUE_UNSUCCESSFUL, requestedUser.getUserName()));
-    }
+    spectator.performEnqueue(pm, queueRequest, "osu:" + user.getUserId(), log, event::respond);
     return true;
   }
 
@@ -274,7 +289,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       return false;
     }
     QueuedPlayer queueRequest = new QueuedPlayer(user, QueueSource.OSU, clock.getTime());
-    EnqueueResult result = spectator.enqueue(pm, queueRequest, true);
+    EnqueueResult result = spectator.enqueue(pm, queueRequest, true, null, true);
     if (result == EnqueueResult.SUCCESS) {
       event.getUser().send().message(Responses.SELF_QUEUE_SUCCESSFUL);
     } else if (result == EnqueueResult.FAILURE) {
@@ -486,8 +501,14 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     return onlineUsers;
   }
 
-  public void pollIngameStatus(OsuUser player) {
+  void pollIngameStatus(OsuUser player) {
     bot.sendIRC().message(ircSettings.getOsuCommandUser(), "!stat " + player.getUserName());
+  }
+
+  void pollIngameStatus(OsuUser player, PollStatusConsumer action) {
+    statusConsumers.computeIfAbsent(player.getUserId(), x -> new LinkedBlockingQueue<>()).add(
+        action);
+    pollIngameStatus(player);
   }
 
   // End Listeners

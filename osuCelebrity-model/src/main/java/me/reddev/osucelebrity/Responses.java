@@ -24,6 +24,8 @@ public class Responses {
   public static final String QUEUE_SPECTATING = "%s is currently being spectated.";
   public static final String QUEUE_NEXT = "%s is next.";
   
+  public static final String OFFLINE = "%s is offline.";
+  
   /*
    * EXCEPTIONS
    */

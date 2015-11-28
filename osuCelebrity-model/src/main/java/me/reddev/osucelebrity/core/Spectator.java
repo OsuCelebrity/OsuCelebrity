@@ -4,9 +4,11 @@ import me.reddev.osucelebrity.PassAndReturnNonnull;
 import me.reddev.osucelebrity.core.api.DisplayQueuePlayer;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osu.PlayerStatus;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import javax.annotation.CheckForNull;
 import javax.jdo.PersistenceManager;
@@ -24,7 +26,7 @@ public interface Spectator {
    */
   default EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue)
       throws IOException {
-    return enqueue(pm, user, selfqueue, null);
+    return enqueue(pm, user, selfqueue, null, true);
   }
 
   /**
@@ -34,10 +36,11 @@ public interface Spectator {
    * @param user a new object (not persistent).
    * @param selfqueue if this is a self-queue some checks are skipped.
    * @param twitchUser the twitch user's name or null if queued from somewhere else
+   * @param online if the target user is online.
    * @return the result of the operation. See {@link EnqueueResult}
    */
   EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue,
-      @CheckForNull String twitchUser) throws IOException;
+      @CheckForNull String twitchUser, boolean online) throws IOException;
 
   /**
    * Stops spectating the current player and advances to the next player.
@@ -127,4 +130,17 @@ public interface Spectator {
    * @param osuUser the offline player
    */
   void reportStatus(PersistenceManager pm, PlayerStatus status);
+
+  /**
+   * This attempts an enqueue operation and checks if the target user is online if this is
+   * requested.
+   * 
+   * @param persistenceManager the request's persistence manager
+   * @param queueRequest the queue request
+   * @param requestingUser the requesting user as a unique string. used for voting.
+   * @param log the requester's log.
+   * @param reply responses to the user are sent here
+   */
+  void performEnqueue(PersistenceManager persistenceManager, QueuedPlayer queueRequest,
+      String requestingUser, Logger log, Consumer<String> reply) throws IOException;
 }

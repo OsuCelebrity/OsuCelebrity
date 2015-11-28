@@ -13,6 +13,7 @@ import com.querydsl.jdo.JDOQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.core.api.CurrentPlayerService;
 import me.reddev.osucelebrity.core.api.DisplayQueuePlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
@@ -27,6 +28,7 @@ import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.Twitch;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.function.ToDoubleFunction;
 
 import javax.annotation.Nonnull;
@@ -255,7 +258,7 @@ public class SpectatorImpl implements Spectator, Runnable {
 
   @Override
   public EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue,
-      String twitchUser) throws IOException {
+      String twitchUser, boolean online) throws IOException {
     ApiUser userData =
         osuApi.getUserData(user.getPlayer().getUserId(), user.getPlayer().getGameMode(), pm, 0L);
     if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
@@ -268,15 +271,16 @@ public class SpectatorImpl implements Spectator, Runnable {
       log.debug("{} has not been active", user.getPlayer().getUserName());
       return EnqueueResult.FAILURE;
     }
-    return doEnqueue(pm, user, selfqueue, twitchUser);
+    return doEnqueue(pm, user, selfqueue, twitchUser, online);
   }
 
   /**
    * enqueue without activity/rank checks.
    * @param twitchUser the enqueueing twitch user's name or null if queued from somewhere else
+   * @param online if the user is online. if false, a vote is attempted first.
    */
   EnqueueResult doEnqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue,
-      String twitchUser) {
+      String twitchUser, boolean online) {
     if (!selfqueue && !user.getPlayer().isAllowsSpectating()) {
       return EnqueueResult.DENIED;
     }
@@ -300,6 +304,9 @@ public class SpectatorImpl implements Spectator, Runnable {
         } else {
           return EnqueueResult.NOT_VOTED;
         }
+      }
+      if (!online) {
+        return EnqueueResult.CHECK_ONLINE;
       }
       queue.add(pm, user);
       if (twitchUser != null) {
@@ -338,7 +345,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     QueuedPlayer queueRequest = new QueuedPlayer(ircUser, QueueSource.TWITCH, clock.getTime());
 
     // Don't force spectate a denied player
-    EnqueueResult enqueueResult = doEnqueue(pm, queueRequest, false, null);
+    EnqueueResult enqueueResult = doEnqueue(pm, queueRequest, false, null, true);
     if (enqueueResult == EnqueueResult.DENIED) {
       return false;
     }
@@ -601,6 +608,32 @@ public class SpectatorImpl implements Spectator, Runnable {
         return;
       }
       this.status.ingameStatus = status;
+    }
+  }
+
+  @Override
+  public void performEnqueue(PersistenceManager persistenceManager, QueuedPlayer queueRequest,
+      String requestingUser, Logger log, Consumer<String> reply) throws IOException {
+    EnqueueResult result = enqueue(persistenceManager, queueRequest, false, requestingUser, false);
+    OsuUser requestedUser = queueRequest.getPlayer();
+    if (result == EnqueueResult.CHECK_ONLINE) {
+      queueRequest.setPlayer(persistenceManager.detachCopy(queueRequest.getPlayer()));
+      osu.pollIngameStatus(requestedUser, (pm, status) -> {
+          try {
+            if (status.getType() == PlayerStatusType.OFFLINE) {
+              reply.accept(String.format(OsuResponses.OFFLINE, requestedUser.getUserName()));
+            } else {
+              queueRequest.setPlayer(pm.makePersistent(queueRequest.getPlayer()));
+              EnqueueResult retryResult = enqueue(pm, queueRequest, false, requestingUser, true);
+  
+              reply.accept(retryResult.formatResponse(requestedUser.getUserName()));
+            }
+          } catch (Exception e) {
+            log.error("exception while handling status poll result", e);
+          }
+        });
+    } else {
+      reply.accept(result.formatResponse(requestedUser.getUserName()));
     }
   }
 }

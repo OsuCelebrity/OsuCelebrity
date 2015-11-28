@@ -1,5 +1,8 @@
 package me.reddev.osucelebrity.osu;
 
+import org.pircbotx.output.OutputIRC;
+
+import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import org.tillerino.osuApiModel.GameModes;
 import static org.mockito.Matchers.any;
@@ -12,7 +15,6 @@ import org.pircbotx.snapshot.UserSnapshot;
 import org.pircbotx.snapshot.UserChannelDaoSnapshot;
 import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.JoinEvent;
-
 import com.google.common.collect.ImmutableList;
 
 import java.util.Arrays;
@@ -69,6 +71,10 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   @Mock
   OsuIrcSettings settings;
   @Mock
+  PircBotX pircBotX;
+  @Mock
+  OutputIRC ourputIrc;
+  @Mock
   Osu osu;
   
   OsuIrcBot ircBot;
@@ -84,19 +90,23 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     when(settings.getOsuIrcCommand()).thenReturn("!");
     when(settings.getOsuCommandUser()).thenReturn("BanchoBot");
     when(user.send()).thenReturn(outputUser);
+    
+    when(pircBotX.sendIRC()).thenReturn(ourputIrc);
 
     ircBot = new OsuIrcBot(osu, osuApi, settings, pmf, spectator, clock);
+    
+    ircBot.bot = pircBotX;
   }
 
   @Test
   public void testSelfQueue() throws Exception {
-    when(spectator.enqueue(any(), any(), eq(true))).thenReturn(EnqueueResult.SUCCESS);
+    when(spectator.enqueue(any(), any(), eq(true), eq(null), eq(true))).thenReturn(EnqueueResult.SUCCESS);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!spec"));
 
     ArgumentCaptor<QueuedPlayer> captor = ArgumentCaptor.forClass(QueuedPlayer.class);
 
-    verify(spectator, only()).enqueue(any(), captor.capture(), eq(true));
+    verify(spectator, only()).enqueue(any(), captor.capture(), eq(true), eq(null), eq(true));
 
     QueuedPlayer request = captor.getValue();
     assertEquals("osuIrcUser", request.getPlayer().getUserName());
@@ -192,14 +202,15 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testQueue() throws Exception {
-    when(spectator.enqueue(any(), any(), eq(false))).thenReturn(EnqueueResult.SUCCESS);
-    
+    when(spectator.enqueue(any(), any(), eq(false), eq(null), eq(false))).thenReturn(
+        EnqueueResult.CHECK_ONLINE);
+
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!spec thatguy"));
-    
-    verify(spectator, only()).enqueue(
-        any(),
-        eq(new QueuedPlayer(osuApi.getUser("thatguy", pmf.getPersistenceManager(), 0),
-            QueueSource.OSU, 0)), eq(false));
+
+    OsuUser requestedUser = osuApi.getUser("thatguy", pmf.getPersistenceManager(), 0);
+
+    verify(spectator).performEnqueue(any(),
+        eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)), eq("osu:0"), any(), any());
   }
   
   @Test
@@ -335,5 +346,27 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     
     OsuUser mod = osuApi.getUser("newmod", pmf.getPersistenceManager(), 0);
     assertEquals(Privilege.PLAYER, mod.getPrivilege());
+  }
+  
+  @Test
+  public void testBanchoBotStatusHandler() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    OsuUser tillerino = osuApi.getUser("Tillerino", pm, 0);
+
+    PollStatusConsumer consumer = mock(PollStatusConsumer.class);
+    ircBot.pollIngameStatus(tillerino, consumer);
+    
+    assertEquals(consumer, ircBot.statusConsumers.get(tillerino.getUserId()).peek());
+    
+    String osuCommandUser = settings.getOsuCommandUser();
+    when(user.getNick()).thenReturn(osuCommandUser);
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Playing:"));
+
+    verifyNoMoreInteractions(spectator);
+    verify(consumer).accept(any(), any());
+    
+    assertTrue(ircBot.statusConsumers.get(tillerino.getUserId()).isEmpty());
   }
 }
