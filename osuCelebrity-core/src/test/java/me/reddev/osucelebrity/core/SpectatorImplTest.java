@@ -175,7 +175,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   public void testPromote2() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     spectator
-        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer", pm, 0), null, clock.getTime()), false);
+        .enqueue(pm, new QueuedPlayer(api.getUser("someplayer1", pm, 0), null, clock.getTime()), false);
 
     spectator.loop(pm);
     clock.sleepUntil(1000);
@@ -192,12 +192,24 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.loop(pm);
     clock.sleepUntil(3000);
 
+    OsuUser user1 = api.getUser("someplayer1", pm, 0);
     OsuUser user2 = api.getUser("someplayer2", pm, 0);
+    OsuUser user3 = api.getUser("someplayer3", pm, 0);
 
     spectator.promote(pm, user2);
 
     PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     assertEquals(user2, queue.currentlySpectating().get().getPlayer());
+    assertEquals(user1, queue.spectatingNext().get().getPlayer());
+    
+    // regular start. after force: stop and next
+    verify(osu).notifyStarting(user1);
+    verify(osu).notifyDone(user1);
+    verify(osu).notifyNext(user1);
+    
+    verify(osu).notifyNext(user3);
+    
+    verify(osu).notifyStarting(user2);
   }
 
   @Test

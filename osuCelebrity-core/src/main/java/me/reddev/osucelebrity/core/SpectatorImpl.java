@@ -246,14 +246,18 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (!spectatingNext.isPresent()) {
       spectatingNext = queue.poll(pm);
       if (spectatingNext.isPresent()) {
-        spectatingNext.get().setState(QueuedPlayer.NEXT);
-        if (spectatingNext.get().isNotify() && queue.currentlySpectating().isPresent()
-            && queue.currentlySpectating().get().getStoppingAt() > clock.getTime()) {
-          osu.notifyNext(spectatingNext.get().getPlayer());
-        }
+        setNext(queue, spectatingNext.get());
       }
     }
     return spectatingNext;
+  }
+
+  private void setNext(PlayerQueue queue, QueuedPlayer next) {
+    next.setState(QueuedPlayer.NEXT);
+    if (next.isNotify() && queue.currentlySpectating().isPresent()
+        && queue.currentlySpectating().get().getStoppingAt() > clock.getTime()) {
+      osu.notifyNext(next.getPlayer());
+    }
   }
 
   @Override
@@ -340,29 +344,36 @@ public class SpectatorImpl implements Spectator, Runnable {
 
   @Override
   public synchronized boolean promote(PersistenceManager pm, OsuUser ircUser) {
-    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
-    Optional<QueuedPlayer> nextUser = queue.spectatingNext();
     QueuedPlayer queueRequest = new QueuedPlayer(ircUser, QueueSource.TWITCH, clock.getTime());
 
-    // Don't force spectate a denied player
     EnqueueResult enqueueResult = doEnqueue(pm, queueRequest, false, null, true);
     if (enqueueResult == EnqueueResult.DENIED) {
+      // Don't force spectate a denied player
       return false;
     }
-    if (enqueueResult == EnqueueResult.FAILURE || enqueueResult == EnqueueResult.VOTED) {
-      QueuedPlayer original = queueRequest;
-      queueRequest = queue.stream().filter(x -> x.equals(original)).findFirst().get();
+    if (enqueueResult == EnqueueResult.CURRENT) {
+      return true;
     }
 
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+    QueuedPlayer original = queueRequest;
+    queueRequest = queue.stream().filter(x -> x.equals(original)).findFirst().get();
+
+    Optional<QueuedPlayer> nextUser = queue.spectatingNext();
     // Revert the next player
     if (nextUser.isPresent()) {
       nextUser.get().setState(QueuedPlayer.QUEUED);
     }
+    
+    final Optional<QueuedPlayer> current = queue.currentlySpectating();
 
     queueRequest.setState(QueuedPlayer.NEXT);
     queue = PlayerQueue.loadQueue(pm, clock);
     advance(pm, queue);
 
+    if (current.isPresent()) {
+      setNext(queue, current.get());
+    }
     return true;
   }
 
@@ -382,7 +393,6 @@ public class SpectatorImpl implements Spectator, Runnable {
       return false;
     }
     startSpectating(pm, queue, next.get());
-    status = new Status();
     return true;
   }
 
@@ -406,6 +416,7 @@ public class SpectatorImpl implements Spectator, Runnable {
       osu.notifyStarting(user);
     }
     osu.startSpectate(user);
+    status = new Status();
   }
 
   @Override
