@@ -9,18 +9,14 @@ import java.util.List;
 public interface TwitchApi {
   /**
    * Gets a list of moderators currently in a channel.
-   * @param channel The name of the channel
    * @return The list of moderator usernames in lowercase
-   * @throws IOException Could not load list
    */
-  List<String> getOnlineMods(String channel) throws IOException;
+  List<String> getOnlineMods();
   
   /**
    * Determines whether a given user is a moderator of a channel.
    * @param username The username of the user
-   * @param channel The channel name
    * @return True if the user is a moderator
-   * @throws Could not load list of moderators
    */
-  boolean isModerator(String username, String channel) throws IOException;
+  boolean isModerator(String username);
 }

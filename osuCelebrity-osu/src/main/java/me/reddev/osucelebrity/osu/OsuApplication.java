@@ -16,7 +16,7 @@ import javax.inject.Inject;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
-public class OsuApplication implements Runnable {
+public class OsuApplication {
   static Pattern playingPattern = Pattern.compile("osu!  - (.*)");
   static Pattern watchingPattern = Pattern.compile("osu!  -  \\(watching (.*)\\)");
 
@@ -68,19 +68,16 @@ public class OsuApplication implements Runnable {
   @CheckForNull
   String windowTitle = null;
 
-  @Override
-  public void run() {
+  /**
+   * updates the osu client window title. logs exceptions.
+   */
+  public void updateWindowTitle() {
     try {
-      for (;;) {
-        try {
-          windowTitle = readWindowTitle();
-          Thread.sleep(100);
-        } catch (InterruptedException e) {
-          return;
-        }
-      }
+      windowTitle = readWindowTitle();
+    } catch (InterruptedException e) {
+      return;
     } catch (Exception e) {
-      log.error("Exception", e);
+      log.error("exception while updating window title", e);
     }
   }
 

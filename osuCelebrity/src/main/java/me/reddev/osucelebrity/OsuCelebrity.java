@@ -9,14 +9,15 @@ import me.reddev.osucelebrity.core.api.CoreApiApplication;
 import me.reddev.osucelebrity.osu.OsuActivityUpdater;
 import me.reddev.osucelebrity.osu.OsuApplication;
 import me.reddev.osucelebrity.osu.OsuIrcBot;
+import me.reddev.osucelebrity.twitch.TwitchApiImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
-
 import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 
 import java.net.URI;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.UriBuilder;
@@ -29,15 +30,17 @@ public class OsuCelebrity {
   final CoreApiApplication apiServerApp;
   final CoreSettings coreSettings;
   final OsuApplication osuApp;
-  final ExecutorService exec;
+  final ScheduledExecutorService exec;
   final OsuActivityUpdater osuActivityUpdater;
+  final TwitchApiImpl twitchApi;
   
   void start() {
     exec.submit(spectator);
     exec.submit(twitchBot);
     exec.submit(osuBot);
-    exec.submit(osuApp);
-    exec.submit(osuActivityUpdater);
+    exec.scheduleAtFixedRate(osuApp::updateWindowTitle, 0, 100, TimeUnit.MILLISECONDS);
+    exec.scheduleWithFixedDelay(osuActivityUpdater::update, 0, 5, TimeUnit.SECONDS);
+    exec.scheduleWithFixedDelay(twitchApi::updateChatters, 0, 5, TimeUnit.SECONDS);
 
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(coreSettings.getApiPort()).build();
 

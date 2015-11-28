@@ -23,35 +23,29 @@ import javax.jdo.PersistenceManagerFactory;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
-public class OsuActivityUpdater implements Runnable {
+public class OsuActivityUpdater {
   private final Downloader downloader;
 
   private final PersistenceManagerFactory pmf;
 
   private final Clock clock;
 
-  @Override
-  public void run() {
-    for (;;) {
-      PersistenceManager pm = pmf.getPersistenceManager();
-      try {
-        try {
-          createMissingActivity(pm);
-          updateActivity(pm);
-        } catch (SocketTimeoutException e) {
-          // yeah, whatever
-        } catch (IOException e) {
-          log.warn("exception", e);
-        } catch (Exception e) {
-          log.error("exception", e);
-        } finally {
-          Thread.sleep(5000);
-        }
-      } catch (InterruptedException e) {
-        return;
-      } finally {
-        pm.close();
-      }
+  /**
+   * Update activity for one player.
+   */
+  public void update() {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      createMissingActivity(pm);
+      updateActivity(pm);
+    } catch (SocketTimeoutException e) {
+      // yeah, whatever
+    } catch (IOException e) {
+      log.warn("exception", e);
+    } catch (Exception e) {
+      log.error("exception", e);
+    } finally {
+      pm.close();
     }
   }
 

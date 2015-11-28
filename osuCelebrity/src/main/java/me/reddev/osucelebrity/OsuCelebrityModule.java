@@ -1,5 +1,6 @@
 package me.reddev.osucelebrity;
 
+
 import com.google.inject.AbstractModule;
 
 import me.reddev.osucelebrity.core.Clock;
@@ -17,11 +18,12 @@ import me.reddev.osucelebrity.osu.OsuIrcSettings;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.osuapi.OsuApiSettings;
 import me.reddev.osucelebrity.twitch.Twitch;
+import me.reddev.osucelebrity.twitch.TwitchApiImpl;
 import me.reddev.osucelebrity.twitch.TwitchImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchIrcSettings;
+import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import me.reddev.osucelebrity.twitchapi.TwitchApiSettings;
-
 import org.tillerino.osuApiModel.Downloader;
 
 import java.io.InputStream;
@@ -29,6 +31,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.inject.Singleton;
 import javax.jdo.JDOHelper;
@@ -66,6 +69,7 @@ public class OsuCelebrityModule extends AbstractModule {
     bind(OsuApi.class).to(OsuApiImpl.class).in(Singleton.class);
     bind(Osu.class).to(OsuImpl.class).in(Singleton.class);
     bind(Twitch.class).to(TwitchImpl.class).in(Singleton.class);
+    bind(TwitchApi.class).to(TwitchApiImpl.class).in(Singleton.class);
 
     bind(OsuIrcBot.class).in(Singleton.class);
     bind(TwitchIrcBot.class).in(Singleton.class);
@@ -73,6 +77,8 @@ public class OsuCelebrityModule extends AbstractModule {
     
     bind(Spectator.class).to(SpectatorImpl.class).in(Singleton.class);
     
-    bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool());
+    ScheduledExecutorService executor = Executors.newScheduledThreadPool(0);
+    bind(ExecutorService.class).toInstance(executor);
+    bind(ScheduledExecutorService.class).toInstance(executor);
   }
 }
