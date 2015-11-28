@@ -3,6 +3,7 @@ package me.reddev.osucelebrity;
 public class Commands {
   public static final String FORCESKIP = "forceskip ";
   public static final String QUEUE = "spec ";
+  public static final String QUEUE2 = "vote ";
   public static final String SELFQUEUE = "spec";
   public static final String OPTIN = "optin";
   public static final String OPTOUT = "optout";

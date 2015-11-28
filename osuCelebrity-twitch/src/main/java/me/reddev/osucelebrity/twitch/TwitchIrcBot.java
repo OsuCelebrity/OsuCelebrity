@@ -6,6 +6,7 @@ import static me.reddev.osucelebrity.Commands.FORCESPEC;
 import static me.reddev.osucelebrity.Commands.NOW_PLAYING;
 import static me.reddev.osucelebrity.Commands.POSITION;
 import static me.reddev.osucelebrity.Commands.QUEUE;
+import static me.reddev.osucelebrity.Commands.QUEUE2;
 import static me.reddev.osucelebrity.Commands.UPVOTE;
 
 import lombok.RequiredArgsConstructor;
@@ -187,18 +188,22 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   boolean handleQueue(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
+    final String targetUser;
     if (StringUtils.startsWithIgnoreCase(message, QUEUE)) {
-      String targetUser = message.substring(QUEUE.length());
-      OsuUser requestedUser = osuApi.getUser(targetUser, pm, 60 * 60 * 1000L);
-      if (requestedUser == null) {
-        throw new UserException(String.format(TwitchResponses.INVALID_USER, targetUser));
-      }
-      QueuedPlayer queueRequest =
-          new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
-      spectator.performEnqueue(pm, queueRequest, "twitch:" + twitchUserName, log, event::respond);
-      return true;
+      targetUser = message.substring(QUEUE.length());
+    } else if (StringUtils.startsWithIgnoreCase(message, QUEUE2)) {
+      targetUser = message.substring(QUEUE2.length());
+    } else {
+      return false;
     }
-    return false;
+    OsuUser requestedUser = osuApi.getUser(targetUser, pm, 60 * 60 * 1000L);
+    if (requestedUser == null) {
+      throw new UserException(String.format(TwitchResponses.INVALID_USER, targetUser));
+    }
+    QueuedPlayer queueRequest =
+        new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
+    spectator.performEnqueue(pm, queueRequest, "twitch:" + twitchUserName, log, event::respond);
+    return true;
   }
 
   boolean handleVote(MessageEvent<PircBotX> event, String message, String twitchUserName,

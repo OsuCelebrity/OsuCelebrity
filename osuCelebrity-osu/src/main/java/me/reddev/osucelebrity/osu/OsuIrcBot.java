@@ -8,6 +8,7 @@ import static me.reddev.osucelebrity.Commands.OPTIN;
 import static me.reddev.osucelebrity.Commands.OPTOUT;
 import static me.reddev.osucelebrity.Commands.POSITION;
 import static me.reddev.osucelebrity.Commands.QUEUE;
+import static me.reddev.osucelebrity.Commands.QUEUE2;
 import static me.reddev.osucelebrity.Commands.SELFPOSITION;
 import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
@@ -247,11 +248,15 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   boolean handleQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws IOException, UserException {
-    if (!StringUtils.startsWithIgnoreCase(message, QUEUE)) {
+    final String queueTarget;
+    if (StringUtils.startsWithIgnoreCase(message, QUEUE)) {
+      queueTarget = message.substring(QUEUE.length());
+    } else if (StringUtils.startsWithIgnoreCase(message, QUEUE2)) {
+      queueTarget = message.substring(QUEUE2.length());
+    } else {
       return false;
     }
     
-    String queueTarget = message.substring(QUEUE.length());
 
     OsuUser requestedUser = osuApi.getUser(queueTarget, pm, 60 * 60 * 1000);
     if (requestedUser == null) {

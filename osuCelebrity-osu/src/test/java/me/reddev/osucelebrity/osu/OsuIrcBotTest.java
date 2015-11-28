@@ -202,10 +202,17 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testQueue() throws Exception {
-    when(spectator.enqueue(any(), any(), eq(false), eq(null), eq(false))).thenReturn(
-        EnqueueResult.CHECK_ONLINE);
-
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!spec thatguy"));
+
+    OsuUser requestedUser = osuApi.getUser("thatguy", pmf.getPersistenceManager(), 0);
+
+    verify(spectator).performEnqueue(any(),
+        eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)), eq("osu:0"), any(), any());
+  }
+  
+  @Test
+  public void testQueueAlias() throws Exception {
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!vote thatguy"));
 
     OsuUser requestedUser = osuApi.getUser("thatguy", pmf.getPersistenceManager(), 0);
 

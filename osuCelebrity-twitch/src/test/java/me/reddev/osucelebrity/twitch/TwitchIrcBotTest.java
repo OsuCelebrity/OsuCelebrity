@@ -96,6 +96,16 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   }
 
   @Test
+  public void testQueueAlias() throws Exception {
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!vote someone"));
+
+    verify(spectator).performEnqueue(
+        any(),
+        eq(new QueuedPlayer(api.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
+            QueueSource.TWITCH, 0)), eq("twitch:twitchIrcUser"), any(), any());
+  }
+
+  @Test
   public void testDank() throws Exception {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!dank"));
 
