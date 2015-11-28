@@ -799,8 +799,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
   
   @Test
   public void testPerformEnqueue() throws Exception {
-    spectator = spy(spectator);
-    
     PersistenceManager pm = pmf.getPersistenceManager();
     QueuedPlayer queuedPlayer = getUser(pm, "someplayer");
     spectator.performEnqueue(pm , queuedPlayer, null, null, System.out::println);
@@ -813,5 +811,29 @@ public class SpectatorImplTest extends AbstractJDOTest {
     captor.getValue().accept(pm, new PlayerStatus(queuedPlayer.getPlayer(), PlayerStatusType.IDLE, 0));
 
     assertTrue(JDOHelper.isPersistent(queuedPlayer));
+  }
+  
+  @Test
+  public void testBoost() throws Exception {
+    PersistenceManager pm = pmf.getPersistenceManager();
+
+    QueuedPlayer user1 = getUser(pm , "player");
+    spectator.enqueue(pm, user1, false);
+    clock.sleepUntil(1000);
+    QueuedPlayer user2 = getUser(pm, "player2");
+    spectator.enqueue(pm, user2, false);
+    clock.sleepUntil(2000);
+    QueuedPlayer user3 = getUser(pm, "player3");
+    spectator.enqueue(pm, user3, false);
+
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+    queue.doSort(pm);
+    assertEquals(Arrays.asList(user1, user2, user3), queue.queue);
+    
+    spectator.boost(pm, user3.getPlayer());
+    assertEquals(1, user3.getBoost());
+    queue.doSort(pm);
+    // user 1 is next
+    assertEquals(Arrays.asList(user1, user3, user2), queue.queue);
   }
 }

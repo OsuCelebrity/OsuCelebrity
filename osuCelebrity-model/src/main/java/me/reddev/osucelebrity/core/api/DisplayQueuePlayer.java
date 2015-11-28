@@ -12,5 +12,5 @@ public class DisplayQueuePlayer {
   
   public String timeInQueue;
   
-  public int votes;
+  public String votes;
 }

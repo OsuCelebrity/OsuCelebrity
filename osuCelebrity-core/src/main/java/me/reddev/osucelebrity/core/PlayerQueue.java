@@ -54,6 +54,7 @@ public class PlayerQueue {
     Collections.sort(
         this.queue,
         Comparator.comparing(QueuedPlayer::getState)
+            .thenComparing(Comparator.comparing(QueuedPlayer::getBoost).reversed())
             .thenComparing(Comparator.comparing(queueTimePlusVotes).reversed())
             .thenComparing(QueuedPlayer::getQueuedAt));
   }

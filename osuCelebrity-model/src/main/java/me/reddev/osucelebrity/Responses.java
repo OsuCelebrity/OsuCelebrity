@@ -26,6 +26,8 @@ public class Responses {
   
   public static final String OFFLINE = "%s is offline.";
   
+  public static final String BOOSTED = "%s was boosted.";
+  
   /*
    * EXCEPTIONS
    */

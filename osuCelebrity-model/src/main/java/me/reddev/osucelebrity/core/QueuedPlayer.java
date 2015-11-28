@@ -44,6 +44,9 @@ public class QueuedPlayer {
   @Index
   int state = 2;
   
+  @Column(defaultValue = "0")
+  int boost = 0;
+  
   /**
    * Creates a new queued player object. This alone won't enqueue this player.
    * 

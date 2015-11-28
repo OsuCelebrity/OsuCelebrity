@@ -572,8 +572,9 @@ public class SpectatorImpl implements Spectator, Runnable {
       }
       long timeInQueue = clock.getTime() - player.getQueuedAt();
       String timeString = CurrentPlayerService.formatDuration(timeInQueue);
-      result.add(new DisplayQueuePlayer(player.getPlayer().getUserName(), timeString, votes
-          .getOrDefault(player, 0L).intValue()));
+      String votesString =
+          player.getBoost() > 0 ? "∞" : String.valueOf(votes.getOrDefault(player, 0L).intValue());
+      result.add(new DisplayQueuePlayer(player.getPlayer().getUserName(), timeString, votesString));
     }
     return result;
   }
@@ -646,5 +647,20 @@ public class SpectatorImpl implements Spectator, Runnable {
     } else {
       reply.accept(result.formatResponse(requestedUser.getUserName()));
     }
+  }
+  
+  @Override
+  public synchronized boolean boost(PersistenceManager pm, OsuUser ircUser) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+    
+    Optional<QueuedPlayer> inQueue =
+        queue.stream().filter(x -> x.getPlayer().equals(ircUser)).findFirst();
+
+    if (!inQueue.isPresent()) {
+      return false;
+    }
+    
+    inQueue.get().setBoost(1);
+    return true;
   }
 }

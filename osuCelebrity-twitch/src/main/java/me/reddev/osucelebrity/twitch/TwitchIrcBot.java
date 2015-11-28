@@ -17,7 +17,6 @@ import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.Clock;
-import me.reddev.osucelebrity.core.EnqueueResult;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
@@ -45,6 +44,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
@@ -91,6 +91,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     modHandlers.add(this::handleAdvance);
     modHandlers.add(this::handleSpec);
     modHandlers.add(this::handleFixClient);
+    modHandlers.add(this::handleBoost);
   }
 
   @Override
@@ -196,10 +197,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     } else {
       return false;
     }
-    OsuUser requestedUser = osuApi.getUser(targetUser, pm, 60 * 60 * 1000L);
-    if (requestedUser == null) {
-      throw new UserException(String.format(TwitchResponses.INVALID_USER, targetUser));
-    }
+    OsuUser requestedUser = getUserOrThrow(pm, targetUser);
     QueuedPlayer queueRequest =
         new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
     spectator.performEnqueue(pm, queueRequest, "twitch:" + twitchUserName, log, event::respond);
@@ -243,15 +241,22 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
     message = message.substring(FORCESPEC.length());
     
-    OsuUser ircUser = osuApi.getUser(message, pm, 0);
-    if (ircUser == null) {
-      throw new UserException(String.format(Responses.INVALID_USER, message));
-    }
+    OsuUser ircUser = getUserOrThrow(pm, message);
     if (spectator.promote(pm, ircUser)) {
       sendMessage(String.format(TwitchResponses.SPECTATE_FORCE,
           event.getUser().getNick(), message));
     }
     return true;
+  }
+
+  @Nonnull
+  private OsuUser getUserOrThrow(PersistenceManager pm, String username) throws IOException,
+      UserException {
+    OsuUser ircUser = osuApi.getUser(username, pm, 0);
+    if (ircUser == null) {
+      throw new UserException(String.format(Responses.INVALID_USER, username));
+    }
+    return ircUser;
   }
   
   boolean handlePosition(MessageEvent<PircBotX> event, String message, String twitchUserName,
@@ -261,20 +266,16 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
     message = message.substring(POSITION.length());
     
-    OsuUser ircUser = osuApi.getUser(message, pm, 0);
-    if (ircUser != null) {
-      int position = spectator.getQueuePosition(pm, ircUser);
-      if (position != -1) {
-        event.getChannel().send().message(String.format(OsuResponses.POSITION, 
-            ircUser.getUserName(), position));
-      } else {
-        event.getChannel().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
-            ircUser.getUserName()));
-      }
-      return true;
+    OsuUser ircUser = getUserOrThrow(pm, message);
+    int position = spectator.getQueuePosition(pm, ircUser);
+    if (position != -1) {
+      event.getChannel().send().message(String.format(OsuResponses.POSITION, 
+          ircUser.getUserName(), position));
+    } else {
+      event.getChannel().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
+          ircUser.getUserName()));
     }
-    
-    return false;
+    return true;
   }
   
   boolean handleNowPlaying(MessageEvent<PircBotX> event, String message, String twitchUserName,
@@ -306,6 +307,16 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       // w/e
     }
     
+    return true;
+  }
+  
+  boolean handleBoost(MessageEvent<PircBotX> event, String message, String twitchUserName,
+      PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, Commands.BOOST)) {
+      return false;
+    }
+        
+    spectator.boost(pm, getUserOrThrow(pm, message.substring(Commands.BOOST.length())));
     return true;
   }
 

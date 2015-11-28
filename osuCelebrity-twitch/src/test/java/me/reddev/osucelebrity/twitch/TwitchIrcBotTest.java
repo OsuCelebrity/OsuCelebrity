@@ -179,4 +179,12 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     
     verify(osu).restartClient();
   }
+  
+  @Test
+  public void testBoost() throws Exception {
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!boost boosttarget"));
+    
+    verify(spectator).boost(any(), eq(api.getUser("boosttarget", pmf.getPersistenceManager(), 0)));
+  }
 }
