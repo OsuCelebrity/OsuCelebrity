@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.twitch;
 
+import me.reddev.osucelebrity.twitchapi.TwitchApi;
+
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -18,7 +20,6 @@ import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.osuapi.MockOsuApi;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -55,6 +56,8 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   Configuration<PircBotX> configuration;
   @Mock
   ListenerManager<PircBotX> listenerManager;
+  @Mock
+  TwitchApi twitchApi;
 
   MockOsuApi api = new MockOsuApi();
   Clock clock = new MockClock();
@@ -75,7 +78,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
     when(settings.getTwitchIrcCommand()).thenReturn("!");
 
-    ircBot = new TwitchIrcBot(settings, api, null, osu, pmf, spectator, new MockClock());
+    ircBot = new TwitchIrcBot(settings, api, twitchApi, osu, pmf, spectator, new MockClock());
   }
   
   QueuedPlayer getUser(PersistenceManager pm, String playerName) {
@@ -112,7 +115,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testForceSkip() throws Exception {
-    when(channel.isOp(user)).thenReturn(true);
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip x"));
 
     verify(spectator).advanceConditional(any(),
@@ -128,7 +131,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testForceSpec() throws Exception {
-    when(channel.isOp(user)).thenReturn(true);
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forcespec x"));
     
     verify(spectator).promote(any(), 
@@ -165,7 +168,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testFixClient() throws Exception {
-    when(channel.isOp(user)).thenReturn(true);
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!fix"));
     
     verify(osu).restartClient();

@@ -75,9 +75,12 @@ public class OsuCelebrityModule extends AbstractModule {
     bind(TwitchIrcBot.class).in(Singleton.class);
     bind(OsuApplication.class).in(Singleton.class);
     
-    bind(Spectator.class).to(SpectatorImpl.class).in(Singleton.class);
+    bind(Spectator.class).to(SpectatorImpl.class);
+
+    bind(SpectatorImpl.class).in(Singleton.class);
+    bind(TwitchApiImpl.class).in(Singleton.class);
     
-    ScheduledExecutorService executor = Executors.newScheduledThreadPool(0);
+    ScheduledExecutorService executor = Executors.newScheduledThreadPool(16);
     bind(ExecutorService.class).toInstance(executor);
     bind(ScheduledExecutorService.class).toInstance(executor);
   }

@@ -96,6 +96,9 @@ public class TwitchApiImpl implements TwitchApi {
               clock.getTime()));
 
       channelChatters = new Gson().fromJson(req, ChannelChatters.class);
+    } catch (IOException e) {
+      // we are expecting these regularly, so no need to put them in the error log
+      log.warn("Exception while updating chatters", e);
     } catch (Exception e) {
       log.error("Exception while updating chatters", e);
     }

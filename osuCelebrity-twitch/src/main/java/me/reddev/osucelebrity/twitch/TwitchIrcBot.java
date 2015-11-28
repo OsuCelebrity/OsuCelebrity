@@ -26,7 +26,7 @@ import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
-
+import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -61,7 +61,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   private final OsuApi osuApi;
 
-  private final Twitch twitch;
+  private final TwitchApi twitchApi;
   
   private final Osu osu;
 
@@ -159,7 +159,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     try {
       boolean handled = false;
       
-      if (event.getChannel().isOp(event.getUser())) {
+      if (twitchApi.isModerator(event.getUser().getNick())) {
         for (CommandHandler commandHandler : modHandlers) {
           if (commandHandler.handle(event, message, event.getUser().getNick(), pm)) {
             handled = true;
