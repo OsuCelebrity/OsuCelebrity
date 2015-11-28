@@ -36,6 +36,7 @@ import org.pircbotx.hooks.events.DisconnectEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
+import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -94,6 +95,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     modHandlers.add(this::handleBoost);
     modHandlers.add(this::handleTimeout);
     modHandlers.add(this::handleBannedMapsFilter);
+    modHandlers.add(this::handleGameMode);
   }
 
   @Override
@@ -353,6 +355,33 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
     event.getChannel().send().message(String.format(TwitchResponses.ADDED_BANNED_MAPS_FILTER));
 
+    return true;
+  }
+  
+  boolean handleGameMode(MessageEvent<PircBotX> event, String message,
+      String twitchUserName, PersistenceManager pm) throws UserException, IOException {
+    if (!StringUtils.startsWithIgnoreCase(message, Commands.GAME_MODE)) {
+      return false;
+    }
+
+    String[] split = message.substring(Commands.GAME_MODE.length()).split(" ", 2);
+
+    OsuUser user = getUserOrThrow(pm, split[1]);
+    
+    if (split[0].equalsIgnoreCase("osu")) {
+      user.setGameMode(GameModes.OSU);
+    } else if (split[0].equalsIgnoreCase("taiko")) {
+      user.setGameMode(GameModes.TAIKO);
+    } else if (split[0].equalsIgnoreCase("ctb")) {
+      user.setGameMode(GameModes.CTB);
+    } else if (split[0].equalsIgnoreCase("mania")) {
+      user.setGameMode(GameModes.MANIA);
+    } else {
+      return false;
+    }
+    
+    event.getChannel().send().message(Responses.GAME_MODE_CHANGED);
+    
     return true;
   }
 

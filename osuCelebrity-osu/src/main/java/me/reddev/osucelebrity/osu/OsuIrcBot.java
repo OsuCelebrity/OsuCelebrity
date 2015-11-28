@@ -410,7 +410,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       return false;
     }
     
-    event.getUser().send().message("game mode changed.");
+    event.getUser().send().message(Responses.GAME_MODE_CHANGED);
     return true;
   }
   

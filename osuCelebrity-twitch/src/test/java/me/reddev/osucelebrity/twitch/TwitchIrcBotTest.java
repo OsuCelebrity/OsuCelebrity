@@ -1,7 +1,8 @@
 package me.reddev.osucelebrity.twitch;
 
-import static org.junit.Assert.*;
+import org.tillerino.osuApiModel.GameModes;
 
+import static org.junit.Assert.*;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import static org.mockito.Mockito.*;
 
@@ -206,5 +207,26 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!banmaps ban this"));
     
     verify(spectator).addBannedMapFilter(any(), eq("ban this"));
+  }
+  
+  @Test
+  public void testChangeGameMode() throws Exception {
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!gamemode taiko player"));
+    OsuUser player = api.getUser("player", pmf.getPersistenceManager(), 0);
+    assertEquals(GameModes.TAIKO, player.getGameMode());
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!gamemode ctb player"));
+    player = api.getUser("player", pmf.getPersistenceManager(), 0);
+    assertEquals(GameModes.CTB, player.getGameMode());
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!gamemode mania player"));
+    player = api.getUser("player", pmf.getPersistenceManager(), 0);
+    assertEquals(GameModes.MANIA, player.getGameMode());
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!gamemode osu player"));
+    player = api.getUser("player", pmf.getPersistenceManager(), 0);
+    assertEquals(GameModes.OSU, player.getGameMode());
   }
 }

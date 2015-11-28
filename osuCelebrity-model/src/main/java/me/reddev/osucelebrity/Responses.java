@@ -40,4 +40,5 @@ public class Responses {
       + "Please try again later.";
   public static final String EXCEPTION_TIMEOUT = "Timeout while accessing the osu! api. "
       + "Please try again later!";
+  public static final String GAME_MODE_CHANGED = "game mode changed.";
 }
