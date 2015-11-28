@@ -556,7 +556,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.enqueue(pm, getUser(pm, "player1"), false);
     spectator.enqueue(pm, getUser(pm, "player2"), false);
     spectator.enqueue(pm, getUser(pm, "player3"), false);
-    assertEquals(2, spectator.getQueuePosition(pm, api.getUser("player2", pm, 0)));
+    assertEquals(1, spectator.getQueuePosition(pm, api.getUser("player2", pm, 0)));
   }
   
   @Test
