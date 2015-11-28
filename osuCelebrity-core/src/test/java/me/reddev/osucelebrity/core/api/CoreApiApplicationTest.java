@@ -2,8 +2,11 @@ package me.reddev.osucelebrity.core.api;
 
 import me.reddev.osucelebrity.core.SpectatorImpl;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
+import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osu.OsuStatus;
 import org.mockito.internal.matchers.Contains;
+import org.tillerino.osuApiModel.GameModes;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
@@ -58,8 +61,11 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
   public void testCurrentPlayerService() throws Exception {
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(0).build();
 
+    OsuUser user = osuApi.getUser("that player", pmf.getPersistenceManager(), 0);
+    user.setGameMode(GameModes.TAIKO);
+    
     when(spectator.getCurrentPlayer(any())).thenReturn(
-        new QueuedPlayer(osuApi.getUser("that player", pmf.getPersistenceManager(), 0),
+        new QueuedPlayer(user,
             QueueSource.OSU, 0));
 
     when(spectator.getNextPlayer(any())).thenReturn(
@@ -90,6 +96,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     assertThat(result, new Contains("\"nextPlayer\":\"next player\""));
     assertThat(result, new Contains("\"beatmap\":\"that beatmap\""));
     assertThat(result, new Contains("\"source\":\"queue\""));
+    assertThat(result, new Contains("\"gameMode\":1"));
 
     System.out.println(queueService.queue());
     result = readUrl(new URL("http://localhost:" + port + "/queue"));

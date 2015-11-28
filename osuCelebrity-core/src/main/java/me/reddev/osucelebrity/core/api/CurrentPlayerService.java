@@ -65,6 +65,8 @@ public class CurrentPlayerService {
     double accuracy;
 
     String country;
+    
+    int gameMode;
 
     String nextPlayer;
     
@@ -115,6 +117,7 @@ public class CurrentPlayerService {
           response.level = apiUser.getLevel();
           response.accuracy = apiUser.getAccuracy();
           response.country = apiUser.getCountry();
+          response.gameMode = apiUser.getGameMode();
         }
       }
       OsuStatus clientStatus = osu.getClientStatus();
