@@ -170,7 +170,8 @@ public class SpectatorImpl implements Spectator, Runnable {
           return SkipReason.OFFLINE;
         }
         long idleTimeout = settings.getIdleTimeout();
-        if (ingameStatus != null && ingameStatus.getType() == PlayerStatusType.PLAYING) {
+        if (ingameStatus != null && (ingameStatus.getType() == PlayerStatusType.PLAYING
+            || ingameStatus.getType() == PlayerStatusType.MULTIPLAYING)) {
           idleTimeout *= 2;
         }
         if (ingameStatus != null && ingameStatus.getType() == PlayerStatusType.AFK) {

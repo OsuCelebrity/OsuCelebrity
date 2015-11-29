@@ -303,6 +303,9 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
     assertEquals(new PlayerStatus(tillerino, PlayerStatusType.WATCHING, 2),
         ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Watching:").get());
+
+    assertEquals(new PlayerStatus(tillerino, PlayerStatusType.MULTIPLAYING, 2),
+        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Multiplaying:").get());
   }
   
   @Test

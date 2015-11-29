@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(exclude = "receivedAt")
 public class PlayerStatus {
   public enum PlayerStatusType {
-    OFFLINE, IDLE, PLAYING, WATCHING, MODDING, AFK
+    OFFLINE, IDLE, PLAYING, WATCHING, MODDING, AFK, MULTIPLAYING
   }
 
   OsuUser user;

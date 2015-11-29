@@ -195,7 +195,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     }
   }
 
-  static Pattern statusPattern = Pattern.compile("Stats for \\(.*\\)\\[https://osu.ppy.sh/u/(\\d+)\\](?: is (Idle|Watching|Modding|Playing|Afk))?:");
+  static Pattern statusPattern = Pattern.compile("Stats for \\(.*\\)\\[https://osu.ppy.sh/u/(\\d+)\\](?: is (Idle|Watching|Modding|Playing|Afk|Multiplaying))?:");
   
   @SuppressFBWarnings("TQ")
   Optional<PlayerStatus> parseStatus(PersistenceManager pm, String message) throws IOException {
