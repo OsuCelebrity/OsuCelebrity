@@ -35,7 +35,7 @@ public class OsuCelebrity {
   final TwitchApiImpl twitchApi;
   
   void start() {
-    exec.submit(spectator);
+    exec.scheduleAtFixedRate(spectator::loop, 0, 100, TimeUnit.MILLISECONDS);
     exec.submit(twitchBot);
     exec.submit(osuBot);
     exec.scheduleAtFixedRate(osuApp::updateWindowTitle, 0, 100, TimeUnit.MILLISECONDS);

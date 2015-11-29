@@ -43,6 +43,12 @@ public abstract class AbstractJDOTest {
   
   protected PersistenceManager pm;
   
+  protected OsuUser osuUser;
+  
+  protected OsuUser osuUser2;
+  
+  protected OsuUser osuUser3;
+  
   @Mock
   protected ExecutorService exec;
 
@@ -56,6 +62,10 @@ public abstract class AbstractJDOTest {
     });
     
     pm = pmf.getPersistenceManager();
+
+    osuUser = osuApi.getUser("defaultUser", pm, 0);
+    osuUser2 = osuApi.getUser("defaultUser2", pm, 0);
+    osuUser3 = osuApi.getUser("defaultUser3", pm, 0);
   }
   @BeforeClass
   public static void createDatastore() {

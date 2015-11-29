@@ -5,6 +5,7 @@ import static me.reddev.osucelebrity.core.QQueueVote.queueVote;
 import static me.reddev.osucelebrity.core.QVote.vote;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
+import static me.reddev.osucelebrity.util.ExecutorServiceHelper.detachAndSchedule;
 
 import com.google.common.base.Objects;
 
@@ -46,6 +47,7 @@ import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Transaction;
 
 /**
  * Controller for what's shown on the screen. Currently all methods except run() are synchronized.
@@ -55,7 +57,7 @@ import javax.jdo.PersistenceManagerFactory;
  */
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
-public class SpectatorImpl implements Spectator, Runnable {
+public class SpectatorImpl implements Spectator {
   final Twitch twitch;
 
   final Clock clock;
@@ -69,71 +71,63 @@ public class SpectatorImpl implements Spectator, Runnable {
   final OsuApi osuApi;
   
   final ExecutorService exec;
-
-  boolean run = true;
-
-  Thread runThread = null;
-
-  @Override
-  public void run() {
-    for (; run;) {
-      try {
-        PersistenceManager pm = pmf.getPersistenceManager();
-        try {
-          long sleepUntil = loop(pm);
-          runThread = Thread.currentThread();
-          clock.sleepUntil(sleepUntil);
-        } catch (InterruptedException e) {
-          // time to wake up and work!
-        } finally {
-          pm.close();
-        }
-      } catch (Exception e) {
-        log.error("Exception in spectator", e);
-      }
-    }
-  }
-
+  
   /**
-   * Wakes the spectator from sleep.
+   * Perform one loop iteration.
    */
-  public void wake() {
-    if (runThread != null) {
-      runThread.interrupt();
+  public void loop() {
+    try {
+      PersistenceManager pm = pmf.getPersistenceManager();
+      try {
+        loop(pm);
+      } finally {
+        pm.close();
+      }
+    } catch (Exception e) {
+      log.error("Exception in spectator", e);
     }
   }
 
-  synchronized long loop(PersistenceManager pm) {
-    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
-    Optional<QueuedPlayer> current = queue.currentlySpectating();
-    Optional<QueuedPlayer> next = lockNext(pm, queue);
-    long time = clock.getTime();
-
-    if (current.isPresent()) {
-      SkipReason shouldSkip = status.shouldSkip(pm, current.get());
-      if (shouldSkip != null) {
-        if (advance(pm, queue)) {
-          twitch.announcePlayerSkipped(shouldSkip, current.get().getPlayer());
-        }
-      } else {
-        if (queue.spectatingUntil() <= time) {
-          if (next.isPresent()) {
-            advance(pm, queue);
-          } else {
-            if (queue.spectatingUntil() <= time
-                - (settings.getAutoSpecTime() - settings.getDefaultSpecDuration())) {
+  synchronized void loop(PersistenceManager pm) {
+    Transaction transaction = pm.currentTransaction();
+    transaction.begin();
+    try {
+      PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+      Optional<QueuedPlayer> current = queue.currentlySpectating();
+      Optional<QueuedPlayer> next = lockNext(pm, queue);
+      long time = clock.getTime();
+  
+      if (current.isPresent()) {
+        SkipReason shouldSkip = status.shouldSkip(pm, current.get());
+        if (shouldSkip != null) {
+          if (advance(pm, queue)) {
+            detachAndSchedule(exec, log, pm, twitch::announcePlayerSkipped, shouldSkip, current
+                .get().getPlayer());
+          }
+        } else {
+          if (queue.spectatingUntil() <= time) {
+            if (next.isPresent()) {
               advance(pm, queue);
+            } else {
+              if (queue.spectatingUntil() <= time
+                  - (settings.getAutoSpecTime() - settings.getDefaultSpecDuration())) {
+                advance(pm, queue);
+              }
             }
           }
         }
+      } else {
+        advance(pm, queue);
       }
-    } else {
-      advance(pm, queue);
+      
+      updateRemainingTime(pm, queue);
+      
+      transaction.commit();
+    } finally {
+      if (transaction.isActive()) {
+        transaction.rollback();
+      }
     }
-
-    updateRemainingTime(pm, queue);
-    long until = queue.currentlySpectating().isPresent() ? queue.spectatingUntil() : 0;
-    return Math.min(time + 100, until > time ? until : time + 100);
   }
 
   class Status {
@@ -163,7 +157,7 @@ public class SpectatorImpl implements Spectator, Runnable {
         }
         if (lastIngameStatusPoll < clock.getTime() - 1000) {
           lastIngameStatusPoll = clock.getTime();
-          exec.submit(() -> osu.pollIngameStatus(player.getPlayer()));
+          detachAndSchedule(exec, log, pm, osu::pollIngameStatus, player.getPlayer());
         }
         if (currentStatus == null
             && lastStatusChange <= clock.getTime() - settings.getOfflineTimeout()) {
@@ -254,23 +248,26 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (!spectatingNext.isPresent()) {
       spectatingNext = queue.poll(pm);
       if (spectatingNext.isPresent()) {
-        setNext(queue, spectatingNext.get());
+        setNext(pm, queue, spectatingNext.get());
       }
     }
     return spectatingNext;
   }
 
-  private void setNext(PlayerQueue queue, QueuedPlayer next) {
+  private void setNext(PersistenceManager pm, PlayerQueue queue, QueuedPlayer next) {
     next.setState(QueuedPlayer.NEXT);
     if (next.isNotify() && queue.currentlySpectating().isPresent()
         && queue.currentlySpectating().get().getStoppingAt() > clock.getTime()) {
-      osu.notifyNext(next.getPlayer());
+      detachAndSchedule(exec, log, pm, osu::notifyNext, next.getPlayer());
     }
   }
 
   @Override
   public EnqueueResult enqueue(PersistenceManager pm, QueuedPlayer user, boolean selfqueue,
       String twitchUser, boolean online) throws IOException {
+    /*
+     * This method is NOT synchronized, we can do expensive calls.
+     */
     ApiUser userData =
         osuApi.getUserData(user.getPlayer().getUserId(), user.getPlayer().getGameMode(), pm, 0L);
     if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
@@ -329,10 +326,8 @@ public class SpectatorImpl implements Spectator, Runnable {
       }
       log.info("Queued " + user.getPlayer().getUserName());
       if (user.isNotify() && !user.equals(lockNext(pm, queue).orElse(null))) {
-        osu.notifyQueued(user.getPlayer(), queue.playerAt(pm, user));
-      }
-      if (!current.isPresent()) {
-        wake();
+        detachAndSchedule(exec, log, pm, osu::notifyQueued, user.getPlayer(),
+            queue.playerAt(pm, user));
       }
       return EnqueueResult.SUCCESS;
     }
@@ -383,7 +378,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     advance(pm, queue);
 
     if (current.isPresent()) {
-      setNext(queue, current.get());
+      setNext(pm, queue, current.get());
     }
     return true;
   }
@@ -413,7 +408,7 @@ public class SpectatorImpl implements Spectator, Runnable {
     if (spectating.isPresent()) {
       spectating.get().setState(QueuedPlayer.DONE);
       if (spectating.get().isNotify()) {
-        osu.notifyDone(spectating.get().getPlayer());
+        detachAndSchedule(exec, log, pm, osu::notifyDone, spectating.get().getPlayer());
         sendEndStatistics(pm, spectating.get());
       }
     }
@@ -424,9 +419,9 @@ public class SpectatorImpl implements Spectator, Runnable {
     next.setStoppingAt(next.getStartedAt() + settings.getDefaultSpecDuration());
     OsuUser user = next.getPlayer();
     if (next.isNotify()) {
-      osu.notifyStarting(user);
+      detachAndSchedule(exec, log, pm, osu::notifyStarting, user);
     }
-    osu.startSpectate(user);
+    detachAndSchedule(exec, log, pm, osu::startSpectate, user);
     status = new Status();
   }
 
@@ -608,7 +603,7 @@ public class SpectatorImpl implements Spectator, Runnable {
       
       //Make sure it's all happy trees
       if (dankScore >= 0.5) {
-        osu.notifyStatistics(player.getPlayer(), danks, skips);
+        detachAndSchedule(exec, log, pm, osu::notifyStatistics, player.getPlayer(), danks, skips);
       }
     }
   }
@@ -637,22 +632,21 @@ public class SpectatorImpl implements Spectator, Runnable {
   @Override
   public void performEnqueue(PersistenceManager persistenceManager, QueuedPlayer queueRequest,
       String requestingUser, Logger log, Consumer<String> reply) throws IOException {
+    /*
+     * This method is NOT synchronized, we can do expensive calls.
+     */
     EnqueueResult result = enqueue(persistenceManager, queueRequest, false, requestingUser, false);
     OsuUser requestedUser = queueRequest.getPlayer();
     if (result == EnqueueResult.CHECK_ONLINE) {
       queueRequest.setPlayer(persistenceManager.detachCopy(queueRequest.getPlayer()));
       osu.pollIngameStatus(requestedUser, (pm, status) -> {
-          try {
-            if (status.getType() == PlayerStatusType.OFFLINE) {
-              reply.accept(String.format(OsuResponses.OFFLINE, requestedUser.getUserName()));
-            } else {
-              queueRequest.setPlayer(pm.makePersistent(queueRequest.getPlayer()));
-              EnqueueResult retryResult = enqueue(pm, queueRequest, false, requestingUser, true);
-  
-              reply.accept(retryResult.formatResponse(requestedUser.getUserName()));
-            }
-          } catch (Exception e) {
-            log.error("exception while handling status poll result", e);
+          if (status.getType() == PlayerStatusType.OFFLINE) {
+            reply.accept(String.format(OsuResponses.OFFLINE, requestedUser.getUserName()));
+          } else {
+            queueRequest.setPlayer(pm.makePersistent(queueRequest.getPlayer()));
+            EnqueueResult retryResult = enqueue(pm, queueRequest, false, requestingUser, true);
+
+            reply.accept(retryResult.formatResponse(requestedUser.getUserName()));
           }
         });
     } else {

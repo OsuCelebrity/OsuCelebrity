@@ -1,7 +1,6 @@
 package me.reddev.osucelebrity.osu;
 
 import org.pircbotx.output.OutputIRC;
-
 import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import org.tillerino.osuApiModel.GameModes;
@@ -17,6 +16,7 @@ import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 import com.google.common.collect.ImmutableList;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -75,12 +75,16 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   Osu osu;
   
   OsuIrcBot ircBot;
+  
+  OsuUser osuIrcUser;
 
   @Before
-  public void initMocks() {
+  public void initMocks() throws Exception {
     when(bot.getConfiguration()).thenReturn(configuration);
     when(configuration.getListenerManager()).thenReturn(listenerManager);
     when(user.getNick()).thenReturn("osuIrcUser");
+    
+    osuIrcUser = osuApi.getUser(user.getNick(), pm, 0);
 
     when(settings.getOsuIrcCommand()).thenReturn("!");
     when(settings.getOsuCommandUser()).thenReturn("BanchoBot");
@@ -200,7 +204,8 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     OsuUser requestedUser = osuApi.getUser("thatguy", pmf.getPersistenceManager(), 0);
 
     verify(spectator).performEnqueue(any(),
-        eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)), eq("osu:0"), any(), any());
+        eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)),
+        eq("osu:" + osuIrcUser.getUserId()), any(), any());
   }
   
   @Test
@@ -210,7 +215,8 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     OsuUser requestedUser = osuApi.getUser("thatguy", pmf.getPersistenceManager(), 0);
 
     verify(spectator).performEnqueue(any(),
-        eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)), eq("osu:0"), any(), any());
+        eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)),
+        eq("osu:" + osuIrcUser.getUserId()), any(), any());
   }
   
   @Test
@@ -275,25 +281,25 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     clock.sleepUntil(2);
     
     assertEquals(new PlayerStatus(thelewa, PlayerStatusType.OFFLINE, 2),
-        ircBot.parseStatus(pm, "Stats for (thelewa)[https://osu.ppy.sh/u/1]:").get());
+        ircBot.parseStatus(pm, "Stats for (thelewa)[https://osu.ppy.sh/u/" + thelewa.getUserId() + "]:").get());
 
     assertEquals(new PlayerStatus(agus2001, PlayerStatusType.AFK, 2),
-        ircBot.parseStatus(pm, "Stats for (agus2001)[https://osu.ppy.sh/u/2] is Afk:").get());
+        ircBot.parseStatus(pm, "Stats for (agus2001)[https://osu.ppy.sh/u/" + agus2001.getUserId() + "] is Afk:").get());
 
     assertEquals(new PlayerStatus(tillerino, PlayerStatusType.IDLE, 2),
-        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Idle:").get());
+        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/" + tillerino.getUserId() + "] is Idle:").get());
 
     assertEquals(new PlayerStatus(tillerino, PlayerStatusType.MODDING, 2),
-        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Modding:").get());
+        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/" + tillerino.getUserId() + "] is Modding:").get());
 
     assertEquals(new PlayerStatus(tillerino, PlayerStatusType.PLAYING, 2),
-        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Playing:").get());
+        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/" + tillerino.getUserId() + "] is Playing:").get());
 
     assertEquals(new PlayerStatus(tillerino, PlayerStatusType.WATCHING, 2),
-        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Watching:").get());
+        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/" + tillerino.getUserId() + "] is Watching:").get());
 
     assertEquals(new PlayerStatus(tillerino, PlayerStatusType.MULTIPLAYING, 2),
-        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Multiplaying:").get());
+        ircBot.parseStatus(pm, "Stats for (Tillerino)[https://osu.ppy.sh/u/" + tillerino.getUserId() + "] is Multiplaying:").get());
   }
   
   @Test
@@ -304,7 +310,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     when(user.getNick()).thenReturn(osuCommandUser);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
-        "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Playing:"));
+        "Stats for (Tillerino)[https://osu.ppy.sh/u/" + tillerino.getUserId() + "] is Playing:"));
 
     verify(spectator).reportStatus(any(),
         eq(new PlayerStatus(tillerino, PlayerStatusType.PLAYING, 0)));
@@ -356,7 +362,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     when(user.getNick()).thenReturn(osuCommandUser);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
-        "Stats for (Tillerino)[https://osu.ppy.sh/u/0] is Playing:"));
+        "Stats for (Tillerino)[https://osu.ppy.sh/u/" + tillerino.getUserId() + "] is Playing:"));
 
     verifyNoMoreInteractions(spectator);
     verify(consumer).accept(any(), any());
