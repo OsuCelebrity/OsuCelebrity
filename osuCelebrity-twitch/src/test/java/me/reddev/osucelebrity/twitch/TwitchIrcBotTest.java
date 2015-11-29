@@ -1,7 +1,6 @@
 package me.reddev.osucelebrity.twitch;
 
 import org.tillerino.osuApiModel.GameModes;
-
 import static org.junit.Assert.*;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import static org.mockito.Mockito.*;
@@ -61,15 +60,10 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   @Mock
   TwitchApi twitchApi;
 
-  MockOsuApi api = new MockOsuApi();
-  Clock clock = new MockClock();
-
   TwitchIrcBot ircBot;
 
   @Before
-  public void initMocks() {
-    MockitoAnnotations.initMocks(this);
-
+  public void initMocks() throws Exception {
     when(bot.getConfiguration()).thenReturn(configuration);
     when(configuration.getListenerManager()).thenReturn(listenerManager);
     when(user.getNick()).thenReturn("twitchIrcUser");
@@ -80,11 +74,11 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
     when(settings.getTwitchIrcCommand()).thenReturn("!");
 
-    ircBot = new TwitchIrcBot(settings, api, twitchApi, osu, pmf, spectator, new MockClock());
+    ircBot = new TwitchIrcBot(settings, osuApi, twitchApi, osu, pmf, spectator, clock);
   }
   
-  QueuedPlayer getUser(PersistenceManager pm, String playerName) {
-    OsuUser user = api.getUser(playerName, pm, 0);
+  QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
+    OsuUser user = osuApi.getUser(playerName, pm, 0);
     return new QueuedPlayer(user, null, clock.getTime());
   }
 
@@ -94,7 +88,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
     verify(spectator).performEnqueue(
         any(),
-        eq(new QueuedPlayer(api.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
+        eq(new QueuedPlayer(osuApi.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
             QueueSource.TWITCH, 0)), eq("twitch:twitchIrcUser"), any(), any());
   }
 
@@ -104,7 +98,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
     verify(spectator).performEnqueue(
         any(),
-        eq(new QueuedPlayer(api.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
+        eq(new QueuedPlayer(osuApi.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
             QueueSource.TWITCH, 0)), eq("twitch:twitchIrcUser"), any(), any());
   }
 
@@ -144,7 +138,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forcespec x"));
     
     verify(spectator).promote(any(), 
-        eq(api.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
+        eq(osuApi.getUser("x", pmf.getPersistenceManagerProxy(), 0)));
   }
   
   @Test
@@ -188,7 +182,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     when(twitchApi.isModerator(user.getNick())).thenReturn(true);
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!boost boosttarget"));
     
-    verify(spectator).boost(any(), eq(api.getUser("boosttarget", pmf.getPersistenceManager(), 0)));
+    verify(spectator).boost(any(), eq(osuApi.getUser("boosttarget", pmf.getPersistenceManager(), 0)));
   }
   
   @Test
@@ -196,7 +190,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     when(twitchApi.isModerator(user.getNick())).thenReturn(true);
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!timeout 60 timeouttarget"));
     
-    OsuUser target = api.getUser("timeouttarget", pmf.getPersistenceManager(), 0);
+    OsuUser target = osuApi.getUser("timeouttarget", pmf.getPersistenceManager(), 0);
     
     assertEquals(60 * 60 * 1000, target.getTimeOutUntil());
   }
@@ -214,19 +208,19 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     when(twitchApi.isModerator(user.getNick())).thenReturn(true);
     
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!gamemode taiko player"));
-    OsuUser player = api.getUser("player", pmf.getPersistenceManager(), 0);
+    OsuUser player = osuApi.getUser("player", pmf.getPersistenceManager(), 0);
     assertEquals(GameModes.TAIKO, player.getGameMode());
     
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!gamemode ctb player"));
-    player = api.getUser("player", pmf.getPersistenceManager(), 0);
+    player = osuApi.getUser("player", pmf.getPersistenceManager(), 0);
     assertEquals(GameModes.CTB, player.getGameMode());
     
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!gamemode mania player"));
-    player = api.getUser("player", pmf.getPersistenceManager(), 0);
+    player = osuApi.getUser("player", pmf.getPersistenceManager(), 0);
     assertEquals(GameModes.MANIA, player.getGameMode());
     
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!gamemode osu player"));
-    player = api.getUser("player", pmf.getPersistenceManager(), 0);
+    player = osuApi.getUser("player", pmf.getPersistenceManager(), 0);
     assertEquals(GameModes.OSU, player.getGameMode());
   }
 }

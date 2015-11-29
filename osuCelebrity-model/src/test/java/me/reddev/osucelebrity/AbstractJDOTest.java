@@ -1,7 +1,16 @@
 package me.reddev.osucelebrity;
 
-import me.reddev.osucelebrity.core.BannedFilter;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.when;
 
+import org.junit.Before;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Mock;
+import me.reddev.osucelebrity.core.Clock;
+import me.reddev.osucelebrity.core.MockClock;
+import me.reddev.osucelebrity.osuapi.MockOsuApi;
+import me.reddev.osucelebrity.osuapi.OsuApi;
+import me.reddev.osucelebrity.core.BannedFilter;
 import me.reddev.osucelebrity.core.QueueVote;
 import me.reddev.osucelebrity.osu.OsuIrcUser;
 import me.reddev.osucelebrity.osuapi.ApiUser;
@@ -16,6 +25,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
@@ -26,7 +36,27 @@ import org.junit.After;
 
 public abstract class AbstractJDOTest {
   static protected PersistenceManagerFactory pmf;
+  
+  protected OsuApi osuApi = new MockOsuApi();
 
+  protected Clock clock = new MockClock();
+  
+  protected PersistenceManager pm;
+  
+  @Mock
+  protected ExecutorService exec;
+
+  @Before
+  public void initMocksOnAbstractJDOTest() throws Exception {
+    MockitoAnnotations.initMocks(this);
+    
+    when(exec.submit(any(Runnable.class))).thenAnswer(x -> {
+      x.getArgumentAt(0, Runnable.class).run();
+      return null;
+    });
+    
+    pm = pmf.getPersistenceManager();
+  }
   @BeforeClass
   public static void createDatastore() {
     Map<String, String> props = new HashMap<>();
@@ -46,6 +76,7 @@ public abstract class AbstractJDOTest {
   
   @After
   public void truncate() {
+    pm.close();
     PersistenceManager pm = pmf.getPersistenceManager();
     pm.getExtent(BannedFilter.class).forEach(pm::deletePersistent);
     pm.getExtent(Vote.class).forEach(pm::deletePersistent);

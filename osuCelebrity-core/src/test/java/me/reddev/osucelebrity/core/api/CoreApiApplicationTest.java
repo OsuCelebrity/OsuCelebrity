@@ -50,13 +50,6 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
   @Mock
   Osu osu;
 
-  OsuApi osuApi = new MockOsuApi();
-
-  @Before
-  public void initMocks() {
-    MockitoAnnotations.initMocks(this);
-  }
-
   @Test
   public void testCurrentPlayerService() throws Exception {
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(0).build();

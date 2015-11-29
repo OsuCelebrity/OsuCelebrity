@@ -15,12 +15,6 @@ public class OsuApplicationTest {
   @Mock
   OsuApplicationSettings settings;
 
-  @Before
-  public void initMocks() {
-    MockitoAnnotations.initMocks(this);
-
-  }
-
   String windowTitle;
   OsuApplication fakeWindowTitle = new OsuApplication(null) {
     public String getWindowTitle() {

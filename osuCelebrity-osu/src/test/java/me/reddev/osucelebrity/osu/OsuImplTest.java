@@ -25,23 +25,18 @@ public class OsuImplTest extends AbstractJDOTest {
   @Mock
   Spectator spectator;
 
-  OsuApi api = new MockOsuApi();
-  
   OsuImpl osu;
 
   @Before
   public void initMocks() throws Exception {
-    MockitoAnnotations.initMocks(this);
-    
     osu = new OsuImpl(bot, app, spectator, pmf);
   }
   
   @Test
   public void testLastActivity() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
-    OsuUser user = api.getUser("activeuser", pm, 0);
+    OsuUser user = osuApi.getUser("activeuser", pm, 0);
     
-    pm.makePersistent(new PlayerActivity(api.getUserData(user.getUserId(), 0, pm, 0), 12345, 0));
+    pm.makePersistent(new PlayerActivity(osuApi.getUserData(user.getUserId(), 0, pm, 0), 12345, 0));
     
     assertEquals(12345, osu.lastActivity(pm, user));
   }

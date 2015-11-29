@@ -50,9 +50,6 @@ import org.pircbotx.output.OutputUser;
 
 
 public class OsuIrcBotTest extends AbstractJDOTest {
-  MockClock clock = new MockClock();
-  OsuApi osuApi = new MockOsuApi();
-
   @Mock
   Spectator spectator;
 
@@ -81,8 +78,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
   @Before
   public void initMocks() {
-    MockitoAnnotations.initMocks(this);
-
     when(bot.getConfiguration()).thenReturn(configuration);
     when(configuration.getListenerManager()).thenReturn(listenerManager);
     when(user.getNick()).thenReturn("osuIrcUser");
@@ -117,7 +112,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testSkip() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
     osuApi.getUser("osuIrcUser", pm, 0).setPrivilege(Privilege.MOD);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!forceskip x"));
@@ -177,7 +171,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testOfflineUser() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
     ircBot.onServerResponse(new ServerResponseEvent<PircBotX>(bot, 401,
         ":cho.ppy.sh 401 OsuCelebrity doesnotexist :No such nick", ImmutableList
             .copyOf(new String[] {"OsuCelebrity", "doesnotexist", "No such nick"})));
@@ -222,8 +215,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testForceSpec() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
-    
     osuApi.getUser("osuIrcUser", pm, 0).setPrivilege(Privilege.MOD);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!forcespec x"));
@@ -242,8 +233,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testFixClient() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
-    
     osuApi.getUser("osuIrcUser", pm, 0).setPrivilege(Privilege.MOD);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!fix"));
@@ -280,7 +269,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testParseStatus() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser tillerino = osuApi.getUser("Tillerino", pm, 0);
     OsuUser thelewa = osuApi.getUser("thelewa", pm, 0);
     OsuUser agus2001 = osuApi.getUser("agus2001", pm, 0);
@@ -310,7 +298,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testBanchoBotStatus() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser tillerino = osuApi.getUser("Tillerino", pm, 0);
 
     String osuCommandUser = settings.getOsuCommandUser();
@@ -325,7 +312,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testMod() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser admin = osuApi.getUser("admin", pm, 0);
     admin.setPrivilege(Privilege.ADMIN);
     {
@@ -343,7 +329,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testModFail() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser admin = osuApi.getUser("notadmin", pm, 0);
     {
       OsuUser mod = osuApi.getUser("newmod", pm, 0);
@@ -360,7 +345,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testBanchoBotStatusHandler() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
     OsuUser tillerino = osuApi.getUser("Tillerino", pm, 0);
 
     PollStatusConsumer consumer = mock(PollStatusConsumer.class);

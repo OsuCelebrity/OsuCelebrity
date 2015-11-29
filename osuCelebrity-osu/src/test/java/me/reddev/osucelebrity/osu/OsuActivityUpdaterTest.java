@@ -29,19 +29,13 @@ import org.tillerino.osuApiModel.Downloader;
 import javax.jdo.PersistenceManager;
 
 public class OsuActivityUpdaterTest extends AbstractJDOTest {
-  Clock clock = new MockClock();
-
   @Mock
   Downloader downloader;
 
   OsuActivityUpdater updater;
 
-  OsuApi api = new MockOsuApi();
-
   @Before
   public void initMocks() throws Exception {
-    MockitoAnnotations.initMocks(this);
-
     updater = new OsuActivityUpdater(downloader, pmf, clock);
   }
 
@@ -49,8 +43,8 @@ public class OsuActivityUpdaterTest extends AbstractJDOTest {
   public void testCreateMissing() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManagerProxy();
 
-    api.getUser("Tillerino", pm, 0);
-    ApiUser user = api.getUserData(0, GameModes.OSU, pm, 0);
+    osuApi.getUser("Tillerino", pm, 0);
+    ApiUser user = osuApi.getUserData(0, GameModes.OSU, pm, 0);
 
     updater.createMissingActivity(pm);
 
@@ -61,9 +55,8 @@ public class OsuActivityUpdaterTest extends AbstractJDOTest {
 
   @Test
   public void testUpdateActivity() throws Exception {
-    PersistenceManager pm = pmf.getPersistenceManager();
-    OsuUser user = api.getUser("rank100", pm, 0);
-    ApiUser data = api.getUserData(user.getUserId(), 0, pm, 0);
+    OsuUser user = osuApi.getUser("rank100", pm, 0);
+    ApiUser data = osuApi.getUserData(user.getUserId(), 0, pm, 0);
     data.setRank(100);
 
     updater.createMissingActivity(pm);
