@@ -16,11 +16,13 @@ public class CoreApiApplication extends Application {
    * Constructor.
    */
   @Inject
-  public CoreApiApplication(CurrentPlayerService currentPlayerService, QueueService queue) {
+  public CoreApiApplication(CurrentPlayerService currentPlayerService, 
+      QueueService queue, VoteService vote) {
     super();
 
     resourceInstances.add(currentPlayerService);
     resourceInstances.add(queue);
+    resourceInstances.add(vote);
   }
 
   @Override
