@@ -48,7 +48,7 @@ public class VoteService {
           new JDOQuery<>(pm).select(vote).from(vote)
               .where(vote.reference.eq(queued));
       
-      List<Vote> votes = query.fetchResults().getResults();      
+      List<Vote> votes = query.fetchResults().getResults();   
       return getUniqueVotes(votes);
     } catch (Exception e) {
       throw e;
