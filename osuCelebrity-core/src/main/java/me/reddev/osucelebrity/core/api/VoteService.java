@@ -10,8 +10,11 @@ import me.reddev.osucelebrity.core.Vote;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.jdo.PersistenceManager;
@@ -48,7 +51,9 @@ public class VoteService {
           new JDOQuery<>(pm).select(vote).from(vote)
               .where(vote.reference.eq(queued));
       
-      List<Vote> votes = query.fetchResults().getResults();   
+      //Create a modifiable result list
+      List<Vote> votes = new ArrayList<Vote>();
+      votes.addAll(query.fetchResults().getResults());   
       return getUniqueVotes(votes);
     } catch (Exception e) {
       throw e;
@@ -63,13 +68,16 @@ public class VoteService {
    * @return The modified sorted list
    */
   private List<Vote> getUniqueVotes(List<Vote> votes) {
+    //Compare in descending order
     votes.sort((d1, d2) -> Long.compare(d1.getVoteTime(), d2.getVoteTime()));
+    Collections.reverse(votes);
     
-    List<String> names = new ArrayList<String>();
+    //Unique set of names
+    Set<String> names = new HashSet<String>();
     for (Iterator<Vote> iterator = votes.iterator(); iterator.hasNext(); ) {
       Vote vote = iterator.next();
       
-      if (names.contains(vote.getTwitchUser())) {
+      if (!names.add(vote.getTwitchUser())) {
         iterator.remove();
       }
     }

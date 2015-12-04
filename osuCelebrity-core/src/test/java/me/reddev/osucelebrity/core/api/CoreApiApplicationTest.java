@@ -8,9 +8,13 @@ import org.mockito.internal.matchers.Contains;
 import org.tillerino.osuApiModel.GameModes;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.any;
+
+import org.junit.Before;
 import org.junit.Test;
 import org.eclipse.jetty.server.ServerConnector;
 
@@ -43,10 +47,20 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
   @Mock
   SpectatorImpl spectator;
   @Mock
-  CoreSettings coreSettings;
+  CoreSettings settings;
   @Mock
   Osu osu;
 
+  @Before
+  public void initMocks() throws IOException {
+    when(settings.getStreamDelay()).thenReturn(0L);
+  }
+  
+  QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
+    OsuUser user = osuApi.getUser(playerName, pm, 0);
+    return new QueuedPlayer(user, null, clock.getTime());
+  }
+  
   @Test
   public void testCurrentPlayerService() throws Exception {
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(0).build();
@@ -65,7 +79,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, "that beatmap"));
 
     CurrentPlayerService cps =
-        new CurrentPlayerService(pmf, spectator, coreSettings, osu, osuApi,
+        new CurrentPlayerService(pmf, spectator, settings, osu, osuApi,
             Executors.newCachedThreadPool());
     QueueService queueService = new QueueService(pmf, spectator);
     VoteService voteService = new VoteService(pmf, spectator);
@@ -102,27 +116,26 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
   @Test
   public void testVoteService() throws Exception {
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(0).build();
-
-    PersistenceManager pm = pmf.getPersistenceManager();
+    SpectatorImpl spectatorImpl = 
+        new SpectatorImpl(null, clock, osu, settings, pmf, osuApi, exec);
     
-    OsuUser user = osuApi.getUser("that player", pm, 0);
-    QueuedPlayer player = new QueuedPlayer(user, QueueSource.TWITCH, 0);
+    QueuedPlayer player = getUser(pm, "some player");
     
-    spectator.enqueue(pm, player, true);
+    spectatorImpl.enqueue(pm, player, false, "redback", true);
+    spectatorImpl.promote(pm, player.getPlayer());
+    spectatorImpl.loop();
     
-    spectator.loop();
+    spectatorImpl.vote(pm, "redback", VoteType.DOWN);
+    spectatorImpl.vote(pm, "tillerino", VoteType.UP);
+    spectatorImpl.vote(pm, "redback", VoteType.UP);
     
-    System.out.println("Vote:" + spectator.vote(pm, "redback", VoteType.UP));
-    spectator.vote(pm, "tillerino", VoteType.UP);
-    spectator.vote(pm, "redback", VoteType.DOWN);
-    
-    spectator.loop();
+    spectatorImpl.loop();
 
     CurrentPlayerService cps =
-        new CurrentPlayerService(pmf, spectator, coreSettings, osu, osuApi,
+        new CurrentPlayerService(pmf, spectatorImpl, settings, osu, osuApi,
             Executors.newCachedThreadPool());
-    QueueService queueService = new QueueService(pmf, spectator);
-    VoteService voteService = new VoteService(pmf, spectator);
+    QueueService queueService = new QueueService(pmf, spectatorImpl);
+    VoteService voteService = new VoteService(pmf, spectatorImpl);
     
     CoreApiApplication apiServerApp = new CoreApiApplication(cps, queueService, voteService);
 
@@ -135,7 +148,10 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     
     String result = readUrl(new URL("http://localhost:" + port + "/votes"));
     
-    assertEquals("", result);
+    assertFalse(result.contains("\"voteType\":\"DOWN\""));
+    assertTrue(result.contains("\"voteType\":\"UP\""));
+    assertTrue(result.contains("\"twitchUser\":\"redback\""));
+    assertTrue(result.contains("\"twitchUser\":\"tillerino\""));
     
     apiServer.stop();
   }

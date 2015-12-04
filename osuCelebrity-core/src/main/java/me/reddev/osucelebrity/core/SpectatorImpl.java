@@ -640,15 +640,15 @@ public class SpectatorImpl implements Spectator {
     if (result == EnqueueResult.CHECK_ONLINE) {
       queueRequest.setPlayer(persistenceManager.detachCopy(queueRequest.getPlayer()));
       osu.pollIngameStatus(requestedUser, (pm, status) -> {
-          if (status.getType() == PlayerStatusType.OFFLINE) {
-            reply.accept(String.format(OsuResponses.OFFLINE, requestedUser.getUserName()));
-          } else {
-            queueRequest.setPlayer(pm.makePersistent(queueRequest.getPlayer()));
-            EnqueueResult retryResult = enqueue(pm, queueRequest, false, requestingUser, true);
+        if (status.getType() == PlayerStatusType.OFFLINE) {
+          reply.accept(String.format(OsuResponses.OFFLINE, requestedUser.getUserName()));
+        } else {
+          queueRequest.setPlayer(pm.makePersistent(queueRequest.getPlayer()));
+          EnqueueResult retryResult = enqueue(pm, queueRequest, false, requestingUser, true);
 
-            reply.accept(retryResult.formatResponse(requestedUser.getUserName()));
-          }
-        });
+          reply.accept(retryResult.formatResponse(requestedUser.getUserName()));
+        }
+      });
     } else {
       reply.accept(result.formatResponse(requestedUser.getUserName()));
     }
