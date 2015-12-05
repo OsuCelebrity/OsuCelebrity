@@ -168,4 +168,12 @@ public interface Spectator {
    * @return each voter's last vote.
    */
   List<Vote> getVotes(PersistenceManager pm, QueuedPlayer queuedPlayer);
+
+  /**
+   * Extend the time of the current player.
+   * @param pm the request's persistence manager
+   * @param expectedUser only extends the time if this player is currently being spectated.
+   * @return success
+   */
+  boolean extendConditional(PersistenceManager pm, String expectedUser);
 }

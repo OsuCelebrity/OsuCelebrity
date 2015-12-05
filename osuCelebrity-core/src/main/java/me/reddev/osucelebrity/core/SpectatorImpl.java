@@ -26,7 +26,6 @@ import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.Twitch;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -338,16 +337,22 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   @Override
   public synchronized boolean advanceConditional(PersistenceManager pm, String expectedUser) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
-    Optional<QueuedPlayer> currentUser = queue.currentlySpectating();
-    if (!currentUser.isPresent()) {
-      return false;
-    }
-    String userName = currentUser.get().getPlayer().getUserName();
-    int distance = StringUtils.getLevenshteinDistance(userName, expectedUser);
-    if (distance >= userName.length() / 2) {
+    if (!queue.isCurrent(expectedUser)) {
       return false;
     }
     return advance(pm, queue);
+  }
+
+  @Override
+  public synchronized boolean extendConditional(PersistenceManager pm, String expectedUser) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+    if (!queue.isCurrent(expectedUser)) {
+      return false;
+    }
+    QueuedPlayer current = queue.currentlySpectating().get();
+    current.setStoppingAt(Math.min(clock.getTime(), current.getStoppingAt())
+        + settings.getDefaultSpecDuration());
+    return true;
   }
 
   @Override

@@ -95,6 +95,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     modHandlers.add(this::handleTimeout);
     modHandlers.add(this::handleBannedMapsFilter);
     modHandlers.add(this::handleGameMode);
+    modHandlers.add(this::handleExtend);
   }
 
   @Override
@@ -376,6 +377,18 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
     
     event.getChannel().send().message(Responses.GAME_MODE_CHANGED);
+    
+    return true;
+  }
+  
+  boolean handleExtend(MessageEvent<PircBotX> event, String message,
+      String twitchUserName, PersistenceManager pm) throws UserException, IOException {
+    String targetUser = Commands.detect(message, Commands.EXTEND);
+    if (targetUser == null) {
+      return false;
+    }
+
+    spectator.extendConditional(pm, targetUser);
     
     return true;
   }

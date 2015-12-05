@@ -223,4 +223,12 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     player = osuApi.getUser("player", pmf.getPersistenceManager(), 0);
     assertEquals(GameModes.OSU, player.getGameMode());
   }
+  
+  @Test
+  public void testExtend() throws Exception {
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!extend someplayer"));
+    
+    verify(spectator).extendConditional(any(), eq("someplayer"));
+  }
 }

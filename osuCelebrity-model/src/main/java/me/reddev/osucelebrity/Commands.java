@@ -22,6 +22,7 @@ public class Commands {
   public static final String BOOST = "boost ";
   public static final String TIMEOUT = "timeout ";
   public static final String ADD_BANNED_MAPS_FILTER = "banmaps ";
+  public static final String EXTEND = "extend ";
   
   /**
    * Detects a command in an incoming message.
@@ -30,7 +31,7 @@ public class Commands {
    * @return null of no candidate was found, or the remaining string if a candidate was found.
    */
   public static String detect(String command, String... candidates) {
-    for (String token : QUEUE) {
+    for (String token : candidates) {
       if (StringUtils.startsWithIgnoreCase(command, token)) {
         return command.substring(token.length());
       }
