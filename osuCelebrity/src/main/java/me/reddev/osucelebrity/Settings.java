@@ -43,9 +43,6 @@ public class Settings implements SettingsMBean {
   private String twitchClientId;
   private String twitchClientSecret;
 
-  // Stream Output Settings
-  private String streamOutputPath;
-
   // Application Settings
   private long defaultSpecDuration;
   private int apiPort;
@@ -60,6 +57,10 @@ public class Settings implements SettingsMBean {
   private int minPlayCount;
   private long maxLastActivity;
 
+  private int osuClientXOffset;
+  private int osuClientYOffset;
+  private int osuClientWidth;
+  private int osuClientHeight;
   /**
    * Loads settings from a given property list.
    * @param properties An imported java property list
