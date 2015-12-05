@@ -47,7 +47,7 @@
 						</goals>
 						<phase>test</phase>
 						<configuration>
-							<configLocation>google_checks.xml</configLocation>
+							<configLocation>../google_checks.xml</configLocation>
 							<violationSeverity>warning</violationSeverity>
 							<excludes>target/**/*</excludes>
 						</configuration>
