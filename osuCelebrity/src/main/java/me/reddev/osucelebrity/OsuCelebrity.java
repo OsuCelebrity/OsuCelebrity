@@ -15,11 +15,13 @@ import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
+import javax.management.ObjectName;
 import javax.ws.rs.core.UriBuilder;
 
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
@@ -33,8 +35,9 @@ public class OsuCelebrity {
   final ScheduledExecutorService exec;
   final OsuActivityUpdater osuActivityUpdater;
   final TwitchApiImpl twitchApi;
+  final Settings settings;
   
-  void start() {
+  void start() throws Exception {
     exec.scheduleAtFixedRate(spectator::loop, 0, 100, TimeUnit.MILLISECONDS);
     exec.submit(twitchBot);
     exec.submit(osuBot);
@@ -48,19 +51,18 @@ public class OsuCelebrity {
         JettyHttpContainerFactory
             .createServer(baseUri, ResourceConfig.forApplication(apiServerApp));
 
-    try {
-      apiServer.start();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    apiServer.start();
+    
+    ManagementFactory.getPlatformMBeanServer().registerMBean(settings,
+        new ObjectName("osuCeleb:type=Settings"));
   }
 
   /**
    * Starts the osuCelebrity bot.
    * 
-   * @param args Command line arguments
+   * @param args Command line arguments 
    */
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     OsuCelebrity osuCelebrity =
         Guice.createInjector(new OsuCelebrityModule()).getInstance(OsuCelebrity.class);
     osuCelebrity.start();
