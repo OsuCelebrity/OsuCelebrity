@@ -8,7 +8,9 @@ import org.junit.Test;
 public class CommandsTest {
   @Test
   public void testWhitespace() throws Exception {
-    assertTrue(Commands.QUEUE.endsWith(" "));
+    for (String token : Commands.QUEUE) {
+      assertTrue(token.endsWith(" "));
+    }
     assertTrue(Commands.FORCESKIP.endsWith(" "));
   }
 }
