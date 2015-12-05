@@ -22,6 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
+import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.ws.rs.core.UriBuilder;
 
@@ -40,6 +41,12 @@ public class OsuCelebrity {
   final OsuRobot osuRobot;
   
   void start() throws Exception {
+    MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
+    jmxServer.registerMBean(settings,
+        new ObjectName("osuCeleb:type=Settings"));
+    jmxServer.registerMBean(spectator,
+        new ObjectName("osuCeleb:type=Spectator"));
+
     exec.scheduleAtFixedRate(spectator::loop, 0, 100, TimeUnit.MILLISECONDS);
     exec.submit(twitchBot);
     exec.submit(osuBot);
@@ -55,9 +62,6 @@ public class OsuCelebrity {
             .createServer(baseUri, ResourceConfig.forApplication(apiServerApp));
 
     apiServer.start();
-    
-    ManagementFactory.getPlatformMBeanServer().registerMBean(settings,
-        new ObjectName("osuCeleb:type=Settings"));
   }
 
   /**

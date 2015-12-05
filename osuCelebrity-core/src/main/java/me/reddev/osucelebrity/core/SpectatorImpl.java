@@ -6,9 +6,7 @@ import static me.reddev.osucelebrity.core.QVote.vote;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 import static me.reddev.osucelebrity.util.ExecutorServiceHelper.detachAndSchedule;
-
 import com.google.common.base.Objects;
-
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -58,7 +56,7 @@ import javax.jdo.Transaction;
  */
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
-public class SpectatorImpl implements Spectator {
+public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   final Twitch twitch;
 
   final Clock clock;
@@ -688,6 +686,18 @@ public class SpectatorImpl implements Spectator {
       if (advance(pm, queue)) {
         twitch.announcePlayerSkipped(SkipReason.BANNED_MAP, current.get().getPlayer());
       }
+    }
+  }
+
+  @Override
+  public synchronized void purgeQueue() {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+      queue.stream().filter(player -> player.getState() > QueuedPlayer.NEXT)
+          .forEach(player -> player.setState(QueuedPlayer.CANCELLED));
+    } finally {
+      pm.close();
     }
   }
 }
