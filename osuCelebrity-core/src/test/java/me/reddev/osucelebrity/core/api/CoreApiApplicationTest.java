@@ -125,8 +125,12 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     spectatorImpl.promote(pm, player.getPlayer());
     spectatorImpl.loop();
     
+    when(settings.getVoteWindow()).thenReturn(10L);
+    
     spectatorImpl.vote(pm, "redback", VoteType.DOWN);
+    clock.sleepUntil(1);
     spectatorImpl.vote(pm, "tillerino", VoteType.UP);
+    clock.sleepUntil(2);
     spectatorImpl.vote(pm, "redback", VoteType.UP);
     
     spectatorImpl.loop();

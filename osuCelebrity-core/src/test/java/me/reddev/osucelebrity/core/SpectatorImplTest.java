@@ -226,6 +226,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.loop(pm);
 
     spectator.vote(pm, "flipflopper", VoteType.UP);
+    clock.sleepUntil(1);
     spectator.vote(pm, "flipflopper", VoteType.DOWN);
 
     assertEquals(0, spectator.getApproval(pm, spectator.getCurrentPlayer(pm)), 0d);

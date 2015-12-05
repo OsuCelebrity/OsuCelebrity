@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -225,22 +226,25 @@ public class SpectatorImpl implements Spectator {
   }
 
   double getApproval(PersistenceManager pm, QueuedPlayer queuedPlayer) {
-    double approval;
+    List<Vote> votes = getVotes(pm, queuedPlayer);
+    long upVotes =
+        votes.stream().filter(x -> x.getVoteType().equals(VoteType.UP)).count();
+    return upVotes / (double) votes.size();
+  }
+
+  @Override
+  public List<Vote> getVotes(PersistenceManager pm, QueuedPlayer queuedPlayer) {
     try (JDOQuery<Vote> query = new JDOQuery<>(pm)) {
       query
           .select(vote)
           .from(vote)
           .where(vote.reference.eq(queuedPlayer),
               vote.voteTime.goe(clock.getTime() - settings.getVoteWindow()))
-          .orderBy(vote.voteTime.asc());
-
-      Map<String, Vote> votes = new HashMap<>();
-      query.fetch().stream().forEach(vote -> votes.put(vote.getTwitchUser(), vote));
-      long upVotes =
-          votes.values().stream().filter(x -> x.getVoteType().equals(VoteType.UP)).count();
-      approval = upVotes / (double) votes.size();
+          .orderBy(vote.voteTime.desc());
+      Set<String> voteKey = new HashSet<>();
+      return query.fetch().stream().filter(vote -> voteKey.add(vote.getTwitchUser()))
+          .collect(Collectors.toList());
     }
-    return approval;
   }
 
   synchronized Optional<QueuedPlayer> lockNext(PersistenceManager pm, PlayerQueue queue) {

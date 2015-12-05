@@ -160,4 +160,12 @@ public interface Spectator {
    * @param startsWith beatmaps with a title that starts with this string will be banned.
    */
   void addBannedMapFilter(PersistenceManager persistenceManager, String startsWith);
+
+  /**
+   * Returns the relevant votes for the current player.
+   * @param pm the request's persistence manager
+   * @param queuedPlayer the player who the votes are associated with.
+   * @return each voter's last vote.
+   */
+  List<Vote> getVotes(PersistenceManager pm, QueuedPlayer queuedPlayer);
 }
