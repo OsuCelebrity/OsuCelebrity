@@ -12,6 +12,8 @@ import me.reddev.osucelebrity.osu.OsuIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchApiImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -56,7 +58,17 @@ public class OsuCelebrity {
 
     Server apiServer =
         JettyHttpContainerFactory
-            .createServer(baseUri, ResourceConfig.forApplication(apiServerApp));
+            .createServer(baseUri, ResourceConfig.forApplication(apiServerApp), false);
+    {
+      HandlerList handlers = new HandlerList();
+      ResourceHandler resourceHandler = new ResourceHandler();
+      resourceHandler.setResourceBase("html");
+      
+      handlers.addHandler(resourceHandler);
+      handlers.addHandler(apiServer.getHandler());
+      
+      apiServer.setHandler(handlers);
+    }
 
     apiServer.start();
   }
