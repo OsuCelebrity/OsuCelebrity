@@ -226,6 +226,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.loop(pm);
 
     spectator.vote(pm, "flipflopper", VoteType.UP);
+    clock.sleepUntil(1);
     spectator.vote(pm, "flipflopper", VoteType.DOWN);
 
     assertEquals(0, spectator.getApproval(pm, spectator.getCurrentPlayer(pm)), 0d);
@@ -838,5 +839,37 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.loop(pm);
     
     assertEquals(spectator.getCurrentPlayer(pm), user2);
+  }
+  
+  @Test
+  public void testExtend() throws Exception {
+    spectator.addBannedMapFilter(pm, "banned");
+
+    QueuedPlayer user1 = getUser(pm , "player1");
+    spectator.enqueue(pm, user1, false);
+
+    spectator.loop(pm);
+    
+    clock.sleepUntil(10000);
+    spectator.extendConditional(pm, "plaer1");
+    
+    assertEquals(clock.getTime() + settings.getDefaultSpecDuration(), spectator
+        .getCurrentPlayer(pm).getStoppingAt());
+  }
+  
+  @Test
+  public void testExtendFail() throws Exception {
+    spectator.addBannedMapFilter(pm, "banned");
+
+    QueuedPlayer user1 = getUser(pm , "player1");
+    spectator.enqueue(pm, user1, false);
+
+    spectator.loop(pm);
+    
+    clock.sleepUntil(10000);
+    spectator.extendConditional(pm, "shit");
+    
+    assertEquals(settings.getDefaultSpecDuration(), spectator
+        .getCurrentPlayer(pm).getStoppingAt());
   }
 }

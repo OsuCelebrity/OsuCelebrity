@@ -6,7 +6,6 @@ import static me.reddev.osucelebrity.Commands.FORCESPEC;
 import static me.reddev.osucelebrity.Commands.NOW_PLAYING;
 import static me.reddev.osucelebrity.Commands.POSITION;
 import static me.reddev.osucelebrity.Commands.QUEUE;
-import static me.reddev.osucelebrity.Commands.QUEUE2;
 import static me.reddev.osucelebrity.Commands.UPVOTE;
 
 import lombok.RequiredArgsConstructor;
@@ -96,6 +95,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     modHandlers.add(this::handleTimeout);
     modHandlers.add(this::handleBannedMapsFilter);
     modHandlers.add(this::handleGameMode);
+    modHandlers.add(this::handleExtend);
   }
 
   @Override
@@ -193,12 +193,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   boolean handleQueue(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    final String targetUser;
-    if (StringUtils.startsWithIgnoreCase(message, QUEUE)) {
-      targetUser = message.substring(QUEUE.length());
-    } else if (StringUtils.startsWithIgnoreCase(message, QUEUE2)) {
-      targetUser = message.substring(QUEUE2.length());
-    } else {
+    String targetUser = Commands.detect(message, QUEUE);
+    if (targetUser == null) {
       return false;
     }
     OsuUser requestedUser = getUserOrThrow(pm, targetUser);
@@ -381,6 +377,18 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
     
     event.getChannel().send().message(Responses.GAME_MODE_CHANGED);
+    
+    return true;
+  }
+  
+  boolean handleExtend(MessageEvent<PircBotX> event, String message,
+      String twitchUserName, PersistenceManager pm) throws UserException, IOException {
+    String targetUser = Commands.detect(message, Commands.EXTEND);
+    if (targetUser == null) {
+      return false;
+    }
+
+    spectator.extendConditional(pm, targetUser);
     
     return true;
   }

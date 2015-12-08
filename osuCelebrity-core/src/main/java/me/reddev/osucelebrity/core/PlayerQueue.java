@@ -1,11 +1,13 @@
 package me.reddev.osucelebrity.core;
 
-import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
 import static me.reddev.osucelebrity.core.QQueueVote.queueVote;
+import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
+
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -138,5 +140,18 @@ public class PlayerQueue {
 
   public Optional<QueuedPlayer> find(QueuedPlayer user) {
     return stream().filter(user::equals).findFirst();
+  }
+
+  boolean isCurrent(String expectedUser) {
+    Optional<QueuedPlayer> currentUser = currentlySpectating();
+    if (!currentUser.isPresent()) {
+      return false;
+    }
+    String userName = currentUser.get().getPlayer().getUserName();
+    int distance = StringUtils.getLevenshteinDistance(userName, expectedUser);
+    if (distance >= userName.length() / 2) {
+      return false;
+    }
+    return true;
   }
 }

@@ -6,9 +6,7 @@ import static me.reddev.osucelebrity.core.QVote.vote;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 import static me.reddev.osucelebrity.util.ExecutorServiceHelper.detachAndSchedule;
-
 import com.google.common.base.Objects;
-
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -28,7 +26,6 @@ import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.Twitch;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -42,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -57,7 +55,7 @@ import javax.jdo.Transaction;
  */
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
-public class SpectatorImpl implements Spectator {
+public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   final Twitch twitch;
 
   final Clock clock;
@@ -225,22 +223,25 @@ public class SpectatorImpl implements Spectator {
   }
 
   double getApproval(PersistenceManager pm, QueuedPlayer queuedPlayer) {
-    double approval;
+    List<Vote> votes = getVotes(pm, queuedPlayer);
+    long upVotes =
+        votes.stream().filter(x -> x.getVoteType().equals(VoteType.UP)).count();
+    return upVotes / (double) votes.size();
+  }
+
+  @Override
+  public List<Vote> getVotes(PersistenceManager pm, QueuedPlayer queuedPlayer) {
     try (JDOQuery<Vote> query = new JDOQuery<>(pm)) {
       query
           .select(vote)
           .from(vote)
           .where(vote.reference.eq(queuedPlayer),
               vote.voteTime.goe(clock.getTime() - settings.getVoteWindow()))
-          .orderBy(vote.voteTime.asc());
-
-      Map<String, Vote> votes = new HashMap<>();
-      query.fetch().stream().forEach(vote -> votes.put(vote.getTwitchUser(), vote));
-      long upVotes =
-          votes.values().stream().filter(x -> x.getVoteType().equals(VoteType.UP)).count();
-      approval = upVotes / (double) votes.size();
+          .orderBy(vote.voteTime.desc());
+      Set<String> voteKey = new HashSet<>();
+      return query.fetch().stream().filter(vote -> voteKey.add(vote.getTwitchUser()))
+          .collect(Collectors.toList());
     }
-    return approval;
   }
 
   synchronized Optional<QueuedPlayer> lockNext(PersistenceManager pm, PlayerQueue queue) {
@@ -336,16 +337,22 @@ public class SpectatorImpl implements Spectator {
   @Override
   public synchronized boolean advanceConditional(PersistenceManager pm, String expectedUser) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
-    Optional<QueuedPlayer> currentUser = queue.currentlySpectating();
-    if (!currentUser.isPresent()) {
-      return false;
-    }
-    String userName = currentUser.get().getPlayer().getUserName();
-    int distance = StringUtils.getLevenshteinDistance(userName, expectedUser);
-    if (distance >= userName.length() / 2) {
+    if (!queue.isCurrent(expectedUser)) {
       return false;
     }
     return advance(pm, queue);
+  }
+
+  @Override
+  public synchronized boolean extendConditional(PersistenceManager pm, String expectedUser) {
+    PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+    if (!queue.isCurrent(expectedUser)) {
+      return false;
+    }
+    QueuedPlayer current = queue.currentlySpectating().get();
+    current.setStoppingAt(Math.min(clock.getTime(), current.getStoppingAt())
+        + settings.getDefaultSpecDuration());
+    return true;
   }
 
   @Override
@@ -685,6 +692,18 @@ public class SpectatorImpl implements Spectator {
       if (advance(pm, queue)) {
         twitch.announcePlayerSkipped(SkipReason.BANNED_MAP, current.get().getPlayer());
       }
+    }
+  }
+
+  @Override
+  public synchronized void purgeQueue() {
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+      queue.stream().filter(player -> player.getState() > QueuedPlayer.NEXT)
+          .forEach(player -> player.setState(QueuedPlayer.CANCELLED));
+    } finally {
+      pm.close();
     }
   }
 }

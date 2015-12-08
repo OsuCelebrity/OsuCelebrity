@@ -21,7 +21,13 @@ public class OsuApplication {
   static Pattern watchingPattern = Pattern.compile("osu!  -  \\(watching (.*)\\)");
 
   public interface OsuApplicationSettings {
-    String getStreamOutputPath();
+    int getOsuClientXOffset();
+    
+    int getOsuClientYOffset();
+    
+    int getOsuClientWidth();
+    
+    int getOsuClientHeight();
   }
 
   private final OsuApplicationSettings settings;

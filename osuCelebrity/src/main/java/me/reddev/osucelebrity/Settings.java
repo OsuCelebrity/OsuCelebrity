@@ -2,13 +2,6 @@ package me.reddev.osucelebrity;
 
 import lombok.Getter;
 import lombok.ToString;
-import me.reddev.osucelebrity.core.CoreSettings;
-import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
-import me.reddev.osucelebrity.osu.OsuIrcSettings;
-import me.reddev.osucelebrity.osuapi.OsuApiSettings;
-import me.reddev.osucelebrity.twitch.TwitchIrcSettings;
-import me.reddev.osucelebrity.twitchapi.TwitchApiSettings;
-
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.InputStream;
@@ -18,8 +11,7 @@ import java.util.Properties;
 
 @Getter
 @ToString
-public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSettings,
-    OsuApplicationSettings, OsuApiSettings, CoreSettings {
+public class Settings implements SettingsMBean {
   // Twitch IRC settings
   private String twitchIrcChannel;
   private String twitchIrcUsername;
@@ -51,9 +43,6 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   private String twitchClientId;
   private String twitchClientSecret;
 
-  // Stream Output Settings
-  private String streamOutputPath;
-
   // Application Settings
   private long defaultSpecDuration;
   private int apiPort;
@@ -68,12 +57,16 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   private int minPlayCount;
   private long maxLastActivity;
 
+  private int osuClientXOffset;
+  private int osuClientYOffset;
+  private int osuClientWidth;
+  private int osuClientHeight;
   /**
-   * Creates a new settings object using a given property list.
+   * Loads settings from a given property list.
    * @param properties An imported java property list
    * @throws RuntimeException if an input parameter is not found 
    */
-  public Settings(Properties properties) {
+  public void load(Properties properties) {
     Field[] fields = Settings.class.getDeclaredFields();
     for (Field f : fields) {
       Class<?> fieldClass = f.getType();
@@ -117,7 +110,7 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
   }
 
   public Settings() {
-    this(getProperties("osuCelebrity.properties"));
+    reload();
   }
   
   /**
@@ -145,5 +138,10 @@ public class Settings implements OsuIrcSettings, TwitchIrcSettings, TwitchApiSet
       }
     }
     return properties;
+  }
+
+  @Override
+  public void reload() {
+    load(getProperties("osuCelebrity.properties"));
   }
 }
