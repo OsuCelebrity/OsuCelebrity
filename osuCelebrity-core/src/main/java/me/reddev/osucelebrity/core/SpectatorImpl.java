@@ -580,7 +580,8 @@ public class SpectatorImpl implements Spectator {
       String timeString = CurrentPlayerService.formatDuration(timeInQueue);
       String votesString =
           player.getBoost() > 0 ? "∞" : String.valueOf(votes.getOrDefault(player, 0L).intValue());
-      result.add(new DisplayQueuePlayer(player.getPlayer().getUserName(), timeString, votesString));
+      result.add(new DisplayQueuePlayer(player.getPlayer().getUserId(),
+          player.getPlayer().getUserName(), timeString, votesString));
     }
     return result;
   }

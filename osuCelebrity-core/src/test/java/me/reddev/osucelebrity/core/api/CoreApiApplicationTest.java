@@ -93,7 +93,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     int port = ((ServerConnector) apiServer.getConnectors()[0]).getLocalPort();
 
     when(spectator.getCurrentQueue(any())).thenReturn(
-        Arrays.asList(new DisplayQueuePlayer("thisguy", "1:45", "12")));
+        Arrays.asList(new DisplayQueuePlayer(1234, "thisguy", "1:45", "12")));
 
     String result = readUrl(new URL("http://localhost:" + port + "/current"));
 
@@ -106,6 +106,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     System.out.println(queueService.queue());
     result = readUrl(new URL("http://localhost:" + port + "/queue"));
 
+    assertThat(result, new Contains("\"userId\":1234"));
     assertThat(result, new Contains("\"name\":\"thisguy\""));
     assertThat(result, new Contains("\"timeInQueue\":\"1:45\""));
     assertThat(result, new Contains("\"votes\":\"12\""));

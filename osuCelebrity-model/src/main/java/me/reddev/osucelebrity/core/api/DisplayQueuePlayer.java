@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class DisplayQueuePlayer {
+  public int userId;
+  
   public String name;
   
   public String timeInQueue;
