@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 
 public class Commands {
   public static final String FORCESKIP = "forceskip ";
-  public static final String[] QUEUE = { "spec ", "vote ", "give " };
+  public static final String[] QUEUE = { "spec ", "vote ", "give ", "spectate " };
   public static final String SELFQUEUE = "spec";
   public static final String OPTIN = "optin";
   public static final String OPTOUT = "optout";

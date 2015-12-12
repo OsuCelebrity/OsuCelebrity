@@ -209,6 +209,18 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   }
   
   @Test
+  public void testQueueWithComment() throws Exception {
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!spec FrenzyLi: because I want to"));
+
+    OsuUser requestedUser = osuApi.getUser("FrenzyLi", pmf.getPersistenceManager(), 0);
+
+    verify(spectator).performEnqueue(any(),
+        eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)),
+        eq("osu:" + osuIrcUser.getUserId()), any(), any());
+  }
+
+  @Test
   public void testQueueAlias() throws Exception {
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!vote thatguy"));
 
