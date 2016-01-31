@@ -106,4 +106,10 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
     this.queue.setText(queue.stream().map(entry -> entry.getPlayer().getUserName())
         .collect(Collectors.joining("\n")));
   }
+  
+  @Override
+  public void setTitle(String title) {
+    super.setTitle(title);
+    requestFocus();
+  }
 }
