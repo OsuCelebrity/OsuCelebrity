@@ -41,6 +41,7 @@ import java.util.function.Consumer;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
@@ -69,6 +70,9 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   final OsuApi osuApi;
   
   final ExecutorService exec;
+  
+  @CheckForNull
+  final StatusWindow statusWindow;
   
   /**
    * Perform one loop iteration.
@@ -141,6 +145,9 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       try {
         if (lastStatusChange == -1 || !Objects.equal(currentStatus, lastStatus)) {
           lastStatusChange = clock.getTime();
+          if (currentStatus != null && statusWindow != null) {
+            statusWindow.setStatus(currentStatus.getType());
+          }
           if (currentStatus != null && currentStatus.getType() == Type.PLAYING) {
             for (BannedFilter filter : pm.getExtent(BannedFilter.class)) {
               if (currentStatus.getDetail().startsWith(filter.getStartsWith())) {
@@ -220,6 +227,12 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     // no votes are NaN => regular drain
 
     current.setLastRemainingTimeUpdate(time);
+    
+    // report numbers
+    if (statusWindow != null) {
+      statusWindow.setApproval(approval);
+      statusWindow.setRemainingTime(current.getStoppingAt() - clock.getTime());
+    }
   }
 
   double getApproval(PersistenceManager pm, QueuedPlayer queuedPlayer) {
@@ -408,7 +421,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     startSpectating(pm, queue, next.get());
     return true;
   }
-
+  
   private synchronized void startSpectating(PersistenceManager pm, 
       PlayerQueue queue, QueuedPlayer next) {
     Optional<QueuedPlayer> spectating = queue.currentlySpectating();
@@ -430,6 +443,9 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     }
     detachAndSchedule(exec, log, pm, osu::startSpectate, user);
     status = new Status();
+    if (statusWindow != null) {
+      statusWindow.newPlayer();
+    }
   }
 
   @Override

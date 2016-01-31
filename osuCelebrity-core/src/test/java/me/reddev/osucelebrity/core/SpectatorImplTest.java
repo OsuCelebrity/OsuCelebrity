@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+import javax.annotation.CheckForNull;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 
@@ -61,7 +62,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     when(settings.getMaxLastActivity()).thenReturn(24L * 60 * 60 * 1000);
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, ""));
     
-    spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec);
+    spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec, null);
   }
 
   QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
@@ -431,7 +432,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   void testAutoQueueDistribution() throws Exception {
     List<ApiUser> recentlyActive = new ArrayList<>();
     Map<Integer, Long> lastQueueTime = new HashMap<>();
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec) {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec, null) {
       @Override
       List<ApiUser> getRecentlyActive(PersistenceManager pm) {
         return recentlyActive;

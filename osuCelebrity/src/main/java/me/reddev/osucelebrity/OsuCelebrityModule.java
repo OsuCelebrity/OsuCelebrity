@@ -3,6 +3,9 @@ package me.reddev.osucelebrity;
 
 import com.google.inject.AbstractModule;
 
+import me.reddev.osucelebrity.core.StatusWindowImpl;
+
+import me.reddev.osucelebrity.core.StatusWindow;
 import me.reddev.osucelebrity.core.Clock;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.Spectator;
@@ -83,5 +86,13 @@ public class OsuCelebrityModule extends AbstractModule {
     ScheduledExecutorService executor = Executors.newScheduledThreadPool(16);
     bind(ExecutorService.class).toInstance(executor);
     bind(ScheduledExecutorService.class).toInstance(executor);
+    
+    StatusWindow statusWindow = new StatusWindow.DummyStatusWindow();
+    try {
+      statusWindow = new StatusWindowImpl(new SystemClock());
+    } catch (Exception e) {
+      // can fail on some testing environments
+    }
+    bind(StatusWindow.class).toInstance(statusWindow);
   }
 }

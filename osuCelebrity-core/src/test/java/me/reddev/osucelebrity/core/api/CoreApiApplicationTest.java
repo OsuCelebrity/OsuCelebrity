@@ -118,7 +118,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
   public void testVoteService() throws Exception {
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(0).build();
     SpectatorImpl spectatorImpl = 
-        new SpectatorImpl(null, clock, osu, settings, pmf, osuApi, exec);
+        new SpectatorImpl(null, clock, osu, settings, pmf, osuApi, exec, null);
     
     QueuedPlayer player = getUser(pm, "some player");
     

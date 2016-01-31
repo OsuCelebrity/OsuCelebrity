@@ -2,6 +2,9 @@ package me.reddev.osucelebrity;
 
 import com.google.inject.Guice;
 
+import me.reddev.osucelebrity.core.StatusWindowImpl;
+
+import me.reddev.osucelebrity.core.StatusWindow;
 import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.SpectatorImpl;
@@ -39,6 +42,7 @@ public class OsuCelebrity {
   final OsuActivityUpdater osuActivityUpdater;
   final TwitchApiImpl twitchApi;
   final Settings settings;
+  final StatusWindow statusWindow;
   
   void start() throws Exception {
     MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
@@ -71,6 +75,8 @@ public class OsuCelebrity {
     }
 
     apiServer.start();
+    
+    ((StatusWindowImpl) statusWindow).setVisible(true);
   }
 
   /**
