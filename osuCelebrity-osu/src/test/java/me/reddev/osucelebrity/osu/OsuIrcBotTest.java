@@ -92,7 +92,12 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     
     when(pircBotX.sendIRC()).thenReturn(ourputIrc);
 
-    ircBot = new OsuIrcBot(osu, osuApi, settings, pmf, spectator, clock);
+    ircBot = new OsuIrcBot(osu, osuApi, settings, pmf, spectator, clock, new Pinger() {
+      @Override
+      void ping(PircBotX bot) throws IOException, InterruptedException {
+        // do nothing
+      }
+    });
     
     ircBot.bot = pircBotX;
   }

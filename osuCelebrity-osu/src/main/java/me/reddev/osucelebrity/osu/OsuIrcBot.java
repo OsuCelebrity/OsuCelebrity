@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
+import org.pircbotx.hooks.events.UnknownEvent;
+
 import static me.reddev.osucelebrity.Commands.FORCESKIP;
 import static me.reddev.osucelebrity.Commands.FORCESPEC;
 import static me.reddev.osucelebrity.Commands.GAME_MODE;
@@ -11,9 +13,7 @@ import static me.reddev.osucelebrity.Commands.QUEUE;
 import static me.reddev.osucelebrity.Commands.SELFPOSITION;
 import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
-
 import com.google.common.collect.ImmutableList;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +80,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   private final PersistenceManagerFactory pmf;
   private final Spectator spectator;
   private final Clock clock;
+  
+  private final Pinger pinger;
 
   PircBotX bot;
 
@@ -114,7 +116,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
               .setLogin(ircSettings.getOsuIrcUsername())
               .addListener(this)
               .setServer(ircSettings.getOsuIrcHost(), ircSettings.getOsuIrcPort(),
-                  ircSettings.getOsuIrcPassword()).setAutoReconnect(true);
+                  ircSettings.getOsuIrcPassword()).setAutoReconnect(true).setMessageDelay(500);
       Stream.of(ircSettings.getOsuIrcAutoJoin().split(",")).forEach(
           configBuilder::addAutoJoinChannel);
       Configuration<PircBotX> config = configBuilder.buildConfiguration();
@@ -142,7 +144,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
    */
   public void messagePlayer(OsuUser user, String message) {
     if (!ircSettings.isOsuIrcSilenced()) {
-      bot.sendIRC().message(user.getUserName().replace(' ', '_'), message);
+      synchronizeThroughPinger(() -> bot.sendIRC().message(user.getUserName().replace(' ', '_'),
+          message));
       log.debug("messaged {}: {}", user.getUserName(), message);
     }
   }
@@ -188,7 +191,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
         }
       }
     } catch (Exception e) {
-      UserException.handleException(log, e, event.getUser().send()::message);
+      UserException.handleException(log, e, message -> respond(event, message));
     } finally {
       pm.close();
     }
@@ -261,7 +264,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       throw new UserException(String.format(OsuResponses.INVALID_USER, queueTarget));
     }
     QueuedPlayer queueRequest = new QueuedPlayer(requestedUser, QueueSource.OSU, clock.getTime());
-    spectator.performEnqueue(pm, queueRequest, "osu:" + user.getUserId(), log, event::respond);
+    spectator.performEnqueue(pm, queueRequest, "osu:" + user.getUserId(), log,
+        msg -> respond(event, msg));
     return true;
   }
 
@@ -273,14 +277,14 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     message = message.substring(FORCESPEC.length());
     
     if (!user.getPrivilege().canSkip) {
-      event.getUser().send().message("not allowed");
+      respond(event, "not allowed");
       return true;
     }
     
     OsuUser target = osuApi.getUser(message, pm, 0);
     if (target != null) {
       if (spectator.promote(pm, target)) {
-        event.getUser().send().message("spectating " + target.getUserName());
+        respond(event, "spectating " + target.getUserName());
       }
     }
     return true;
@@ -294,9 +298,9 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     QueuedPlayer queueRequest = new QueuedPlayer(user, QueueSource.OSU, clock.getTime());
     EnqueueResult result = spectator.enqueue(pm, queueRequest, true, null, true);
     if (result == EnqueueResult.SUCCESS) {
-      event.getUser().send().message(Responses.SELF_QUEUE_SUCCESSFUL);
+      respond(event, Responses.SELF_QUEUE_SUCCESSFUL);
     } else if (result == EnqueueResult.FAILURE) {
-      event.getUser().send().message(Responses.SELF_QUEUE_UNSUCCESSFU);
+      respond(event, Responses.SELF_QUEUE_UNSUCCESSFU);
     }
     return true;
   }
@@ -311,9 +315,9 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     }
     message = message.substring(FORCESKIP.length());
     if (spectator.advanceConditional(pm, message)) {
-      event.getUser().send().message("Skipped.");
+      respond(event, "Skipped.");
     } else {
-      event.getUser().send().message("Not skipped.");
+      respond(event, "Not skipped.");
     }
     return true;
   }
@@ -322,12 +326,12 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       PersistenceManager pm) throws UserException, IOException {
     if (message.equalsIgnoreCase(MUTE)) {
       user.setAllowsNotifications(false);
-      event.getUser().send().message(String.format(OsuResponses.MUTED));
+      respond(event, String.format(OsuResponses.MUTED));
       return true;
     }
     if (message.equalsIgnoreCase(UNMUTE)) {
       user.setAllowsNotifications(true);
-      event.getUser().send().message(String.format(OsuResponses.UNMUTED));
+      respond(event, String.format(OsuResponses.UNMUTED));
       return true;
     }
     return false;
@@ -338,12 +342,12 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     if (message.equalsIgnoreCase(OPTOUT)) {
       user.setAllowsSpectating(false);
       spectator.removeFromQueue(pm, user);
-      event.getUser().send().message(String.format(OsuResponses.OPTOUT));
+      respond(event, String.format(OsuResponses.OPTOUT));
       return true;
     }
     if (message.equalsIgnoreCase(OPTIN)) {
       user.setAllowsSpectating(true);
-      event.getUser().send().message(String.format(OsuResponses.OPTIN));
+      respond(event, String.format(OsuResponses.OPTIN));
       return true;
     }
     return false;
@@ -359,10 +363,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     if (requestedUser != null) {
       int position = spectator.getQueuePosition(pm, requestedUser);
       if (position != -1) {
-        event.getUser().send().message(String.format(OsuResponses.POSITION, 
+        respond(event, String.format(OsuResponses.POSITION, 
             requestedUser.getUserName(), position));
       } else {
-        event.getUser().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
+        respond(event, String.format(OsuResponses.NOT_IN_QUEUE, 
             requestedUser.getUserName()));
       }
       return true;
@@ -379,10 +383,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     
     int position = spectator.getQueuePosition(pm, user);
     if (position != -1) {
-      event.getUser().send().message(String.format(OsuResponses.POSITION, 
+      respond(event, String.format(OsuResponses.POSITION, 
           user.getUserName(), position));
     } else {
-      event.getUser().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
+      respond(event, String.format(OsuResponses.NOT_IN_QUEUE, 
           user.getUserName()));
     }
     return true;
@@ -408,7 +412,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       return false;
     }
     
-    event.getUser().send().message(Responses.GAME_MODE_CHANGED);
+    respond(event, Responses.GAME_MODE_CHANGED);
     return true;
   }
   
@@ -444,7 +448,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     }
     target.setPrivilege(Privilege.MOD);
     
-    event.getUser().send().message("modded");
+    respond(event, "modded");
     
     return true;
   }
@@ -505,7 +509,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   }
 
   void pollIngameStatus(OsuUser player) {
-    bot.sendIRC().message(ircSettings.getOsuCommandUser(), "!stat " + player.getUserName());
+    synchronizeThroughPinger(() -> bot.sendIRC().message(ircSettings.getOsuCommandUser(),
+        "!stat " + player.getUserName()));
   }
 
   void pollIngameStatus(OsuUser player, PollStatusConsumer action) {
@@ -514,5 +519,26 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     pollIngameStatus(player);
   }
 
+  @Override
+  public void onUnknown(UnknownEvent<PircBotX> event) throws Exception {
+    pinger.handleUnknownEvent(event);
+  }
+  
+  synchronized boolean synchronizeThroughPinger(Runnable runnable) {
+    try {
+      pinger.ping(bot);
+      runnable.run();
+      return true;
+    } catch (IOException e) {
+      return false;
+    } catch (InterruptedException e) {
+      return false;
+    }
+  }
+  
+  void respond(PrivateMessageEvent<?> event, String response) {
+    synchronizeThroughPinger(() -> event.respond(response));
+  }
+  
   // End Listeners
 }
