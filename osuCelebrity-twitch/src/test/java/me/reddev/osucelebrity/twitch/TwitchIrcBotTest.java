@@ -91,6 +91,16 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
         eq(new QueuedPlayer(osuApi.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
             QueueSource.TWITCH, 0)), eq("twitch:twitchIrcUser"), any(), any());
   }
+  
+  @Test
+  public void testQueueWithComment() throws Exception {
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!spectate Q__Q    : best emoticon"));
+
+    verify(spectator).performEnqueue(
+        any(),
+        eq(new QueuedPlayer(osuApi.getUser("Q__Q", pmf.getPersistenceManagerProxy(), 0),
+            QueueSource.TWITCH, 0)), eq("twitch:twitchIrcUser"), any(), any());
+  }
 
   @Test
   public void testQueueAlias() throws Exception {

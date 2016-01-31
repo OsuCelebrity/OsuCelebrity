@@ -250,6 +250,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     String queueTarget = Commands.detect(message, QUEUE);
     if (queueTarget == null) {
       return false;
+    } else {
+      // Permits: !spec username : reason
+      // Example: !spec Tillerino: for awesomeness Keepo
+      queueTarget = queueTarget.split(":")[0].trim();
     }
 
     OsuUser requestedUser = osuApi.getUser(queueTarget, pm, 60 * 60 * 1000);

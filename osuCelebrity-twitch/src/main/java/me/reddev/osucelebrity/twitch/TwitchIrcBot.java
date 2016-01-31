@@ -193,10 +193,18 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   boolean handleQueue(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
+    // Detects queueing commands.
     String targetUser = Commands.detect(message, QUEUE);
+
+    // Splits command options by ":"
     if (targetUser == null) {
       return false;
+    } else {
+      // Permits: !spec username : reason
+      // Example: !spec Tillerino: for awesomeness Keepo
+      targetUser = targetUser.split(":")[0].trim();
     }
+
     OsuUser requestedUser = getUserOrThrow(pm, targetUser);
     QueuedPlayer queueRequest =
         new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
