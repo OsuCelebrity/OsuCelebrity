@@ -147,10 +147,12 @@ public interface Spectator {
    * @param queueRequest the queue request
    * @param requestingUser the requesting user as a unique string. used for voting.
    * @param log the requester's log.
-   * @param reply responses to the user are sent here
+   * @param reply positive responses to the user are sent here
+   * @param replyNegative negative responses are sent here
    */
   void performEnqueue(PersistenceManager persistenceManager, QueuedPlayer queueRequest,
-      String requestingUser, Logger log, Consumer<String> reply) throws IOException;
+      String requestingUser, Logger log, Consumer<String> reply, Consumer<String> replyNegative)
+      throws IOException;
   
   /**
    * Adds a filter for banned maps. If the current player plays a map which matches this filter,

@@ -1,13 +1,13 @@
 package me.reddev.osucelebrity.osu;
 
 import org.pircbotx.PircBotX;
+import org.pircbotx.Utils;
+import org.pircbotx.hooks.events.UnknownEvent;
 
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.pircbotx.Utils;
-import org.pircbotx.hooks.events.UnknownEvent;
 
 public class Pinger {
   volatile String pingMessage = null;

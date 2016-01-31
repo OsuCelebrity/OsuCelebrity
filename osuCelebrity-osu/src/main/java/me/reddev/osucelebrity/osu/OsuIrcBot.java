@@ -1,7 +1,5 @@
 package me.reddev.osucelebrity.osu;
 
-import org.pircbotx.hooks.events.UnknownEvent;
-
 import static me.reddev.osucelebrity.Commands.FORCESKIP;
 import static me.reddev.osucelebrity.Commands.FORCESPEC;
 import static me.reddev.osucelebrity.Commands.GAME_MODE;
@@ -13,7 +11,9 @@ import static me.reddev.osucelebrity.Commands.QUEUE;
 import static me.reddev.osucelebrity.Commands.SELFPOSITION;
 import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
+
 import com.google.common.collect.ImmutableList;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +41,7 @@ import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.ServerResponseEvent;
+import org.pircbotx.hooks.events.UnknownEvent;
 import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
@@ -265,7 +266,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     }
     QueuedPlayer queueRequest = new QueuedPlayer(requestedUser, QueueSource.OSU, clock.getTime());
     spectator.performEnqueue(pm, queueRequest, "osu:" + user.getUserId(), log,
-        msg -> respond(event, msg));
+        msg -> respond(event, msg), msg -> respond(event, msg));
     return true;
   }
 

@@ -1,24 +1,27 @@
 package me.reddev.osucelebrity.twitch;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.annotations.SerializedName;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.core.Clock;
+import me.reddev.osucelebrity.core.StatusWindow;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import me.reddev.osucelebrity.twitchapi.TwitchApiSettings;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,12 +32,14 @@ import javax.inject.Inject;
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class TwitchApiImpl implements TwitchApi {
   private static final String TMI_BASE = "http://tmi.twitch.tv/";
+  private static final String CHATDEPOT_BASE = "http://chatdepot.twitch.tv/";
 
   private static final String CHATTERS = "group/user/%s/chatters?_=%d";
 
   private final TwitchApiSettings settings;
   private final TwitchIrcSettings ircSettings;
   private final Clock clock;
+  private final StatusWindow statusWindow;
 
   /**
    * Sends a request to the Twitch API server with POST queries.
@@ -83,6 +88,15 @@ public class TwitchApiImpl implements TwitchApi {
     return readString(conn.getInputStream());
   }
 
+  private String getRoomMembershipsRequest() throws IOException {
+    URL url =
+        new URL(CHATDEPOT_BASE + "room_memberships?oauth_token="
+            + settings.getTwitchToken().substring("oauth:".length()));
+    URLConnection conn = url.openConnection();
+
+    return readString(conn.getInputStream());
+  }
+
   @CheckForNull
   ChannelChatters channelChatters = null;
 
@@ -96,6 +110,7 @@ public class TwitchApiImpl implements TwitchApi {
               clock.getTime()));
 
       channelChatters = new Gson().fromJson(req, ChannelChatters.class);
+      statusWindow.setTwitchMods(channelChatters.getChatters().getModerators());
     } catch (IOException e) {
       // we are expecting these regularly, so no need to put them in the error log
       log.warn("Exception while updating chatters", e);
@@ -106,7 +121,8 @@ public class TwitchApiImpl implements TwitchApi {
 
   @Override
   public boolean isModerator(String username) {
-    return getOnlineMods().contains(username.toLowerCase());
+    List<String> onlineMods = getOnlineMods();
+    return onlineMods.contains(username.toLowerCase());
   }
 
   @Data
@@ -123,10 +139,38 @@ public class TwitchApiImpl implements TwitchApi {
       List<String> viewers;
     }
   }
+  
+  @Data
+  public static class RoomMemberships {
+    List<Membership> memberships;
+    
+    @Data
+    public static class Membership {
+      Room room;
+      
+      @Data
+      public static class Room {
+        @SerializedName("irc_channel")
+        String ircChannel;
+        List<String> servers;
+      }
+    }
+  }
 
   @Override
   public List<String> getOnlineMods() {
     return channelChatters != null ? channelChatters.getChatters().getModerators() : Collections
         .emptyList();
+  }
+  
+  @Override
+  public List<Entry<String, List<String>>> getRoomMemberships() throws IOException {
+    String req =
+        getRoomMembershipsRequest();
+
+    RoomMemberships memberships = new Gson().fromJson(req, RoomMemberships.class);
+    
+    return memberships.memberships.stream().map(mship -> mship.room)
+        .map(room -> Pair.of(room.ircChannel, room.servers)).collect(Collectors.toList());
   }
 }

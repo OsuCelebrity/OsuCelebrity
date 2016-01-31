@@ -1,11 +1,12 @@
 package me.reddev.osucelebrity.core;
 
-import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
 import static me.reddev.osucelebrity.core.QQueueVote.queueVote;
+import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
 import static me.reddev.osucelebrity.core.QVote.vote;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 import static me.reddev.osucelebrity.util.ExecutorServiceHelper.detachAndSchedule;
+
 import com.google.common.base.Objects;
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
@@ -13,9 +14,9 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.api.CurrentPlayerService;
 import me.reddev.osucelebrity.core.api.DisplayQueuePlayer;
-import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
@@ -41,7 +42,6 @@ import java.util.function.Consumer;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
@@ -71,7 +71,6 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   
   final ExecutorService exec;
   
-  @CheckForNull
   final StatusWindow statusWindow;
   
   /**
@@ -95,6 +94,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     transaction.begin();
     try {
       PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
+      statusWindow.setQueue(queue.queue);
       Optional<QueuedPlayer> current = queue.currentlySpectating();
       Optional<QueuedPlayer> next = lockNext(pm, queue);
       long time = clock.getTime();
@@ -145,7 +145,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       try {
         if (lastStatusChange == -1 || !Objects.equal(currentStatus, lastStatus)) {
           lastStatusChange = clock.getTime();
-          if (currentStatus != null && statusWindow != null) {
+          if (currentStatus != null) {
             statusWindow.setStatus(currentStatus.getType());
           }
           if (currentStatus != null && currentStatus.getType() == Type.PLAYING) {
@@ -202,6 +202,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     QueuedPlayer current = currentlySpectating.get();
 
     double approval = getApproval(pm, current);
+    statusWindow.setRawApproval(approval);
     long time = clock.getTime();
     long lastRemainingTime = current.getStoppingAt() - current.getLastRemainingTimeUpdate();
     long timePlayed = clock.getTime() - current.getStartedAt();
@@ -229,10 +230,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     current.setLastRemainingTimeUpdate(time);
     
     // report numbers
-    if (statusWindow != null) {
-      statusWindow.setApproval(approval);
-      statusWindow.setRemainingTime(current.getStoppingAt() - clock.getTime());
-    }
+    statusWindow.setApproval(approval);
+    statusWindow.setRemainingTime(current.getStoppingAt() - clock.getTime());
   }
 
   double getApproval(PersistenceManager pm, QueuedPlayer queuedPlayer) {
@@ -443,9 +442,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     }
     detachAndSchedule(exec, log, pm, osu::startSpectate, user);
     status = new Status();
-    if (statusWindow != null) {
-      statusWindow.newPlayer();
-    }
+    statusWindow.newPlayer();
   }
 
   @Override
@@ -655,7 +652,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
 
   @Override
   public void performEnqueue(PersistenceManager persistenceManager, QueuedPlayer queueRequest,
-      String requestingUser, Logger log, Consumer<String> reply) throws IOException {
+      String requestingUser, Logger log, Consumer<String> reply, Consumer<String> replyNegative)
+      throws IOException {
     /*
      * This method is NOT synchronized, we can do expensive calls.
      */
@@ -665,16 +663,25 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       queueRequest.setPlayer(persistenceManager.detachCopy(queueRequest.getPlayer()));
       osu.pollIngameStatus(requestedUser, (pm, status) -> {
           if (status.getType() == PlayerStatusType.OFFLINE) {
-            reply.accept(String.format(OsuResponses.OFFLINE, requestedUser.getUserName()));
+            replyNegative.accept(String.format(OsuResponses.OFFLINE, requestedUser.getUserName()));
           } else {
             queueRequest.setPlayer(pm.makePersistent(queueRequest.getPlayer()));
             EnqueueResult retryResult = enqueue(pm, queueRequest, false, requestingUser, true);
 
-            reply.accept(retryResult.formatResponse(requestedUser.getUserName()));
+            replyEnqueue(retryResult, requestedUser.getUserName(), reply, replyNegative);
           }
         });
     } else {
-      reply.accept(result.formatResponse(requestedUser.getUserName()));
+      replyEnqueue(result, requestedUser.getUserName(), reply, replyNegative);
+    }
+  }
+  
+  void replyEnqueue(EnqueueResult result, String requestedUser, Consumer<String> reply,
+      Consumer<String> replyNegative) {
+    if (result == EnqueueResult.SUCCESS || result == EnqueueResult.VOTED) {
+      reply.accept(result.formatResponse(requestedUser));
+    } else {
+      replyNegative.accept(result.formatResponse(requestedUser));
     }
   }
   

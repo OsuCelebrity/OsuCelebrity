@@ -1,12 +1,15 @@
 package me.reddev.osucelebrity.core;
 
+import lombok.RequiredArgsConstructor;
+import me.reddev.osucelebrity.osu.OsuStatus;
+
 import java.awt.Button;
 import java.awt.FlowLayout;
 import java.awt.Label;
+import java.awt.TextArea;
 import java.text.DecimalFormat;
-
-import lombok.RequiredArgsConstructor;
-import me.reddev.osucelebrity.osu.OsuStatus;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.swing.JFrame;
 
@@ -25,6 +28,9 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
   private Label approval;
 
   private Label remainingTime;
+  private Label twitchMods;
+  private TextArea queue;
+  private Label rawApproval;
 
   {
     setLayout(new FlowLayout());
@@ -43,10 +49,16 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
       setIdle.addActionListener(e -> setTitle(IDLE));
       add(setIdle);
     }
-    add(new Label("Approval"));
+    add(new Label("Raw Approval: "));
+    add(rawApproval = new Label("?"));
+    add(new Label("Adjusted Approval: "));
     add(approval = new Label("?"));
-    add(new Label("Remaining time (ms)"));
+    add(new Label("Remaining time (ms):"));
     add(remainingTime = new Label("?"));
+    add(new Label("Twitch mods (online):"));
+    add(twitchMods = new Label("?"));
+    add(new Label("Queue:"));
+    add(queue = new TextArea("?", 16, 32));
   }
 
   @Override
@@ -68,14 +80,30 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
     newPlayer = clock.getTime();
     setTitle(NEW_PLAYER);
   }
+  
+  @Override
+  public void setRawApproval(double approval) {
+    this.rawApproval.setText(new DecimalFormat("0.00").format(approval));
+  }
 
   @Override
   public void setApproval(double approval) {
-    this.approval.setText(new DecimalFormat("#.00").format(approval));
+    this.approval.setText(new DecimalFormat("0.00").format(approval));
   }
 
   @Override
   public void setRemainingTime(long remainingTime) {
     this.remainingTime.setText("" + remainingTime);
+  }
+  
+  @Override
+  public void setTwitchMods(List<String> mods) {
+    twitchMods.setText(mods.toString());
+  }
+  
+  @Override
+  public void setQueue(List<QueuedPlayer> queue) {
+    this.queue.setText(queue.stream().map(entry -> entry.getPlayer().getUserName())
+        .collect(Collectors.joining("\n")));
   }
 }

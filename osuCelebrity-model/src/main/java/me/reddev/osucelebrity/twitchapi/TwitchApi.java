@@ -4,6 +4,7 @@ import me.reddev.osucelebrity.PassAndReturnNonnull;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map.Entry;
 
 @PassAndReturnNonnull
 public interface TwitchApi {
@@ -19,4 +20,6 @@ public interface TwitchApi {
    * @return True if the user is a moderator
    */
   boolean isModerator(String username);
+
+  List<Entry<String, List<String>>> getRoomMemberships() throws IOException;
 }

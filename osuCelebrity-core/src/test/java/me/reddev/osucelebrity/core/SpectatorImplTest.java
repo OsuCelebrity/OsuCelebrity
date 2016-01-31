@@ -62,7 +62,9 @@ public class SpectatorImplTest extends AbstractJDOTest {
     when(settings.getMaxLastActivity()).thenReturn(24L * 60 * 60 * 1000);
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.PLAYING, ""));
     
-    spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec, null);
+    spectator =
+        new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec,
+            new StatusWindow.DummyStatusWindow());
   }
 
   QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
@@ -750,7 +752,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   @Test
   public void testPerformEnqueue() throws Exception {
     QueuedPlayer queuedPlayer = getUser(pm, "someplayer");
-    spectator.performEnqueue(pm , queuedPlayer, null, null, System.out::println);
+    spectator.performEnqueue(pm , queuedPlayer, null, null, System.out::println, System.out::println);
     
     ArgumentCaptor<PollStatusConsumer> captor = ArgumentCaptor.forClass(PollStatusConsumer.class);
     verify(osu).pollIngameStatus(eq(queuedPlayer.getPlayer()), captor.capture());

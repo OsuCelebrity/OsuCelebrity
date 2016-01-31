@@ -2,18 +2,18 @@ package me.reddev.osucelebrity;
 
 import com.google.inject.Guice;
 
-import me.reddev.osucelebrity.core.StatusWindowImpl;
-
-import me.reddev.osucelebrity.core.StatusWindow;
 import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.SpectatorImpl;
+import me.reddev.osucelebrity.core.StatusWindow;
+import me.reddev.osucelebrity.core.StatusWindowImpl;
 import me.reddev.osucelebrity.core.api.CoreApiApplication;
 import me.reddev.osucelebrity.osu.OsuActivityUpdater;
 import me.reddev.osucelebrity.osu.OsuApplication;
 import me.reddev.osucelebrity.osu.OsuIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchApiImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
+import me.reddev.osucelebrity.twitch.TwitchWhisperBot;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -34,6 +34,7 @@ import javax.ws.rs.core.UriBuilder;
 public class OsuCelebrity {
   final SpectatorImpl spectator;
   final TwitchIrcBot twitchBot;
+  final TwitchWhisperBot twitchWhisper;
   final OsuIrcBot osuBot;
   final CoreApiApplication apiServerApp;
   final CoreSettings coreSettings;
@@ -51,9 +52,12 @@ public class OsuCelebrity {
     jmxServer.registerMBean(spectator,
         new ObjectName("osuCeleb:type=Spectator"));
 
+    twitchWhisper.findServer();
+
     exec.scheduleAtFixedRate(spectator::loop, 0, 100, TimeUnit.MILLISECONDS);
-    exec.submit(twitchBot);
     exec.submit(osuBot);
+    exec.submit(twitchBot);
+    exec.submit(twitchWhisper);
     exec.scheduleAtFixedRate(osuApp::updateWindowTitle, 0, 100, TimeUnit.MILLISECONDS);
     exec.scheduleWithFixedDelay(osuActivityUpdater::update, 0, 5, TimeUnit.SECONDS);
     exec.scheduleWithFixedDelay(twitchApi::updateChatters, 0, 5, TimeUnit.SECONDS);

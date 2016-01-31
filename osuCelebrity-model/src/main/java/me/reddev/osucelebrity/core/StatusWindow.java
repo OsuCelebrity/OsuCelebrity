@@ -1,10 +1,9 @@
 package me.reddev.osucelebrity.core;
 
+import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 
-import me.reddev.osucelebrity.osu.OsuStatus;
-
-
+import java.util.List;
 
 public interface StatusWindow {
   public static class DummyStatusWindow implements StatusWindow {
@@ -19,6 +18,15 @@ public interface StatusWindow {
 
     @Override
     public void setRemainingTime(long remainingTime) {}
+
+    @Override
+    public void setTwitchMods(List<String> mods) {}
+
+    @Override
+    public void setQueue(List<QueuedPlayer> queue) {}
+
+    @Override
+    public void setRawApproval(double approval) {}
   }
 
   /**
@@ -37,7 +45,22 @@ public interface StatusWindow {
   public abstract void setApproval(double approval);
 
   /**
+   * Reports the raw approval (without time penalty).
+   */
+  public abstract void setRawApproval(double approval);
+
+  /**
    * Reports the remaining time for the current player.
    */
   public abstract void setRemainingTime(long remainingTime);
+
+  /**
+   * Reports the current mods in the twitch channel.
+   */
+  public void setTwitchMods(List<String> mods);
+
+  /**
+   * Reports the current queue.
+   */
+  public void setQueue(List<QueuedPlayer> queue);
 }

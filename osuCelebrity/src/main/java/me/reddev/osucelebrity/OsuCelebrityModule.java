@@ -3,18 +3,17 @@ package me.reddev.osucelebrity;
 
 import com.google.inject.AbstractModule;
 
-import me.reddev.osucelebrity.core.StatusWindowImpl;
-
-import me.reddev.osucelebrity.core.StatusWindow;
 import me.reddev.osucelebrity.core.Clock;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.core.SpectatorImpl;
+import me.reddev.osucelebrity.core.StatusWindow;
+import me.reddev.osucelebrity.core.StatusWindowImpl;
 import me.reddev.osucelebrity.core.SystemClock;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuApiImpl;
-import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.osucelebrity.osu.OsuApplication;
+import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
 import me.reddev.osucelebrity.osu.OsuImpl;
 import me.reddev.osucelebrity.osu.OsuIrcBot;
 import me.reddev.osucelebrity.osu.OsuIrcSettings;
@@ -25,15 +24,16 @@ import me.reddev.osucelebrity.twitch.TwitchApiImpl;
 import me.reddev.osucelebrity.twitch.TwitchImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchIrcSettings;
+import me.reddev.osucelebrity.twitch.TwitchWhisperBot;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import me.reddev.osucelebrity.twitchapi.TwitchApiSettings;
 import org.tillerino.osuApiModel.Downloader;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.inject.Singleton;
@@ -76,6 +76,7 @@ public class OsuCelebrityModule extends AbstractModule {
 
     bind(OsuIrcBot.class).in(Singleton.class);
     bind(TwitchIrcBot.class).in(Singleton.class);
+    bind(TwitchWhisperBot.class).in(Singleton.class);
     bind(OsuApplication.class).in(Singleton.class);
     
     bind(Spectator.class).to(SpectatorImpl.class);

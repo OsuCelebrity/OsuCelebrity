@@ -1,19 +1,19 @@
 package me.reddev.osucelebrity.core.api;
 
+import me.reddev.osucelebrity.core.StatusWindow;
+
 import me.reddev.osucelebrity.core.VoteType;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osu.OsuStatus;
 import org.mockito.internal.matchers.Contains;
 import org.tillerino.osuApiModel.GameModes;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.any;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.eclipse.jetty.server.ServerConnector;
@@ -117,8 +117,9 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
   @Test
   public void testVoteService() throws Exception {
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(0).build();
-    SpectatorImpl spectatorImpl = 
-        new SpectatorImpl(null, clock, osu, settings, pmf, osuApi, exec, null);
+    SpectatorImpl spectatorImpl =
+        new SpectatorImpl(null, clock, osu, settings, pmf, osuApi, exec,
+            new StatusWindow.DummyStatusWindow());
     
     QueuedPlayer player = getUser(pm, "some player");
     

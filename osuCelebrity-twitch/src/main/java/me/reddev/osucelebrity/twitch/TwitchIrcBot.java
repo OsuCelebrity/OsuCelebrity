@@ -71,6 +71,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   private final Spectator spectator;
 
   private final Clock clock;
+  
+  private final TwitchWhisperBot whisperBot;
 
   PircBotX bot;
 
@@ -83,19 +85,16 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     handlers.add(this::handleVote);
     handlers.add(this::handlePosition);
     handlers.add(this::handleNowPlaying);
-  }
-  
-  private final List<CommandHandler> modHandlers = new ArrayList<>();
-  
-  {
-    modHandlers.add(this::handleAdvance);
-    modHandlers.add(this::handleSpec);
-    modHandlers.add(this::handleFixClient);
-    modHandlers.add(this::handleBoost);
-    modHandlers.add(this::handleTimeout);
-    modHandlers.add(this::handleBannedMapsFilter);
-    modHandlers.add(this::handleGameMode);
-    modHandlers.add(this::handleExtend);
+    
+    // MOD COMMANDS
+    handlers.add(this::handleAdvance);
+    handlers.add(this::handleSpec);
+    handlers.add(this::handleFixClient);
+    handlers.add(this::handleBoost);
+    handlers.add(this::handleTimeout);
+    handlers.add(this::handleBannedMapsFilter);
+    handlers.add(this::handleGameMode);
+    handlers.add(this::handleExtend);
   }
 
   @Override
@@ -163,35 +162,21 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
     PersistenceManager pm = pmf.getPersistenceManager();
     try {
-      boolean handled = false;
-      
-      if (twitchApi.isModerator(event.getUser().getNick())) {
-        for (CommandHandler commandHandler : modHandlers) {
-          if (commandHandler.handle(event, message, event.getUser().getNick(), pm)) {
-            handled = true;
-            break;
-          }
-        }
-      }
-      
-      if (!handled) {
-        for (CommandHandler commandHandler : handlers) {
-          if (commandHandler.handle(event, message, event.getUser().getNick(), pm)) {
-            break;
-          }
+      for (CommandHandler commandHandler : handlers) {
+        if (commandHandler.handle(event, message, event.getUser().getNick(), pm)) {
+          break;
         }
       }
     } catch (Exception e) {
       Consumer<String> messager =
-          x -> event.getChannel().send()
-              .message(String.format("@%s: %s", event.getUser().getNick(), x));
+          x -> whisperBot.whisper(event.getUser().getNick(), x);
       UserException.handleException(log, e, messager);
     } finally {
       pm.close();
     }
   }
 
-  boolean handleQueue(MessageEvent<PircBotX> event, String message, String twitchUserName,
+  boolean handleQueue(MessageEvent<PircBotX> event, String message, String requesterNick,
       PersistenceManager pm) throws UserException, IOException {
     // Detects queueing commands.
     String targetUser = Commands.detect(message, QUEUE);
@@ -208,7 +193,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     OsuUser requestedUser = getUserOrThrow(pm, targetUser);
     QueuedPlayer queueRequest =
         new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
-    spectator.performEnqueue(pm, queueRequest, "twitch:" + twitchUserName, log, event::respond);
+    spectator.performEnqueue(pm, queueRequest, "twitch:" + requesterNick, log, event::respond,
+        msg -> whisperBot.whisper(requesterNick, msg));
     return true;
   }
 
@@ -227,12 +213,19 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     spectator.vote(pm, twitchUserName, type);
     return true;
   }
+  
+  void requireMod(MessageEvent<PircBotX> event) throws UserException {
+    if (!twitchApi.isModerator(event.getUser().getNick())) {
+      throw new UserException("You're not a mod.");
+    }
+  }
 
   boolean handleAdvance(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
     if (!StringUtils.startsWithIgnoreCase(message, FORCESKIP)) {
       return false;
     }
+    requireMod(event);
     message = message.substring(FORCESKIP.length());
     
     if (spectator.advanceConditional(pm, message)) {
@@ -247,6 +240,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (!StringUtils.startsWithIgnoreCase(message, FORCESPEC)) {
       return false;
     }
+    requireMod(event);
     message = message.substring(FORCESPEC.length());
     
     OsuUser ircUser = getUserOrThrow(pm, message);
@@ -280,7 +274,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       event.getChannel().send().message(String.format(OsuResponses.POSITION, 
           ircUser.getUserName(), position));
     } else {
-      event.getChannel().send().message(String.format(OsuResponses.NOT_IN_QUEUE, 
+      throw new UserException(String.format(OsuResponses.NOT_IN_QUEUE, 
           ircUser.getUserName()));
     }
     return true;
@@ -308,6 +302,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (!message.equalsIgnoreCase(Commands.RESTART_CLIENT)) {
       return false;
     }
+    requireMod(event);
     
     try {
       osu.restartClient();
@@ -323,6 +318,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (!StringUtils.startsWithIgnoreCase(message, Commands.BOOST)) {
       return false;
     }
+    requireMod(event);
 
     String boostedUser = message.substring(Commands.BOOST.length());
 
@@ -339,6 +335,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (!StringUtils.startsWithIgnoreCase(message, Commands.TIMEOUT)) {
       return false;
     }
+    requireMod(event);
         
     String[] split = message.substring(Commands.TIMEOUT.length()).split(" ", 2);
     
@@ -358,6 +355,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (!StringUtils.startsWithIgnoreCase(message, Commands.ADD_BANNED_MAPS_FILTER)) {
       return false;
     }
+    requireMod(event);
 
     message = message.substring(Commands.ADD_BANNED_MAPS_FILTER.length());
 
@@ -373,6 +371,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (!StringUtils.startsWithIgnoreCase(message, Commands.GAME_MODE)) {
       return false;
     }
+    requireMod(event);
 
     String[] split = message.substring(Commands.GAME_MODE.length()).split(" ", 2);
 
@@ -387,7 +386,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     } else if (split[0].equalsIgnoreCase("mania")) {
       user.setGameMode(GameModes.MANIA);
     } else {
-      return false;
+      throw new UserException("Unknown game mode.");
     }
     
     event.getChannel().send().message(Responses.GAME_MODE_CHANGED);
@@ -401,6 +400,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (targetUser == null) {
       return false;
     }
+    requireMod(event);
 
     spectator.extendConditional(pm, targetUser);
     

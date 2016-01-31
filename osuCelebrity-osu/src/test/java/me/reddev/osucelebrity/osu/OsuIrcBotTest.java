@@ -210,7 +210,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
     verify(spectator).performEnqueue(any(),
         eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)),
-        eq("osu:" + osuIrcUser.getUserId()), any(), any());
+        eq("osu:" + osuIrcUser.getUserId()), any(), any(), any());
   }
   
   @Test
@@ -222,7 +222,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
     verify(spectator).performEnqueue(any(),
         eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)),
-        eq("osu:" + osuIrcUser.getUserId()), any(), any());
+        eq("osu:" + osuIrcUser.getUserId()), any(), any(), any());
   }
 
   @Test
@@ -233,7 +233,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
     verify(spectator).performEnqueue(any(),
         eq(new QueuedPlayer(requestedUser, QueueSource.OSU, 0)),
-        eq("osu:" + osuIrcUser.getUserId()), any(), any());
+        eq("osu:" + osuIrcUser.getUserId()), any(), any(), any());
   }
   
   @Test
