@@ -323,8 +323,14 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (!StringUtils.startsWithIgnoreCase(message, Commands.BOOST)) {
       return false;
     }
-        
-    spectator.boost(pm, getUserOrThrow(pm, message.substring(Commands.BOOST.length())));
+
+    String boostedUser = message.substring(Commands.BOOST.length());
+
+    spectator.boost(pm, getUserOrThrow(pm, boostedUser));
+
+    event.getChannel().send()
+        .message(String.format(TwitchResponses.BOOST_QUEUE, boostedUser, event.getUser()));
+
     return true;
   }
   

@@ -15,9 +15,11 @@ public class TwitchResponses extends Responses {
 
   public static final String SKIPPED_FORCE = "%s was skipped by %s.";
 
-  public static final String SPECTATE_FORCE = "%s has force spectated %s";
+  public static final String SPECTATE_FORCE = "%s has force spectated %s.";
 
-  public static final String TIMEOUT = "%s has been timed out for %d minutes";
+  public static final String TIMEOUT = "%s has been timed out for %d minutes.";
 
   public static final String ADDED_BANNED_MAPS_FILTER = "Filter added.";
+  
+  public static final String BOOST_QUEUE = "%s was boosted to the front of the queue by %s.";
 }
