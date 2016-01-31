@@ -39,6 +39,7 @@ public class OsuRobot {
   private IplImage downloadButton2;
   private IplImage downloadButton3;
   private IplImage redownloadButton;
+  private IplImage statusWindowMarker;
   private Robot robot;
 
   private final OsuApplicationSettings settings;
@@ -56,6 +57,9 @@ public class OsuRobot {
           convertAndKeepInMemory(toGrayScale(ImageIO.read(new File("download3.png"))));
       redownloadButton =
           convertAndKeepInMemory(toGrayScale(ImageIO.read(new File("redownload.png"))));
+      statusWindowMarker =
+          convertAndKeepInMemory(toGrayScale(ImageIO.read(ClassLoader
+              .getSystemResourceAsStream("statusWindowMarker.png"))));
       robot = new Robot();
       robot.setAutoDelay(100);
       loaded = true;
@@ -143,6 +147,7 @@ public class OsuRobot {
       findAndClick(screenshot, downloadButton2);
       findAndClick(screenshot, downloadButton3);
       findAndClick(screenshot, redownloadButton);
+      findAndClick(screenshot, statusWindowMarker);
       screenshot.release();
     } catch (Exception e) {
       log.error("exception while trying to find");

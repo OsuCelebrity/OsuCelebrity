@@ -7,11 +7,16 @@ import java.awt.Button;
 import java.awt.FlowLayout;
 import java.awt.Label;
 import java.awt.TextArea;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 
 @RequiredArgsConstructor
 public class StatusWindowImpl extends JFrame implements StatusWindow {
@@ -34,6 +39,13 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
 
   {
     setLayout(new FlowLayout());
+    try {
+      BufferedImage markerImage =
+          ImageIO.read(ClassLoader.getSystemResourceAsStream("statusWindowMarker.png"));
+      add(new JLabel(new ImageIcon(markerImage)));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     {
       Button setNewPlayer = new Button("DEBUG OBS: Set title to " + NEW_PLAYER);
       setNewPlayer.addActionListener(e -> setTitle(NEW_PLAYER));
@@ -59,6 +71,8 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
     add(twitchMods = new Label("?"));
     add(new Label("Queue:"));
     add(queue = new TextArea("?", 16, 32));
+    
+    setSize(300, 900);
   }
 
   @Override
