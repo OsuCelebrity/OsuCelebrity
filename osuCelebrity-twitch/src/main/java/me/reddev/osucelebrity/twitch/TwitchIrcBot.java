@@ -325,7 +325,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     spectator.boost(pm, getUserOrThrow(pm, boostedUser));
 
     event.getChannel().send()
-        .message(String.format(TwitchResponses.BOOST_QUEUE, boostedUser, event.getUser()));
+        .message(String.format(TwitchResponses.BOOST_QUEUE, boostedUser, event.getUser().getNick()));
 
     return true;
   }
