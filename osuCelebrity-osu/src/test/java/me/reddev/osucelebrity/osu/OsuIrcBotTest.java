@@ -9,7 +9,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
-import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.snapshot.UserSnapshot;
 import org.pircbotx.snapshot.UserChannelDaoSnapshot;
 import org.pircbotx.hooks.events.QuitEvent;
@@ -24,22 +23,16 @@ import org.pircbotx.hooks.events.ServerResponseEvent;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import javax.jdo.PersistenceManager;
-
 import me.reddev.osucelebrity.AbstractJDOTest;
 import me.reddev.osucelebrity.Privilege;
 import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.core.EnqueueResult;
-import me.reddev.osucelebrity.core.MockClock;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.Spectator;
-import me.reddev.osucelebrity.osuapi.MockOsuApi;
-import me.reddev.osucelebrity.osuapi.OsuApi;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.pircbotx.Channel;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -178,18 +171,6 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     assertEquals(new HashSet<>(Arrays.asList("me", "you", "them")), ircBot.getOnlineUsers());
   }
   
-  @Test
-  public void testOfflineUser() throws Exception {
-    ircBot.onServerResponse(new ServerResponseEvent<PircBotX>(bot, 401,
-        ":cho.ppy.sh 401 OsuCelebrity doesnotexist :No such nick", ImmutableList
-            .copyOf(new String[] {"OsuCelebrity", "doesnotexist", "No such nick"})));
-
-    verify(spectator).reportStatus(
-        any(),
-        eq(new PlayerStatus(osuApi.getIrcUser("doesnotexist", pm, 0).getUser(),
-            PlayerStatusType.OFFLINE, 0)));
-  }
-
   @Test
   public void testJoinQuit() throws Exception {
     ircBot.onJoin(new JoinEvent<PircBotX>(bot, channel, user));

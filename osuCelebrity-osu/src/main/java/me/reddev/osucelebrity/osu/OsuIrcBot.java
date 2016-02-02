@@ -484,23 +484,6 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
         onlineUsers.add(nick);
       }
-    } else if (event.getCode() == 401) {
-      ImmutableList<String> parsedResponse = event.getParsedResponse();
-      log.debug("{} is offline", parsedResponse.get(1));
-      // measure time early in case the osu api blocks
-      long time = clock.getTime();
-      PersistenceManager pm = pmf.getPersistenceManager();
-      try {
-        OsuIrcUser ircUser = osuApi.getIrcUser(parsedResponse.get(1), pm, 0);
-        if (ircUser != null) {
-          OsuUser user = ircUser.getUser();
-          if (user != null) {
-            spectator.reportStatus(pm, new PlayerStatus(user, PlayerStatusType.OFFLINE, time));
-          }
-        }
-      } finally {
-        pm.close();
-      }
     } else {
       super.onServerResponse(event);
     }
