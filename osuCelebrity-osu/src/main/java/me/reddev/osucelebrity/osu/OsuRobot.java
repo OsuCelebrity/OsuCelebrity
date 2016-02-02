@@ -112,6 +112,8 @@ public class OsuRobot {
       int clickX = detectionLoc.x() + target1.width() / 2 + settings.getOsuClientXOffset();
       int clickY = detectionLoc.y() + target1.height() / 2 + settings.getOsuClientYOffset();
 
+      log.debug("Score {} x {} y {}", detectionScore, clickX, clickY);
+
       robot.mouseMove(clickX, clickY);
 
       robot.mousePress(InputEvent.BUTTON1_MASK);
