@@ -268,6 +268,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   }
 
   private void setNext(PersistenceManager pm, PlayerQueue queue, QueuedPlayer next) {
+    log.debug("Setting {} to state {}", next.getPlayer().getUserName(), QueuedPlayer.NEXT);
     next.setState(QueuedPlayer.NEXT);
     if (next.isNotify() && queue.currentlySpectating().isPresent()
         && queue.currentlySpectating().get().getStoppingAt() > clock.getTime()) {
@@ -387,11 +388,14 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     Optional<QueuedPlayer> nextUser = queue.spectatingNext();
     // Revert the next player
     if (nextUser.isPresent()) {
+      log.debug("Reverting {} to state {}", nextUser.get().getPlayer().getUserName(),
+          QueuedPlayer.QUEUED);
       nextUser.get().setState(QueuedPlayer.QUEUED);
     }
     
     final Optional<QueuedPlayer> current = queue.currentlySpectating();
 
+    log.debug("Setting {} to state {}", queueRequest.getPlayer().getUserName(), QueuedPlayer.NEXT);
     queueRequest.setState(QueuedPlayer.NEXT);
     queue = PlayerQueue.loadQueue(pm, clock);
     advance(pm, queue);
@@ -425,6 +429,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       PlayerQueue queue, QueuedPlayer next) {
     Optional<QueuedPlayer> spectating = queue.currentlySpectating();
     if (spectating.isPresent()) {
+      log.debug("Setting {} to state {}", spectating.get().getPlayer().getUserName(),
+          QueuedPlayer.DONE);
       spectating.get().setState(QueuedPlayer.DONE);
       if (spectating.get().isNotify()) {
         detachAndSchedule(exec, log, pm, osu::notifyDone, spectating.get().getPlayer());
@@ -432,6 +438,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       }
     }
     long time = clock.getTime();
+    log.debug("Setting {} to state {}", next.getPlayer().getUserName(), QueuedPlayer.SPECTATING);
     next.setState(QueuedPlayer.SPECTATING);
     next.setStartedAt(time);
     next.setLastRemainingTimeUpdate(time);
@@ -635,6 +642,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     if (status.getType() == PlayerStatusType.OFFLINE) {
       // Just remove them from the queue. We can refine this behaviour later.
       queue = PlayerQueue.loadQueue(pm, clock);
+      log.debug("{} is offline. removing from queue", status.getUser().getUserName());
       removeFromQueue(pm, status.getUser());
     }
     if (queue == null) {

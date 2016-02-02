@@ -341,6 +341,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       PersistenceManager pm) throws UserException, IOException {
     if (message.equalsIgnoreCase(OPTOUT)) {
       user.setAllowsSpectating(false);
+      log.debug("{} opted out. removing from queue", user.getUserName());
       spectator.removeFromQueue(pm, user);
       respond(event, String.format(OsuResponses.OPTOUT));
       return true;
@@ -485,6 +486,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       }
     } else if (event.getCode() == 401) {
       ImmutableList<String> parsedResponse = event.getParsedResponse();
+      log.debug("{} is offline", parsedResponse.get(1));
       // measure time early in case the osu api blocks
       long time = clock.getTime();
       PersistenceManager pm = pmf.getPersistenceManager();

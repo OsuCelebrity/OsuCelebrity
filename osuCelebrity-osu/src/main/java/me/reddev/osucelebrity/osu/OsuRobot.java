@@ -61,7 +61,7 @@ public class OsuRobot {
           convertAndKeepInMemory(toGrayScale(ImageIO.read(ClassLoader
               .getSystemResourceAsStream("statusWindowMarker.png"))));
       robot = new Robot();
-      robot.setAutoDelay(100);
+      robot.setAutoDelay(0);
       loaded = true;
     } catch (Exception e) {
       log.warn("Error while initializing image processing", e);
