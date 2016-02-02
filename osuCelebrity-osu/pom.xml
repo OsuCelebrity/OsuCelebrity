@@ -52,8 +52,8 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.tillerino.osu</groupId>
-			<artifactId>osuApiConnector</artifactId>
+			<groupId>com.github.tillerino</groupId>
+			<artifactId>osu-api-connector</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.mapstruct</groupId>

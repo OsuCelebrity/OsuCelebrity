@@ -3,10 +3,7 @@ jdk:
   - oraclejdk8
 
 before_install:
-  - git clone https://github.com/Tillerino/osuApiConnector.git
-  - cd osuApiConnector
-  - mvn -fosuApiConnector/pom.xml -DskipTests=true -Dmaven.javadoc.skip=true -Dversions.skip=true -Dlombok.delombok.skip=true -Dfindbugs.skip=true install
-  - cd ../osuCelebrity-parent
+  - cd osuCelebrity-parent
 
 # we're not installing anything
 install: true
