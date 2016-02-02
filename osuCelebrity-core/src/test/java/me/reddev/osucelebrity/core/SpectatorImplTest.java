@@ -875,4 +875,27 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertEquals(settings.getDefaultSpecDuration(), spectator
         .getCurrentPlayer(pm).getStoppingAt());
   }
+  
+  @Test
+  public void testShortQueue() throws Exception {
+    when(settings.getShortQueueLength()).thenReturn(10);
+    
+    QueuedPlayer user1 = getUser(pm , "player1");
+    spectator.enqueue(pm, user1, false);
+    spectator.enqueue(pm, getUser(pm , "player2"), false);
+    spectator.enqueue(pm, getUser(pm , "player3"), false);
+    spectator.enqueue(pm, getUser(pm , "player4"), false);
+    spectator.enqueue(pm, getUser(pm , "player5"), false);
+    spectator.enqueue(pm, getUser(pm , "player6"), false);
+    
+    spectator.loop(pm);
+    assertEquals(user1, spectator.getCurrentPlayer(pm));
+    
+    long stoppingAt = user1.getStoppingAt();
+    
+    clock.sleepUntil(1000);
+    spectator.loop(pm);
+    
+    assertTrue(user1.getStoppingAt() > stoppingAt - 900);
+  }
 }

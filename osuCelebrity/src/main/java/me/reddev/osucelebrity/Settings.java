@@ -56,6 +56,7 @@ public class Settings implements SettingsMBean {
   private long autoSpecMaxRank;
   private int minPlayCount;
   private long maxLastActivity;
+  private int shortQueueLength;
 
   private int osuClientXOffset;
   private int osuClientYOffset;

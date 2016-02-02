@@ -200,31 +200,37 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       return;
     }
     QueuedPlayer current = currentlySpectating.get();
+    long time = clock.getTime();
 
     double approval = getApproval(pm, current);
     statusWindow.setRawApproval(approval);
-    long time = clock.getTime();
-    long lastRemainingTime = current.getStoppingAt() - current.getLastRemainingTimeUpdate();
-    long timePlayed = clock.getTime() - current.getStartedAt();
-    OsuStatus readStatus = status.lastStatus;
-    boolean playing = readStatus != null && readStatus.getType() == Type.PLAYING;
-    
+    long timePlayed = time - current.getStartedAt();
     approval -= penalty(settings.getDefaultSpecDuration(), timePlayed);
     
+    OsuStatus readStatus = status.lastStatus;
+    boolean playing = readStatus != null && readStatus.getType() == Type.PLAYING;
+
+    long drain = time - current.getLastRemainingTimeUpdate();
+    
+    if (queue.queue.size() <= settings.getShortQueueLength()) {
+      drain *= .4 + queue.queue.size() / 17d;
+    }
+    
+    final long adjustedDrain;
     if (approval > .75) {
-      long newRemainingTime =
-          Math.min(settings.getDefaultSpecDuration(),
-              lastRemainingTime + time - current.getLastRemainingTimeUpdate());
-      current.setStoppingAt(time + newRemainingTime);
+      adjustedDrain = -drain;
     } else if (approval >= .5
         || (!playing && timePlayed < settings.getDefaultSpecDuration())) {
-      current.setStoppingAt(time + current.getStoppingAt() - current.getLastRemainingTimeUpdate());
+      adjustedDrain = 0;
     } else if (approval < .25) {
-      long newRemainingTime =
-          Math.min(settings.getDefaultSpecDuration(),
-              lastRemainingTime - 2 * (time - current.getLastRemainingTimeUpdate()));
-      current.setStoppingAt(time + newRemainingTime);
+      adjustedDrain = drain * 2;
+    } else {
+      adjustedDrain = drain;
     }
+    long newStoppingAt = current.getStoppingAt() + drain - adjustedDrain;
+    newStoppingAt = Math.min(newStoppingAt, time + settings.getDefaultSpecDuration());
+    
+    current.setStoppingAt(newStoppingAt);
     // no votes are NaN => regular drain
 
     current.setLastRemainingTimeUpdate(time);

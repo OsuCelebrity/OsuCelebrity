@@ -24,4 +24,6 @@ public interface CoreSettings {
   int getMinPlayCount();
 
   long getMaxLastActivity();
+  
+  int getShortQueueLength();
 }
