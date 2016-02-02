@@ -2,12 +2,9 @@ package me.reddev.osucelebrity.osu;
 
 import static org.bytedeco.javacpp.opencv_core.cvSize;
 import static org.bytedeco.javacpp.opencv_imgproc.CV_TM_CCOEFF_NORMED;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import me.reddev.osucelebrity.osu.OsuApplication.OsuApplicationSettings;
-
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacpp.opencv_core.CvPoint;
@@ -25,6 +22,7 @@ import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,7 +85,7 @@ public class OsuRobot {
     return gray;
   }
 
-  void findAndClick(IplImage input1, IplImage target1) {
+  boolean findAndClick(IplImage input1, IplImage target1) {
     int iwidth = input1.width() - target1.width() + 1;
     int iheight = input1.height() - target1.height() + 1;
 
@@ -106,7 +104,7 @@ public class OsuRobot {
       detectionScore = max.get(0);
 
       if (detectionScore < 0.9) {
-        return;
+        return false;
       }
 
       int clickX = detectionLoc.x() + target1.width() / 2 + settings.getOsuClientXOffset();
@@ -115,11 +113,12 @@ public class OsuRobot {
       log.debug("Score {} x {} y {}", detectionScore, clickX, clickY);
 
       robot.mouseMove(clickX, clickY);
+      Thread.sleep(1);
+      robot.mouseMove(clickX, clickY);
 
       robot.mousePress(InputEvent.BUTTON1_MASK);
       robot.mouseRelease(InputEvent.BUTTON1_MASK);
-      
-      Thread.sleep(2000);
+      return true;
     } catch (RuntimeException e) {
       throw e;
     } catch (Exception e) {
@@ -138,24 +137,35 @@ public class OsuRobot {
       Rectangle region =
           new Rectangle(settings.getOsuClientXOffset(), settings.getOsuClientYOffset(),
               settings.getOsuClientWidth(), settings.getOsuClientHeight());
-      BufferedImage bufferedScreenshot = toGrayScale(robot.createScreenCapture(region));
-      // writing this image is very fast, so I'd like to keep it for adjusting offsets
-      ImageIO.write(bufferedScreenshot, "BMP", new File("screenshot.bmp"));
+      IplImage screenshot = getScreenshot(region);
 
-      Java2DFrameConverter converter1 = new Java2DFrameConverter();
-      ToIplImage converter2 = new ToIplImage();
-      Frame frame = converter1.convert(bufferedScreenshot);
-      IplImage screenshot = converter2.convert(frame);
-
-      findAndClick(screenshot, downloadButton);
-      findAndClick(screenshot, downloadButton2);
-      findAndClick(screenshot, downloadButton3);
-      findAndClick(screenshot, redownloadButton);
-      findAndClick(screenshot, statusWindowMarker);
+      for (IplImage needle : new IplImage[] {downloadButton, downloadButton2, downloadButton3,
+          redownloadButton, statusWindowMarker}) {
+        if (findAndClick(screenshot, needle)) {
+          Thread.sleep(1000);
+          screenshot = getScreenshot(region);
+          if (findAndClick(screenshot, needle)) {
+            Thread.sleep(1000);
+            screenshot = getScreenshot(region);
+          }
+        }
+      }
       screenshot.release();
     } catch (Exception e) {
       log.error("exception while trying to find");
     }
+  }
+
+  private IplImage getScreenshot(Rectangle region) throws IOException {
+    BufferedImage bufferedScreenshot = toGrayScale(robot.createScreenCapture(region));
+    // writing this image is very fast, so I'd like to keep it for adjusting offsets
+    ImageIO.write(bufferedScreenshot, "BMP", new File("screenshot.bmp"));
+
+    Java2DFrameConverter converter1 = new Java2DFrameConverter();
+    ToIplImage converter2 = new ToIplImage();
+    Frame frame = converter1.convert(bufferedScreenshot);
+    IplImage screenshot = converter2.convert(frame);
+    return screenshot;
   }
 
 }
