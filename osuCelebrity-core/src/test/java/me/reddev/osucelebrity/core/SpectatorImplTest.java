@@ -896,6 +896,6 @@ public class SpectatorImplTest extends AbstractJDOTest {
     clock.sleepUntil(1000);
     spectator.loop(pm);
     
-    assertTrue(user1.getStoppingAt() > stoppingAt - 900);
+    assertTrue(user1.getStoppingAt() > stoppingAt);
   }
 }

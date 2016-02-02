@@ -227,7 +227,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     } else {
       adjustedDrain = drain;
     }
-    long newStoppingAt = current.getStoppingAt() + drain - adjustedDrain;
+    long newStoppingAt =
+        current.getStoppingAt() + time - current.getLastRemainingTimeUpdate() - adjustedDrain;
     newStoppingAt = Math.min(newStoppingAt, time + settings.getDefaultSpecDuration());
     
     current.setStoppingAt(newStoppingAt);
