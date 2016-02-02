@@ -286,6 +286,11 @@
 				<artifactId>javacv</artifactId>
 				<version>1.1</version>
 			</dependency>
+			<dependency>
+				<groupId>com.github.tillerino</groupId>
+				<artifactId>log4j-http-appender</artifactId>
+				<version>0.2</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	<dependencies>

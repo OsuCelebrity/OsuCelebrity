@@ -107,5 +107,9 @@
 			<version>5.1.37</version>
 			<scope>runtime</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.github.tillerino</groupId>
+			<artifactId>log4j-http-appender</artifactId>
+		</dependency>
 	</dependencies>
 </project>
