@@ -11,9 +11,7 @@ import static me.reddev.osucelebrity.Commands.QUEUE;
 import static me.reddev.osucelebrity.Commands.SELFPOSITION;
 import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
-
 import com.google.common.collect.ImmutableList;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -145,9 +143,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
    */
   public void messagePlayer(OsuUser user, String message) {
     if (!ircSettings.isOsuIrcSilenced()) {
-      synchronizeThroughPinger(() -> bot.sendIRC().message(user.getUserName().replace(' ', '_'),
-          message));
-      log.debug("messaged {}: {}", user.getUserName(), message);
+      if (synchronizeThroughPinger(() -> bot.sendIRC().message(
+          user.getUserName().replace(' ', '_'), message))) {
+        log.debug("MESSAGED {}: {}", user.getUserName(), message);
+      }
     }
   }
 
@@ -510,8 +509,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   }
 
   void pollIngameStatus(OsuUser player) {
-    synchronizeThroughPinger(() -> bot.sendIRC().message(ircSettings.getOsuCommandUser(),
-        "!stat " + player.getUserName()));
+    if (synchronizeThroughPinger(() -> bot.sendIRC().message(ircSettings.getOsuCommandUser(),
+        "!stat " + player.getUserName()))) {
+      log.debug("POLLED STATUS for: {}", player.getUserName());
+    }
   }
 
   void pollIngameStatus(OsuUser player, PollStatusConsumer action) {
@@ -531,14 +532,18 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       runnable.run();
       return true;
     } catch (IOException e) {
+      log.warn("IOException while waiting for pong: {}", e.getMessage());
       return false;
     } catch (InterruptedException e) {
+      log.warn("Interrupted while waiting for pong: {}", e.getMessage());
       return false;
     }
   }
   
   void respond(PrivateMessageEvent<?> event, String response) {
-    synchronizeThroughPinger(() -> event.respond(response));
+    if (synchronizeThroughPinger(() -> event.respond(response))) {
+      log.debug("RESPONDED to {}: {}", event.getUser().getNick(), response);
+    }
   }
   
   // End Listeners
