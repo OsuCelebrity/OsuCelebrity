@@ -385,6 +385,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       return false;
     }
     if (enqueueResult == EnqueueResult.CURRENT) {
+      detachAndSchedule(exec, log, pm, osu::startSpectate, ircUser);
       return true;
     }
 
