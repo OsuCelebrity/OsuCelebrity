@@ -213,7 +213,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     long drain = time - current.getLastRemainingTimeUpdate();
     
     if (queue.queue.size() <= settings.getShortQueueLength()) {
-      drain *= .4 + queue.queue.size() / 17d;
+      drain *= .5 * (1D + (queue.queue.size() - 1D) / (settings.getShortQueueLength() - 1D));
     }
     
     final long adjustedDrain;
