@@ -1,11 +1,6 @@
 package me.reddev.osucelebrity.twitch;
 
 import static me.reddev.osucelebrity.Commands.DOWNVOTE;
-import static me.reddev.osucelebrity.Commands.FORCESKIP;
-import static me.reddev.osucelebrity.Commands.FORCESPEC;
-import static me.reddev.osucelebrity.Commands.NOW_PLAYING;
-import static me.reddev.osucelebrity.Commands.POSITION;
-import static me.reddev.osucelebrity.Commands.QUEUE;
 import static me.reddev.osucelebrity.Commands.UPVOTE;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +21,6 @@ import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
-import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.hooks.ListenerAdapter;
@@ -58,6 +52,12 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
         PersistenceManager pm) throws UserException, IOException;
   }
 
+  @FunctionalInterface
+  interface ConfirmedCommandHandler {
+    void handle(MessageEvent<PircBotX> event, String arguments, String twitchUserName,
+        PersistenceManager pm) throws UserException, IOException;
+  }
+
   private final TwitchIrcSettings settings;
 
   private final OsuApi osuApi;
@@ -81,20 +81,20 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   private final List<CommandHandler> handlers = new ArrayList<>();
 
   {
-    handlers.add(this::handleQueue);
+    handlers.add(createHandler(false, this::handleQueue, Commands.QUEUE));
     handlers.add(this::handleVote);
-    handlers.add(this::handlePosition);
-    handlers.add(this::handleNowPlaying);
+    handlers.add(createHandler(false, this::handlePosition, Commands.POSITION));
+    handlers.add(createHandler(false, this::handleNowPlaying, Commands.NOW_PLAYING));
     
     // MOD COMMANDS
-    handlers.add(this::handleAdvance);
-    handlers.add(this::handleSpec);
-    handlers.add(this::handleFixClient);
-    handlers.add(this::handleBoost);
-    handlers.add(this::handleTimeout);
-    handlers.add(this::handleBannedMapsFilter);
-    handlers.add(this::handleGameMode);
-    handlers.add(this::handleExtend);
+    handlers.add(createHandler(true, this::handleAdvance, Commands.FORCESKIP));
+    handlers.add(createHandler(true, this::handleSpec, Commands.FORCESPEC));
+    handlers.add(createHandler(true, this::handleFixClient, Commands.RESTART_CLIENT));
+    handlers.add(createHandler(true, this::handleBoost, Commands.BOOST));
+    handlers.add(createHandler(true, this::handleTimeout, Commands.TIMEOUT));
+    handlers.add(createHandler(true, this::handleBannedMapsFilter, Commands.ADD_BANNED_MAPS_FILTER));
+    handlers.add(createHandler(true, this::handleGameMode, Commands.GAME_MODE));
+    handlers.add(createHandler(true, this::handleExtend, Commands.EXTEND));
   }
 
   @Override
@@ -176,26 +176,17 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
   }
 
-  boolean handleQueue(MessageEvent<PircBotX> event, String message, String requesterNick,
+  void handleQueue(MessageEvent<PircBotX> event, String targetUser, String requesterNick,
       PersistenceManager pm) throws UserException, IOException {
-    // Detects queueing commands.
-    String targetUser = Commands.detect(message, QUEUE);
-
-    // Splits command options by ":"
-    if (targetUser == null) {
-      return false;
-    } else {
-      // Permits: !spec username : reason
-      // Example: !spec Tillerino: for awesomeness Keepo
-      targetUser = targetUser.split(":")[0].trim();
-    }
+    // Permits: !spec username : reason
+    // Example: !spec Tillerino: for awesomeness Keepo
+    targetUser = targetUser.split(":")[0].trim();
 
     OsuUser requestedUser = getUserOrThrow(pm, targetUser);
     QueuedPlayer queueRequest =
         new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
     spectator.performEnqueue(pm, queueRequest, "twitch:" + requesterNick, log, event::respond,
         msg -> whisperBot.whisper(requesterNick, msg));
-    return true;
   }
 
   boolean handleVote(MessageEvent<PircBotX> event, String message, String twitchUserName,
@@ -220,35 +211,21 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
   }
 
-  boolean handleAdvance(MessageEvent<PircBotX> event, String message, String twitchUserName,
+  void handleAdvance(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, FORCESKIP)) {
-      return false;
-    }
-    requireMod(event);
-    message = message.substring(FORCESKIP.length());
-    
     if (spectator.advanceConditional(pm, message)) {
       sendMessage(String.format(TwitchResponses.SKIPPED_FORCE, message, event.getUser()
           .getNick()));
     }
-    return true;
   }
   
-  boolean handleSpec(MessageEvent<PircBotX> event, String message, String twitchUserName,
+  void handleSpec(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, FORCESPEC)) {
-      return false;
-    }
-    requireMod(event);
-    message = message.substring(FORCESPEC.length());
-    
     OsuUser ircUser = getUserOrThrow(pm, message);
     if (spectator.promote(pm, ircUser)) {
       sendMessage(String.format(TwitchResponses.SPECTATE_FORCE,
           event.getUser().getNick(), message));
     }
-    return true;
   }
 
   @Nonnull
@@ -261,13 +238,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     return ircUser;
   }
   
-  boolean handlePosition(MessageEvent<PircBotX> event, String message, String twitchUserName,
+  void handlePosition(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, POSITION)) {
-      return false;
-    }
-    message = message.substring(POSITION.length());
-    
     OsuUser ircUser = getUserOrThrow(pm, message);
     int position = spectator.getQueuePosition(pm, ircUser);
     if (position != -1) {
@@ -277,15 +249,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       throw new UserException(String.format(OsuResponses.NOT_IN_QUEUE, 
           ircUser.getUserName()));
     }
-    return true;
   }
   
-  boolean handleNowPlaying(MessageEvent<PircBotX> event, String message, String twitchUserName,
+  void handleNowPlaying(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, NOW_PLAYING)) {
-      return false;
-    }
-
     QueuedPlayer player = spectator.getCurrentPlayer(pm);
     
     OsuStatus status = osu.getClientStatus();
@@ -293,51 +260,28 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       event.getChannel().send().message(String.format(OsuResponses.NOW_PLAYING, 
           player.getPlayer().getUserName(), status.getDetail()));
     }
-    
-    return true;
   }
   
-  boolean handleFixClient(MessageEvent<PircBotX> event, String message, String twitchUserName,
+  void handleFixClient(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!message.equalsIgnoreCase(Commands.RESTART_CLIENT)) {
-      return false;
-    }
-    requireMod(event);
-    
     try {
       osu.restartClient();
     } catch (InterruptedException e) {
       // w/e
     }
-    
-    return true;
   }
   
-  boolean handleBoost(MessageEvent<PircBotX> event, String message, String twitchUserName,
+  void handleBoost(MessageEvent<PircBotX> event, String boostedUser, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, Commands.BOOST)) {
-      return false;
-    }
-    requireMod(event);
-
-    String boostedUser = message.substring(Commands.BOOST.length());
-
     spectator.boost(pm, getUserOrThrow(pm, boostedUser));
 
     event.getChannel().send()
         .message(String.format(TwitchResponses.BOOST_QUEUE, boostedUser, event.getUser().getNick()));
-
-    return true;
   }
   
-  boolean handleTimeout(MessageEvent<PircBotX> event, String message, String twitchUserName,
+  void handleTimeout(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, Commands.TIMEOUT)) {
-      return false;
-    }
-    requireMod(event);
-        
-    String[] split = message.substring(Commands.TIMEOUT.length()).split(" ", 2);
+    String[] split = message.split(" ", 2);
     
     int minutes = Math.max(0, Integer.parseInt(split[0]));
     OsuUser timeoutUser = getUserOrThrow(pm, split[1]);
@@ -346,34 +290,18 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     
     event.getChannel().send()
         .message(String.format(TwitchResponses.TIMEOUT, timeoutUser.getUserName(), minutes));
-    
-    return true;
   }
   
-  boolean handleBannedMapsFilter(MessageEvent<PircBotX> event, String message,
+  void handleBannedMapsFilter(MessageEvent<PircBotX> event, String message,
       String twitchUserName, PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, Commands.ADD_BANNED_MAPS_FILTER)) {
-      return false;
-    }
-    requireMod(event);
-
-    message = message.substring(Commands.ADD_BANNED_MAPS_FILTER.length());
-
     spectator.addBannedMapFilter(pm, message);
 
     event.getChannel().send().message(String.format(TwitchResponses.ADDED_BANNED_MAPS_FILTER));
-
-    return true;
   }
   
-  boolean handleGameMode(MessageEvent<PircBotX> event, String message,
+  void handleGameMode(MessageEvent<PircBotX> event, String message,
       String twitchUserName, PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, Commands.GAME_MODE)) {
-      return false;
-    }
-    requireMod(event);
-
-    String[] split = message.substring(Commands.GAME_MODE.length()).split(" ", 2);
+    String[] split = message.split(" ", 2);
 
     OsuUser user = getUserOrThrow(pm, split[1]);
     
@@ -390,21 +318,11 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
     
     event.getChannel().send().message(Responses.GAME_MODE_CHANGED);
-    
-    return true;
   }
   
-  boolean handleExtend(MessageEvent<PircBotX> event, String message,
+  void handleExtend(MessageEvent<PircBotX> event, String targetUser,
       String twitchUserName, PersistenceManager pm) throws UserException, IOException {
-    String targetUser = Commands.detect(message, Commands.EXTEND);
-    if (targetUser == null) {
-      return false;
-    }
-    requireMod(event);
-
     spectator.extendConditional(pm, targetUser);
-    
-    return true;
   }
 
   @Override 
@@ -441,5 +359,21 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
    */
   public List<String> getSubscribers() {
     return subscribers;
+  }
+  
+  CommandHandler createHandler(boolean requiresMod, ConfirmedCommandHandler handler,
+      String... triggers) {
+    return (event, message, twitchUserName, pm) -> {
+      String remainingMessage = Commands.detect(message, triggers);
+      if (remainingMessage == null) {
+        return false;
+      }
+      if (requiresMod) {
+        requireMod(event);
+      }
+      log.debug("{} invokes {}", twitchUserName, remainingMessage);
+      handler.handle(event, remainingMessage, twitchUserName, pm);
+      return true;
+    };
   }
 }
