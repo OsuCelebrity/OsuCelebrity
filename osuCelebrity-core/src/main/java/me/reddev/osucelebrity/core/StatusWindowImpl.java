@@ -36,6 +36,7 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
   private Label twitchMods;
   private TextArea queue;
   private Label rawApproval;
+  private Label frozen;
 
   {
     setLayout(new FlowLayout());
@@ -69,9 +70,11 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
     add(remainingTime = new Label("?"));
     add(new Label("Twitch mods (online):"));
     add(twitchMods = new Label("?"));
+    add(new Label("Frozen:"));
+    add(frozen = new Label("?"));
     add(new Label("Queue:"));
     add(queue = new TextArea("?", 16, 32));
-    
+
     setSize(300, 900);
   }
 
@@ -94,7 +97,7 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
     newPlayer = clock.getTime();
     setTitle(NEW_PLAYER);
   }
-  
+
   @Override
   public void setRawApproval(double approval) {
     this.rawApproval.setText(new DecimalFormat("0.00").format(approval));
@@ -109,21 +112,26 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
   public void setRemainingTime(long remainingTime) {
     this.remainingTime.setText("" + remainingTime);
   }
-  
+
   @Override
   public void setTwitchMods(List<String> mods) {
     twitchMods.setText(mods.toString());
   }
-  
+
   @Override
   public void setQueue(List<QueuedPlayer> queue) {
     this.queue.setText(queue.stream().map(entry -> entry.getPlayer().getUserName())
         .collect(Collectors.joining("\n")));
   }
-  
+
   @Override
   public void setTitle(String title) {
     super.setTitle(title);
     requestFocus();
+  }
+
+  @Override
+  public void setFrozen(boolean frozen) {
+    this.frozen.setText("" + frozen);
   }
 }

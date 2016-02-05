@@ -95,6 +95,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     handlers.add(createHandler(true, this::handleBannedMapsFilter, Commands.ADD_BANNED_MAPS_FILTER));
     handlers.add(createHandler(true, this::handleGameMode, Commands.GAME_MODE));
     handlers.add(createHandler(true, this::handleExtend, Commands.EXTEND));
+    handlers.add(this::handleFreeze);
+    handlers.add(this::handleUnfreeze);
   }
 
   @Override
@@ -323,6 +325,30 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   void handleExtend(MessageEvent<PircBotX> event, String targetUser,
       String twitchUserName, PersistenceManager pm) throws UserException, IOException {
     spectator.extendConditional(pm, targetUser);
+  }
+
+  boolean handleFreeze(MessageEvent<PircBotX> event, String message,
+      String twitchUserName, PersistenceManager pm) throws UserException, IOException {
+    if (Commands.detect(message, Commands.FREEZE) == null) {
+      return false;
+    }
+    requireMod(event);
+
+    spectator.setFrozen(true);
+    
+    return true;
+  }
+
+  boolean handleUnfreeze(MessageEvent<PircBotX> event, String message,
+      String twitchUserName, PersistenceManager pm) throws UserException, IOException {
+    if (Commands.detect(message, Commands.UNFREEZE) == null) {
+      return false;
+    }
+    requireMod(event);
+
+    spectator.setFrozen(false);
+    
+    return true;
   }
 
   @Override 

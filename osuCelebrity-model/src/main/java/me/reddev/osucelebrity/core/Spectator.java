@@ -178,4 +178,15 @@ public interface Spectator {
    * @return success
    */
   boolean extendConditional(PersistenceManager pm, String expectedUser);
+  
+  /**
+   * "freezes" the queue progression and health drain.
+   * @param freeze whether or not to freeze the queue
+   */
+  public void setFrozen(boolean freeze);
+
+  /**
+   * Whether or not the queue progression and health drain are "frozen".
+   */
+  boolean isFrozen();
 }

@@ -247,4 +247,20 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
     verify(spectator).extendConditional(any(), eq("someplayer"));
   }
+
+  @Test
+  public void testFreeze() throws Exception {
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!freeze"));
+
+    verify(spectator).setFrozen(true);
+  }
+
+  @Test
+  public void testUnfreeze() throws Exception {
+    when(twitchApi.isModerator(user.getNick())).thenReturn(true);
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!unfreeze"));
+
+    verify(spectator).setFrozen(false);
+  }
 }

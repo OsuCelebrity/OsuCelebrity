@@ -23,6 +23,8 @@ public class Commands {
   public static final String TIMEOUT = "timeout ";
   public static final String ADD_BANNED_MAPS_FILTER = "banmaps ";
   public static final String EXTEND = "extend ";
+  public static final String FREEZE = "freeze";
+  public static final String UNFREEZE = "unfreeze";
   
   /**
    * Detects a command in an incoming message.

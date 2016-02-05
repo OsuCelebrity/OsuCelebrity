@@ -295,6 +295,30 @@ public class SpectatorImplTest extends AbstractJDOTest {
   }
   
   @Test
+  public void testRemainingTimeFrozen() throws Exception {
+    OsuUser user = osuApi.getUser("someplayer", pm, 0);
+    spectator.enqueue(pm, new QueuedPlayer(user, null, clock.getTime()), false);
+    
+    spectator.loop(pm);
+
+    {
+      QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
+      assertEquals(user, currentPlayer.getPlayer());
+      assertEquals(30000, currentPlayer.getStoppingAt());
+    }
+
+    clock.sleepUntil(10000);
+    spectator.loop(pm);
+    assertEquals(30000, spectator.getCurrentPlayer(pm).getStoppingAt());
+
+    spectator.setFrozen(true);
+
+    clock.sleepUntil(20000);
+    spectator.loop(pm);
+    assertEquals(40000, spectator.getCurrentPlayer(pm).getStoppingAt());
+  }
+
+  @Test
   public void testFastDrain() throws Exception {
     OsuUser user = osuApi.getUser("someplayer", pm, 0);
     QueuedPlayer queued = new QueuedPlayer(user, null, clock.getTime());
@@ -395,6 +419,18 @@ public class SpectatorImplTest extends AbstractJDOTest {
     assertEquals("user2", spectator.getCurrentPlayer(pm).getPlayer().getUserName());
 
     verify(twitch).announcePlayerSkipped(SkipReason.IDLE, player1.getPlayer());
+  }
+
+  @Test
+  public void testPlayerIdleFrozen() throws Exception {
+    QueuedPlayer player1 = getUser(pm, "user1");
+    spectator.enqueue(pm, player1, false);
+    spectator.enqueue(pm, getUser(pm, "user2"), false);
+    spectator.loop(pm);
+    spectator.setFrozen(true);
+    
+    when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.WATCHING, ""));
+    assertSpectatingUntil(pm, player1.getPlayer(), settings.getIdleTimeout() * 2);
   }
 
   private void assertSpectatingUntil(PersistenceManager pm, OsuUser player, long until)

@@ -95,6 +95,14 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     try {
       PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
       statusWindow.setQueue(queue.queue);
+      
+      statusWindow.setFrozen(frozen);
+      if (frozen) {
+        updateRemainingTime(pm, queue);
+        transaction.commit();
+        return;
+      }
+      
       Optional<QueuedPlayer> current = queue.currentlySpectating();
       Optional<QueuedPlayer> next = lockNext(pm, queue);
       long time = clock.getTime();
@@ -188,6 +196,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   }
 
   Status status = new Status();
+
+  private boolean frozen = false;
   
   public static double penalty(long defaultSpecDuration, long timePlayed) {
     double quot = Math.min(1, defaultSpecDuration / (double) timePlayed);
@@ -217,10 +227,11 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     }
     
     final long adjustedDrain;
-    if (approval > .75) {
+    if (frozen || (!playing && timePlayed < settings.getDefaultSpecDuration())) {
+      adjustedDrain = 0;
+    } else if (approval > .75) {
       adjustedDrain = -drain;
-    } else if (approval >= .5
-        || (!playing && timePlayed < settings.getDefaultSpecDuration())) {
+    } else if (approval >= .5) {
       adjustedDrain = 0;
     } else if (approval < .25) {
       adjustedDrain = drain * 2;
@@ -744,5 +755,15 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     } finally {
       pm.close();
     }
+  }
+  
+  @Override
+  public synchronized void setFrozen(boolean freeze) {
+    frozen = freeze;
+  }
+
+  @Override
+  public boolean isFrozen() {
+    return frozen;
   }
 }

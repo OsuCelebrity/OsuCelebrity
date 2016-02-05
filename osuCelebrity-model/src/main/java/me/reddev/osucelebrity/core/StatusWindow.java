@@ -27,6 +27,9 @@ public interface StatusWindow {
 
     @Override
     public void setRawApproval(double approval) {}
+
+    @Override
+    public void setFrozen(boolean frozen) {}
   }
 
   /**
@@ -63,4 +66,9 @@ public interface StatusWindow {
    * Reports the current queue.
    */
   public void setQueue(List<QueuedPlayer> queue);
+
+  /**
+   * Reports whether the spectator is frozen (see {@link Spectator#setFrozen(boolean)}).
+   */
+  public abstract void setFrozen(boolean frozen);
 }
