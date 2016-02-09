@@ -22,6 +22,7 @@ import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -152,14 +153,18 @@ public class OsuRobot {
       }
       screenshot.release();
     } catch (Exception e) {
-      log.error("exception while trying to find");
+      log.error("exception while trying to find", e);
     }
   }
 
   private IplImage getScreenshot(Rectangle region) throws IOException {
     BufferedImage bufferedScreenshot = toGrayScale(robot.createScreenCapture(region));
     // writing this image is very fast, so I'd like to keep it for adjusting offsets
-    ImageIO.write(bufferedScreenshot, "BMP", new File("screenshot.bmp"));
+    try {
+      ImageIO.write(bufferedScreenshot, "BMP", new File("screenshot.bmp"));
+    } catch (Exception e) {
+      log.debug("error writing screenshot", e);
+    }
 
     Java2DFrameConverter converter1 = new Java2DFrameConverter();
     ToIplImage converter2 = new ToIplImage();
