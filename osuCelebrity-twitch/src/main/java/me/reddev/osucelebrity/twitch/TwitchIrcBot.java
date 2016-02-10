@@ -95,8 +95,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     handlers.add(createHandler(true, this::handleBannedMapsFilter, Commands.ADD_BANNED_MAPS_FILTER));
     handlers.add(createHandler(true, this::handleGameMode, Commands.GAME_MODE));
     handlers.add(createHandler(true, this::handleExtend, Commands.EXTEND));
-    handlers.add(this::handleFreeze);
-    handlers.add(this::handleUnfreeze);
+    handlers.add(createHandler(true, this::handleFreeze, Commands.FREEZE));
+    handlers.add(createHandler(true, this::handleUnfreeze, Commands.UNFREEZE));
   }
 
   @Override
@@ -327,28 +327,14 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     spectator.extendConditional(pm, targetUser);
   }
 
-  boolean handleFreeze(MessageEvent<PircBotX> event, String message,
+  void handleFreeze(MessageEvent<PircBotX> event, String message,
       String twitchUserName, PersistenceManager pm) throws UserException, IOException {
-    if (Commands.detect(message, Commands.FREEZE) == null) {
-      return false;
-    }
-    requireMod(event);
-
     spectator.setFrozen(true);
-    
-    return true;
   }
 
-  boolean handleUnfreeze(MessageEvent<PircBotX> event, String message,
+  void handleUnfreeze(MessageEvent<PircBotX> event, String message,
       String twitchUserName, PersistenceManager pm) throws UserException, IOException {
-    if (Commands.detect(message, Commands.UNFREEZE) == null) {
-      return false;
-    }
-    requireMod(event);
-
     spectator.setFrozen(false);
-    
-    return true;
   }
 
   @Override 
@@ -397,7 +383,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       if (requiresMod) {
         requireMod(event);
       }
-      log.debug("{} invokes {}", twitchUserName, remainingMessage);
+      log.debug("{} invokes {}", twitchUserName, message);
       handler.handle(event, remainingMessage, twitchUserName, pm);
       return true;
     };
