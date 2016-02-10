@@ -70,6 +70,12 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
         PersistenceManager pm) throws UserException, IOException, InterruptedException;
   }
 
+  @FunctionalInterface
+  interface ConfirmedCommandHandler {
+    void handle(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+        PersistenceManager pm) throws UserException, IOException, InterruptedException;
+  }
+  
   /*
    * Injected
    */
@@ -91,17 +97,17 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   Map<Integer, BlockingQueue<PollStatusConsumer>> statusConsumers = new ConcurrentHashMap<>();
 
   {
-    handlers.add(this::handlePosition);
-    handlers.add(this::handleSelfPosition);
-    handlers.add(this::handleQueue);
-    handlers.add(this::handleSelfQueue);
-    handlers.add(this::handleSkip);
+    handlers.add(createHandler(this::handlePosition, POSITION));
+    handlers.add(createHandler(this::handleSelfPosition, SELFPOSITION));
+    handlers.add(createHandler(this::handleQueue, QUEUE));
+    handlers.add(createHandler(this::handleSelfQueue, SELFQUEUE));
+    handlers.add(createHandler(this::handleSkip, FORCESKIP));
     handlers.add(this::handleMute);
     handlers.add(this::handleOpt);
-    handlers.add(this::handleSpec);
-    handlers.add(this::handleGameMode);
-    handlers.add(this::handleRestartClient);
-    handlers.add(this::handleMod);
+    handlers.add(createHandler(this::handleSpec, FORCESPEC));
+    handlers.add(createHandler(this::handleGameMode, GAME_MODE));
+    handlers.add(createHandler(this::handleRestartClient, Commands.RESTART_CLIENT));
+    handlers.add(createHandler(this::handleMod, Commands.MOD));
   }
 
   /**
@@ -248,16 +254,24 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     }
   }
 
-  boolean handleQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+  CommandHandler createHandler(ConfirmedCommandHandler handler,
+      String... triggers) {
+    return (event, message, user, pm) -> {
+      String remainingMessage = Commands.detect(message, triggers);
+      if (remainingMessage == null) {
+        return false;
+      }
+      log.debug("{} invokes {}", user.getUserName(), message);
+      handler.handle(event, remainingMessage, user, pm);
+      return true;
+    };
+  }
+  
+  void handleQueue(PrivateMessageEvent<PircBotX> event, String queueTarget, OsuUser user,
       PersistenceManager pm) throws IOException, UserException {
-    String queueTarget = Commands.detect(message, QUEUE);
-    if (queueTarget == null) {
-      return false;
-    } else {
-      // Permits: !spec username : reason
-      // Example: !spec Tillerino: for awesomeness Keepo
-      queueTarget = queueTarget.split(":")[0].trim();
-    }
+    // Permits: !spec username : reason
+    // Example: !spec Tillerino: for awesomeness Keepo
+    queueTarget = queueTarget.split(":")[0].trim();
 
     OsuUser requestedUser = osuApi.getUser(queueTarget, pm, 60 * 60 * 1000);
     if (requestedUser == null) {
@@ -266,19 +280,12 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     QueuedPlayer queueRequest = new QueuedPlayer(requestedUser, QueueSource.OSU, clock.getTime());
     spectator.performEnqueue(pm, queueRequest, "osu:" + user.getUserId(), log,
         msg -> respond(event, msg), msg -> respond(event, msg));
-    return true;
   }
 
-  boolean handleSpec(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+  void handleSpec(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, FORCESPEC)) {
-      return false;
-    }
-    message = message.substring(FORCESPEC.length());
-    
     if (!user.getPrivilege().canSkip) {
-      respond(event, "not allowed");
-      return true;
+      throw new UserException("not allowed");
     }
     
     OsuUser target = osuApi.getUser(message, pm, 0);
@@ -287,14 +294,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
         respond(event, "spectating " + target.getUserName());
       }
     }
-    return true;
   }
 
-  boolean handleSelfQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+  void handleSelfQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws IOException {
-    if (!message.equalsIgnoreCase(SELFQUEUE)) {
-      return false;
-    }
     QueuedPlayer queueRequest = new QueuedPlayer(user, QueueSource.OSU, clock.getTime());
     EnqueueResult result = spectator.enqueue(pm, queueRequest, true, null, true);
     if (result == EnqueueResult.SUCCESS) {
@@ -302,24 +305,18 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     } else if (result == EnqueueResult.FAILURE) {
       respond(event, Responses.SELF_QUEUE_UNSUCCESSFU);
     }
-    return true;
   }
 
-  boolean handleSkip(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+  void handleSkip(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, FORCESKIP)) {
-      return false;
-    }
     if (!user.getPrivilege().canSkip) {
       throw new UserException("Unauthorized to skip.");
     }
-    message = message.substring(FORCESKIP.length());
     if (spectator.advanceConditional(pm, message)) {
       respond(event, "Skipped.");
     } else {
       respond(event, "Not skipped.");
     }
-    return true;
   }
   
   boolean handleMute(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
@@ -354,34 +351,26 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     return false;
   }
   
-  boolean handlePosition(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+  void handlePosition(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, POSITION)) {
-      return false;
-    }
     message = message.substring(POSITION.length());
     OsuUser requestedUser = osuApi.getUser(message, pm, 60 * 60 * 1000);
-    if (requestedUser != null) {
-      int position = spectator.getQueuePosition(pm, requestedUser);
-      if (position != -1) {
-        respond(event, String.format(OsuResponses.POSITION, 
-            requestedUser.getUserName(), position));
-      } else {
-        respond(event, String.format(OsuResponses.NOT_IN_QUEUE, 
-            requestedUser.getUserName()));
-      }
-      return true;
+    if (requestedUser == null) {
+      return;
     }
     
-    return false;
+    int position = spectator.getQueuePosition(pm, requestedUser);
+    if (position != -1) {
+      respond(event, String.format(OsuResponses.POSITION, 
+          requestedUser.getUserName(), position));
+    } else {
+      respond(event, String.format(OsuResponses.NOT_IN_QUEUE, 
+          requestedUser.getUserName()));
+    }
   }
   
-  boolean handleSelfPosition(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+  void handleSelfPosition(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, SELFPOSITION)) {
-      return false;
-    }
-    
     int position = spectator.getQueuePosition(pm, user);
     if (position != -1) {
       respond(event, String.format(OsuResponses.POSITION, 
@@ -390,17 +379,10 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       respond(event, String.format(OsuResponses.NOT_IN_QUEUE, 
           user.getUserName()));
     }
-    return true;
   }
   
-  boolean handleGameMode(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+  void handleGameMode(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
-    if (!StringUtils.startsWithIgnoreCase(message, GAME_MODE)) {
-      return false;
-    }
-    
-    message = message.substring(GAME_MODE.length());
-    
     if (message.equalsIgnoreCase("osu")) {
       user.setGameMode(GameModes.OSU);
     } else if (message.equalsIgnoreCase("taiko")) {
@@ -410,35 +392,23 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     } else if (message.equalsIgnoreCase("mania")) {
       user.setGameMode(GameModes.MANIA);
     } else {
-      return false;
+      throw new UserException("Unknown game mode.");
     }
     
     respond(event, Responses.GAME_MODE_CHANGED);
-    return true;
   }
   
-  boolean handleRestartClient(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+  void handleRestartClient(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException, InterruptedException {
-    if (!message.equalsIgnoreCase(Commands.RESTART_CLIENT)) {
-      return false;
-    }
-    
     if (!user.getPrivilege().canRestartClient) {
       throw new UserException("not allowed");
     }
     
     osu.restartClient();
-    return true;
   }
   
-  boolean handleMod(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+  void handleMod(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException, InterruptedException {
-    if (!StringUtils.startsWithIgnoreCase(message, Commands.MOD)) {
-      return false;
-    }
-    
-    message = message.substring(Commands.MOD.length());
-    
     if (!user.getPrivilege().canMod) {
       throw new UserException("not allowed");
     }
@@ -450,8 +420,6 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     target.setPrivilege(Privilege.MOD);
     
     respond(event, "modded");
-    
-    return true;
   }
 
   @Override
