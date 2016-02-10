@@ -1,5 +1,12 @@
 package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.OsuResponses;
+
+import me.reddev.osucelebrity.twitch.QTwitchUser;
+import me.reddev.osucelebrity.JdoQueryUtil;
+import me.reddev.osucelebrity.twitch.TwitchUser;
+import me.reddev.osucelebrity.twitchapi.TwitchApiUser;
+import org.tillerino.osuApiModel.OsuApiUser;
 import org.pircbotx.output.OutputIRC;
 import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
@@ -22,7 +29,6 @@ import java.util.HashSet;
 import org.pircbotx.hooks.events.ServerResponseEvent;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-
 import me.reddev.osucelebrity.AbstractJDOTest;
 import me.reddev.osucelebrity.Privilege;
 import me.reddev.osucelebrity.Responses;
@@ -366,5 +372,60 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     verify(consumer).accept(any(), any());
     
     assertTrue(ircBot.statusConsumers.get(tillerino.getUserId()).isEmpty());
+  }
+  
+  @Test
+  public void testLink() throws Exception {
+    {
+      TwitchApiUser twitchApiUser = new TwitchApiUser();
+      TwitchUser twitchUser = new TwitchUser(twitchApiUser);
+      twitchUser.setLinkString("<LINKSTRING>");
+      
+      pm.makePersistent(twitchUser);
+    }
+    
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!link <LINKSTRING>"));
+
+    // there is only on twitch user, so we can grab anything.
+    TwitchUser twitchUser =
+        JdoQueryUtil.getUnique(pmf.getPersistenceManager(), QTwitchUser.twitchUser).get();
+    assertEquals(osuIrcUser, twitchUser.getOsuUser());
+    assertNull(twitchUser.getLinkString());
+  }
+  
+  @Test
+  public void testLinkNotFound() throws Exception {
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!link <LINKSTRING>"));
+
+    verify(outputUser).message(OsuResponses.UNKNOWN_LINK);
+  }
+  
+  @Test
+  public void testLinkDuplication() throws Exception {
+    {
+      // create request
+      TwitchApiUser twitchApiUser = new TwitchApiUser();
+      TwitchUser twitchUser = new TwitchUser(twitchApiUser);
+      twitchUser.setLinkString("<LINKSTRING>");
+      
+      pm.makePersistent(twitchUser);
+    }
+    
+    {
+      // create linked account
+      TwitchApiUser twitchApiUser = new TwitchApiUser();
+      twitchApiUser.setId(1);
+      TwitchUser twitchUser = new TwitchUser(twitchApiUser);
+      twitchUser.setOsuUser(osuIrcUser);
+      
+      pm.makePersistent(twitchUser);
+    }
+    
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!link <LINKSTRING>"));
+
+    verify(outputUser).message(OsuResponses.ALREADY_LINKED);
   }
 }

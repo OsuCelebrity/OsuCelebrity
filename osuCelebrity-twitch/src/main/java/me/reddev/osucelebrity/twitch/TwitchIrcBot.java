@@ -14,6 +14,7 @@ import me.reddev.osucelebrity.core.Clock;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
+import me.reddev.osucelebrity.core.Trust;
 import me.reddev.osucelebrity.core.VoteType;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
@@ -34,6 +35,7 @@ import org.tillerino.osuApiModel.GameModes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -73,6 +75,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   private final Clock clock;
   
   private final TwitchWhisperBot whisperBot;
+  
+  private final Trust trust;
+  
+  private final Twitch twitch;
 
   PircBotX bot;
 
@@ -85,6 +91,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     handlers.add(this::handleVote);
     handlers.add(createHandler(false, this::handlePosition, Commands.POSITION));
     handlers.add(createHandler(false, this::handleNowPlaying, Commands.NOW_PLAYING));
+    handlers.add(createHandler(false, this::handleLink, Commands.START_LINK));
     
     // MOD COMMANDS
     handlers.add(createHandler(true, this::handleAdvance, Commands.FORCESKIP));
@@ -180,6 +187,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
   void handleQueue(MessageEvent<PircBotX> event, String targetUser, String requesterNick,
       PersistenceManager pm) throws UserException, IOException {
+    checkTrust(pm, requesterNick);
+    
     // Permits: !spec username : reason
     // Example: !spec Tillerino: for awesomeness Keepo
     targetUser = targetUser.split(":")[0].trim();
@@ -189,6 +198,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
         new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
     spectator.performEnqueue(pm, queueRequest, "twitch:" + requesterNick, log, event::respond,
         msg -> whisperBot.whisper(requesterNick, msg));
+  }
+
+  void checkTrust(PersistenceManager pm, String subject) throws IOException, UserException {
+    trust.checkTrust(pm, twitch.getUser(pm, subject, 60 * 1000L));
   }
 
   boolean handleVote(MessageEvent<PircBotX> event, String message, String twitchUserName,
@@ -203,6 +216,9 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (type == null) {
       return false;
     }
+
+    checkTrust(pm, twitchUserName);
+
     spectator.vote(pm, twitchUserName, type);
     return true;
   }
@@ -335,6 +351,20 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   void handleUnfreeze(MessageEvent<PircBotX> event, String message,
       String twitchUserName, PersistenceManager pm) throws UserException, IOException {
     spectator.setFrozen(false);
+  }
+  
+  void handleLink(MessageEvent<PircBotX> event, String message,
+      String twitchUserName, PersistenceManager pm) throws UserException, IOException {
+    TwitchUser user = twitch.getUser(pm, twitchUserName, 0L);
+    
+    if (user.getOsuUser() != null) {
+      throw new UserException("Your account is already linked.");
+    }
+    
+    user.setLinkString(UUID.randomUUID().toString());
+    
+    whisperBot.whisper(twitchUserName,
+        String.format(TwitchResponses.LINK_INSTRUCTIONS, user.getLinkString()));
   }
 
   @Override 

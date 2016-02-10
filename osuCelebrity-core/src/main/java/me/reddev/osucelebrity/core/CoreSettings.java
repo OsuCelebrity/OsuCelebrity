@@ -26,4 +26,6 @@ public interface CoreSettings {
   long getMaxLastActivity();
   
   int getShortQueueLength();
+  
+  long getTwitchTrustAccountAge();
 }

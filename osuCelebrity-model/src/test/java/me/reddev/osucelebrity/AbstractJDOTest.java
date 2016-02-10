@@ -3,23 +3,26 @@ package me.reddev.osucelebrity;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.mockito.MockitoAnnotations;
-import org.mockito.Mock;
+import me.reddev.osucelebrity.core.BannedFilter;
 import me.reddev.osucelebrity.core.Clock;
 import me.reddev.osucelebrity.core.MockClock;
+import me.reddev.osucelebrity.core.QueueVote;
+import me.reddev.osucelebrity.core.QueuedPlayer;
+import me.reddev.osucelebrity.core.Vote;
+import me.reddev.osucelebrity.osu.OsuIrcUser;
+import me.reddev.osucelebrity.osu.OsuUser;
+import me.reddev.osucelebrity.osu.PlayerActivity;
+import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.MockOsuApi;
 import me.reddev.osucelebrity.osuapi.OsuApi;
-import me.reddev.osucelebrity.core.BannedFilter;
-import me.reddev.osucelebrity.core.QueueVote;
-import me.reddev.osucelebrity.osu.OsuIrcUser;
-import me.reddev.osucelebrity.osuapi.ApiUser;
-import me.reddev.osucelebrity.osu.OsuUser;
-import me.reddev.osucelebrity.core.Vote;
-import me.reddev.osucelebrity.osu.PlayerActivity;
-import me.reddev.osucelebrity.core.QueuedPlayer;
+import me.reddev.osucelebrity.twitch.TwitchUser;
+import me.reddev.osucelebrity.twitchapi.TwitchApiUser;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -30,8 +33,6 @@ import java.util.concurrent.ExecutorService;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
-
-import org.junit.After;
 
 
 public abstract class AbstractJDOTest {
@@ -95,7 +96,9 @@ public abstract class AbstractJDOTest {
     pm.getExtent(PlayerActivity.class).forEach(pm::deletePersistent);
     pm.getExtent(OsuIrcUser.class).forEach(pm::deletePersistent);
     pm.getExtent(ApiUser.class).forEach(pm::deletePersistent);
+    pm.getExtent(TwitchUser.class).forEach(pm::deletePersistent);
     pm.getExtent(OsuUser.class).forEach(pm::deletePersistent);
+    pm.getExtent(TwitchApiUser.class).forEach(pm::deletePersistent);
     pm.close();
   }
 

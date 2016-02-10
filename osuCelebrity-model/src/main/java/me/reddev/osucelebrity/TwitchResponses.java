@@ -22,4 +22,12 @@ public class TwitchResponses extends Responses {
   public static final String ADDED_BANNED_MAPS_FILTER = "Filter added.";
   
   public static final String BOOST_QUEUE = "%s was boosted to the front of the queue by %s.";
+  
+  public static final String UNTRUSTED = "Your twitch account has been flagged as suspicious"
+      + " by a routine check. This is no cause for concern, but we kindly ask you to link"
+      + " your twitch account to you osu! account using the !link command."
+      + " We apologize for the inconvience.";
+
+  public static final String LINK_INSTRUCTIONS = "To link your account, please login to osu!"
+      + " and send the following command to the player OsuCelebrity: !link %s";
 }

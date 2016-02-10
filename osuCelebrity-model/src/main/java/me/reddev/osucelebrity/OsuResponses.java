@@ -65,4 +65,12 @@ public class OsuResponses extends Responses {
    * After the player has finished playing.
    */
   public static final String STATISTICS = "Your session statistics: %d danks, %d skips.";
+  
+  /*
+   * ACCOUNT LINKING
+   */
+  public static final String LINKED = "Your osu! account has been linked to the twitch account %s.";
+  public static final String ALREADY_LINKED = "Your osu! account is already linked"
+      + " to a twitch account.";
+  public static final String UNKNOWN_LINK = "Link string not found.";
 }

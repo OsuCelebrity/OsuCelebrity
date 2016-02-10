@@ -36,10 +36,10 @@ public class UserException extends Exception {
       // no need to log this
       messager.accept(e.getMessage());
     } catch (SocketTimeoutException e) {
-      log.debug("Osu API timeout.", e);
+      log.debug("API timeout.", e);
       messager.accept(Responses.EXCEPTION_TIMEOUT);
     } catch (IOException e) {
-      log.error("Osu API exception.", e);
+      log.error("API exception.", e);
       messager.accept(Responses.EXCEPTION_IO);
     } catch (Exception e) {
       log.error("exception", e);

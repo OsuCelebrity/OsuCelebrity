@@ -10,6 +10,8 @@ import me.reddev.osucelebrity.core.SpectatorImpl;
 import me.reddev.osucelebrity.core.StatusWindow;
 import me.reddev.osucelebrity.core.StatusWindowImpl;
 import me.reddev.osucelebrity.core.SystemClock;
+import me.reddev.osucelebrity.core.Trust;
+import me.reddev.osucelebrity.core.TrustImpl;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuApiImpl;
 import me.reddev.osucelebrity.osu.OsuApplication;
@@ -73,6 +75,7 @@ public class OsuCelebrityModule extends AbstractModule {
     bind(Osu.class).to(OsuImpl.class).in(Singleton.class);
     bind(Twitch.class).to(TwitchImpl.class).in(Singleton.class);
     bind(TwitchApi.class).to(TwitchApiImpl.class).in(Singleton.class);
+    bind(Trust.class).to(TrustImpl.class).in(Singleton.class);
 
     bind(OsuIrcBot.class).in(Singleton.class);
     bind(TwitchIrcBot.class).in(Singleton.class);

@@ -1,5 +1,10 @@
 package me.reddev.osucelebrity.twitch;
 
+import me.reddev.osucelebrity.TwitchResponses;
+
+import org.mockito.Spy;
+import me.reddev.osucelebrity.UserException;
+import me.reddev.osucelebrity.core.Trust;
 import org.tillerino.osuApiModel.GameModes;
 import static org.junit.Assert.*;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
@@ -59,6 +64,18 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   ListenerManager<PircBotX> listenerManager;
   @Mock
   TwitchApi twitchApi;
+  @Mock
+  Trust trust;
+  @Mock
+  Twitch twitch;
+
+  @Spy
+  TwitchWhisperBot whisperBot = new TwitchWhisperBot(null, null) {
+    @Override
+    public void whisper(String username, String message) {
+      // do Nothing
+    }
+  };
 
   TwitchIrcBot ircBot;
 
@@ -76,12 +93,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
     ircBot =
         new TwitchIrcBot(settings, osuApi, twitchApi, osu, pmf, spectator, clock,
-            new TwitchWhisperBot(null, null) {
-              @Override
-              public void whisper(String username, String message) {
-                // do Nothing
-              }
-            });
+            whisperBot, trust, twitch);
   }
 
   QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
@@ -97,6 +109,15 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
         any(),
         eq(new QueuedPlayer(osuApi.getUser("someone", pmf.getPersistenceManagerProxy(), 0),
             QueueSource.TWITCH, 0)), eq("twitch:twitchIrcUser"), any(), any(), any());
+  }
+
+  @Test
+  public void testQueueUntrusted() throws Exception {
+    doThrow(new UserException("")).when(trust).checkTrust(any(), any());
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!spec someone"));
+
+    verifyZeroInteractions(spectator);
   }
 
   @Test
@@ -125,6 +146,15 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!dank"));
 
     verify(spectator).vote(any(), eq("twitchIrcUser"), eq(VoteType.UP));
+  }
+
+  @Test
+  public void testDankUntrusted() throws Exception {
+    doThrow(new UserException("")).when(trust).checkTrust(any(), any());
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!dank"));
+
+    verifyZeroInteractions(spectator);
   }
 
   @Test
@@ -262,5 +292,34 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!unfreeze"));
 
     verify(spectator).setFrozen(false);
+  }
+  
+  @Test
+  public void testLink() throws Exception {
+    // prepare the object and make Twitch return the object
+    TwitchUser userObject = new TwitchUser(null);
+    assertNull(userObject.getLinkString());
+    when(twitch.getUser(any(), eq("twitchIrcUser"), anyLong())).thenReturn(userObject);
+
+    // invoke command
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!link"));
+
+    // verify that a link string has been set and that it was whispered to the user
+    assertNotNull(userObject.getLinkString());
+    verify(whisperBot).whisper(eq("twitchIrcUser"), contains(userObject.getLinkString()));
+  }
+  
+  @Test
+  public void testLinked() throws Exception {
+    // prepare the object, link it to an osu! account and make Twitch return the object
+    TwitchUser userObject = new TwitchUser(null);
+    userObject.setOsuUser(osuUser);
+    when(twitch.getUser(any(), eq("twitchIrcUser"), anyLong())).thenReturn(userObject);
+
+    // invoke command
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!link"));
+
+    // verify that no link string has been set
+    assertNull(userObject.getLinkString());
   }
 }

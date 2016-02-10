@@ -11,6 +11,32 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>com.mysema.maven</groupId>
+				<artifactId>apt-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>process</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>target/generated-sources/java</outputDirectory>
+							<processor>org.mapstruct.ap.MappingProcessor</processor>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<configuration>
+					<sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 	<dependencies>
 		<dependency>
 			<groupId>tv.rdbk.osuCelebrity</groupId>
@@ -26,12 +52,16 @@
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
 		<dependency>
-				<groupId>com.github.tillerino</groupId>
-				<artifactId>osu-api-connector</artifactId>
+			<groupId>com.github.tillerino</groupId>
+			<artifactId>osu-api-connector</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.pircbotx</groupId>
 			<artifactId>pircbotx</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct-jdk8</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>tv.rdbk.osuCelebrity</groupId>

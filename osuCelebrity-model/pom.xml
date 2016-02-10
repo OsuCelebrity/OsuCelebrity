@@ -52,7 +52,7 @@
 							<goal>enhance</goal>
 						</goals>
 						<configuration>
-							<fork>false</fork>
+							<log4jConfiguration>${basedir}/src/test/resources/datanucleuslog4j.properties</log4jConfiguration>
 						</configuration>
 					</execution>
 				</executions>

@@ -11,11 +11,14 @@ import static me.reddev.osucelebrity.Commands.QUEUE;
 import static me.reddev.osucelebrity.Commands.SELFPOSITION;
 import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
+import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
+
 import com.google.common.collect.ImmutableList;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.Commands;
+import me.reddev.osucelebrity.JdoQueryUtil;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.Privilege;
 import me.reddev.osucelebrity.Responses;
@@ -28,7 +31,7 @@ import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.OsuApi;
-import org.apache.commons.lang3.StringUtils;
+import me.reddev.osucelebrity.twitch.TwitchUser;
 import org.pircbotx.Configuration;
 import org.pircbotx.Configuration.Builder;
 import org.pircbotx.PircBotX;
@@ -108,6 +111,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     handlers.add(createHandler(this::handleGameMode, GAME_MODE));
     handlers.add(createHandler(this::handleRestartClient, Commands.RESTART_CLIENT));
     handlers.add(createHandler(this::handleMod, Commands.MOD));
+    handlers.add(createHandler(this::handleLink, Commands.FINISH_LINK));
   }
 
   /**
@@ -420,6 +424,32 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     target.setPrivilege(Privilege.MOD);
     
     respond(event, "modded");
+  }
+  
+  void handleLink(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
+      PersistenceManager pm) throws UserException, IOException {
+    final TwitchUser userObject =
+        JdoQueryUtil.getUnique(pm, twitchUser, twitchUser.linkString.eq(message)).orElseThrow(
+            () -> new UserException(OsuResponses.UNKNOWN_LINK));
+    
+    if (JdoQueryUtil.getUnique(pm, twitchUser, twitchUser.osuUser.eq(user)).isPresent()) {
+      throw new UserException(OsuResponses.ALREADY_LINKED);
+    }
+    
+    // the twitch side makes sure that a twitch account can't be linked twice.
+    pm.currentTransaction().begin();
+    try {
+      userObject.setOsuUser(user);
+      userObject.setLinkString(null);
+      pm.currentTransaction().commit();
+    } finally {
+      if (pm.currentTransaction().isActive()) {
+        pm.currentTransaction().rollback();
+      }
+    }
+    
+    respond(event, String.format(OsuResponses.LINKED,
+        userObject.getUser().getDisplayName()));
   }
 
   @Override

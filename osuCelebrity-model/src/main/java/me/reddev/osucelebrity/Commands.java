@@ -25,6 +25,8 @@ public class Commands {
   public static final String EXTEND = "extend ";
   public static final String FREEZE = "freeze";
   public static final String UNFREEZE = "unfreeze";
+  public static final String START_LINK = "link";
+  public static final String FINISH_LINK = "link ";
   
   /**
    * Detects a command in an incoming message.
