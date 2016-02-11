@@ -357,7 +357,6 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   
   void handlePosition(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
-    message = message.substring(POSITION.length());
     OsuUser requestedUser = osuApi.getUser(message, pm, 60 * 60 * 1000);
     if (requestedUser == null) {
       return;
