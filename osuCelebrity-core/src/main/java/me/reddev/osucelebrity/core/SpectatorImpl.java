@@ -115,8 +115,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
         SkipReason shouldSkip = status.shouldSkip(pm, current.get());
         if (shouldSkip != null) {
           if (advance(pm, queue)) {
-            detachAndSchedule(exec, log, pm, twitch::announcePlayerSkipped, shouldSkip, current
-                .get().getPlayer());
+            detachAndSchedule(exec, log, pm, twitch::announceAdvance, shouldSkip, current
+                .get().getPlayer(), queue.currentlySpectating().get().getPlayer());
           }
         } else {
           if (queue.spectatingUntil() <= time) {
@@ -768,7 +768,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
         && status.lastStatus.getType() == Type.PLAYING
         && status.lastStatus.getDetail().startsWith(startsWith)) {
       if (advance(pm, queue)) {
-        twitch.announcePlayerSkipped(SkipReason.BANNED_MAP, current.get().getPlayer());
+        twitch.announceAdvance(SkipReason.BANNED_MAP, current.get().getPlayer(), queue
+            .currentlySpectating().get().getPlayer());
       }
     }
   }

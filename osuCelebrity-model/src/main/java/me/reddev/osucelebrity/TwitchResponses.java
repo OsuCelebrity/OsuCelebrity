@@ -7,11 +7,11 @@ package me.reddev.osucelebrity;
 public class TwitchResponses extends Responses {
   public static final String INVALID_FORMAT_QUEUE = "Expected !queue {username}";
 
-  public static final String SKIPPED_OFFLINE = "It appears %s is offline.";
+  public static final String SKIPPED_OFFLINE = " (%s was offline)";
 
-  public static final String SKIPPED_IDLE = "%s isn't doing anything. Let's move on.";
+  public static final String SKIPPED_IDLE = " (%s was idle)";
 
-  public static final String BANNED_MAP = "%s was playing a banned beatmap.";
+  public static final String BANNED_MAP = " (%s was playing a banned beatmap)";
 
   public static final String SKIPPED_FORCE = "%s was skipped by %s.";
 
@@ -30,4 +30,8 @@ public class TwitchResponses extends Responses {
 
   public static final String LINK_INSTRUCTIONS = "To link your account, please login to osu!"
       + " and send the following command to the player OsuCelebrity: !link %s";
+  
+  public static final String NEW_SPECTATEE = "NOW SPECTATING: %s";
+  
+  public static final String OLD_SPECTATEE = " | Thanks for playing, %s!";
 }

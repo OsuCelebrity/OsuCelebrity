@@ -362,7 +362,8 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.enqueue(pm, getUser(pm, "user1"), false);
     QueuedPlayer player2 = getUser(pm, "user2");
     spectator.enqueue(pm, player2, false);
-    spectator.enqueue(pm, getUser(pm, "user3"), false);
+    QueuedPlayer player3 = getUser(pm, "user3");
+    spectator.enqueue(pm, player3, false);
 
     when(osu.getClientStatus()).thenReturn(null);
     spectator.loop(pm);
@@ -401,14 +402,15 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     assertEquals("user3", spectator.getCurrentPlayer(pm).getPlayer().getUserName());
 
-    verify(twitch).announcePlayerSkipped(SkipReason.OFFLINE, player2.getPlayer());
+    verify(twitch).announceAdvance(SkipReason.OFFLINE, player2.getPlayer(), player3.getPlayer());
   }
 
   @Test
   public void testPlayerIdle() throws Exception {
     QueuedPlayer player1 = getUser(pm, "user1");
     spectator.enqueue(pm, player1, false);
-    spectator.enqueue(pm, getUser(pm, "user2"), false);
+    QueuedPlayer player2 = getUser(pm, "user2");
+    spectator.enqueue(pm, player2, false);
     spectator.loop(pm);
 
     when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.WATCHING, ""));
@@ -418,7 +420,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     assertEquals("user2", spectator.getCurrentPlayer(pm).getPlayer().getUserName());
 
-    verify(twitch).announcePlayerSkipped(SkipReason.IDLE, player1.getPlayer());
+    verify(twitch).announceAdvance(SkipReason.IDLE, player1.getPlayer(), player2.getPlayer());
   }
 
   @Test

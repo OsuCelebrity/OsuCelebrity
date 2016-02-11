@@ -36,16 +36,23 @@ public class TwitchImpl implements Twitch {
   }
 
   @Override
-  public void announcePlayerSkipped(SkipReason reason, OsuUser player) {
+  public void announceAdvance(SkipReason reason, OsuUser oldPlayer, OsuUser newPlayer) {
+    String message = String.format(TwitchResponses.NEW_SPECTATEE, newPlayer.getUserName());
+    
     if (reason == SkipReason.OFFLINE) {
-      bot.sendMessage(String.format(TwitchResponses.SKIPPED_OFFLINE, player.getUserName()));
+      message += String.format(TwitchResponses.SKIPPED_OFFLINE, oldPlayer.getUserName());
     }
     if (reason == SkipReason.IDLE) {
-      bot.sendMessage(String.format(TwitchResponses.SKIPPED_IDLE, player.getUserName()));
+      message += String.format(TwitchResponses.SKIPPED_IDLE, oldPlayer.getUserName());
     }
     if (reason == SkipReason.BANNED_MAP) {
-      bot.sendMessage(String.format(TwitchResponses.BANNED_MAP, player.getUserName()));
+      message += String.format(TwitchResponses.BANNED_MAP, oldPlayer.getUserName());
     }
+    if (reason == null && oldPlayer != null) {
+      message += String.format(TwitchResponses.OLD_SPECTATEE, oldPlayer.getUserName());
+    }
+    
+    bot.sendMessage(message);
   }
 
   @Override

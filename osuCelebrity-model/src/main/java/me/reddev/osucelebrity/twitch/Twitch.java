@@ -6,13 +6,15 @@ import me.reddev.osucelebrity.osu.OsuUser;
 
 import java.io.IOException;
 
+import javax.annotation.CheckForNull;
 import javax.jdo.PersistenceManager;
 
 @PassAndReturnNonnull
 public interface Twitch {
   public void whisperUser(String nick, String message);
 
-  public void announcePlayerSkipped(SkipReason reason, OsuUser player);
+  public void announceAdvance(@CheckForNull SkipReason reason, @CheckForNull OsuUser oldPlayer,
+      OsuUser newPlayer);
 
   /**
    * Retrieves a twitch user from the database or creates a new one.
