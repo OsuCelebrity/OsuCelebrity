@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.core.QueueVote;
+
 import static me.reddev.osucelebrity.Commands.FORCESKIP;
 import static me.reddev.osucelebrity.Commands.FORCESPEC;
 import static me.reddev.osucelebrity.Commands.GAME_MODE;
@@ -14,6 +16,7 @@ import static me.reddev.osucelebrity.Commands.UNMUTE;
 import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
 
 import com.google.common.collect.ImmutableList;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -282,7 +285,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       throw new UserException(String.format(OsuResponses.INVALID_USER, queueTarget));
     }
     QueuedPlayer queueRequest = new QueuedPlayer(requestedUser, QueueSource.OSU, clock.getTime());
-    spectator.performEnqueue(pm, queueRequest, "osu:" + user.getUserId(), log,
+    spectator.performEnqueue(pm, queueRequest, QueueVote.OSU + user.getUserId(), log,
         msg -> respond(event, msg), msg -> respond(event, msg));
   }
 
@@ -303,7 +306,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   void handleSelfQueue(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws IOException {
     QueuedPlayer queueRequest = new QueuedPlayer(user, QueueSource.OSU, clock.getTime());
-    EnqueueResult result = spectator.enqueue(pm, queueRequest, true, null, true);
+    EnqueueResult result =
+        spectator.enqueue(pm, queueRequest, true, QueueVote.OSU + user.getUserId(), true);
     if (result == EnqueueResult.SUCCESS) {
       respond(event, Responses.SELF_QUEUE_SUCCESSFUL);
     } else if (result == EnqueueResult.FAILURE) {

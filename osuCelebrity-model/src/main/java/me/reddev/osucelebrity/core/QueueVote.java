@@ -20,6 +20,9 @@ public class QueueVote {
   
   private String twitchUser;
 
+  public static final String TWITCH = "twitch:";
+  public static final String OSU = "osu:";
+
   /**
    * Constructs a new vote for a queued player.
    * @param reference the queued player.

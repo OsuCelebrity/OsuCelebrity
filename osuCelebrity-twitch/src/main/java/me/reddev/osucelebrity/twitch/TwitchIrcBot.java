@@ -1,8 +1,9 @@
 package me.reddev.osucelebrity.twitch;
 
+import me.reddev.osucelebrity.core.QueueVote;
+
 import static me.reddev.osucelebrity.Commands.DOWNVOTE;
 import static me.reddev.osucelebrity.Commands.UPVOTE;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.Commands;
@@ -196,8 +197,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     OsuUser requestedUser = getUserOrThrow(pm, targetUser);
     QueuedPlayer queueRequest =
         new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
-    spectator.performEnqueue(pm, queueRequest, "twitch:" + requesterNick, log, event::respond,
-        msg -> whisperBot.whisper(requesterNick, msg));
+    spectator.performEnqueue(pm, queueRequest, QueueVote.TWITCH + requesterNick, log,
+        event::respond, msg -> whisperBot.whisper(requesterNick, msg));
   }
 
   void checkTrust(PersistenceManager pm, String subject) throws IOException, UserException {

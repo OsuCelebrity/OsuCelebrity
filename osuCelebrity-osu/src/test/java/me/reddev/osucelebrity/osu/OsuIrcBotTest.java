@@ -103,13 +103,14 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testSelfQueue() throws Exception {
-    when(spectator.enqueue(any(), any(), eq(true), eq(null), eq(true))).thenReturn(EnqueueResult.SUCCESS);
+    when(spectator.enqueue(any(), any(), eq(true), any(), eq(true))).thenReturn(EnqueueResult.SUCCESS);
 
     ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!spec"));
 
     ArgumentCaptor<QueuedPlayer> captor = ArgumentCaptor.forClass(QueuedPlayer.class);
 
-    verify(spectator, only()).enqueue(any(), captor.capture(), eq(true), eq(null), eq(true));
+    verify(spectator, only()).enqueue(any(), captor.capture(), eq(true),
+        eq("osu:" + osuApi.getUser("osuIrcUser", pm, 0L).getUserId()), eq(true));
 
     QueuedPlayer request = captor.getValue();
     assertEquals("osuIrcUser", request.getPlayer().getUserName());
@@ -389,7 +390,8 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
     // there is only on twitch user, so we can grab anything.
     TwitchUser twitchUser =
-        JdoQueryUtil.getUnique(pmf.getPersistenceManager(), QTwitchUser.twitchUser).get();
+        JdoQueryUtil.getUnique(pmf.getPersistenceManager(), QTwitchUser.twitchUser,
+            QTwitchUser.twitchUser.user.id.eq(0)).get();
     assertEquals(osuIrcUser, twitchUser.getOsuUser());
     assertNull(twitchUser.getLinkString());
   }

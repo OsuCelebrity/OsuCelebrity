@@ -587,8 +587,22 @@ public class SpectatorImplTest extends AbstractJDOTest {
   @Test
   public void testVoteQueue() throws Exception {
     QueuedPlayer user = getUser(pm, "player");
-    assertTrue(spectator.voteQueue(pm, user, "voter"));
-    assertFalse(spectator.voteQueue(pm, user, "voter"));
+    assertTrue(spectator.voteQueue(pm, user, "twitch:voter"));
+    assertFalse(spectator.voteQueue(pm, user, "twitch:voter"));
+  }
+  
+  @Test
+  public void testVotedDuplicateFromTwitch() throws Exception {
+    QueuedPlayer user = getUser(pm, "player");
+    assertTrue(spectator.voteQueue(pm, user, "twitch:" + linkedTwitchUser.getUser().getName()));
+    assertFalse(spectator.voteQueue(pm, user, "osu:" + linkedTwitchUser.getOsuUser().getUserId()));
+  }
+  
+  @Test
+  public void testVotedDuplicateFromOsu() throws Exception {
+    QueuedPlayer user = getUser(pm, "player");
+    assertTrue(spectator.voteQueue(pm, user, "osu:" + linkedTwitchUser.getOsuUser().getUserId()));
+    assertFalse(spectator.voteQueue(pm, user, "twitch:" + linkedTwitchUser.getUser().getName()));
   }
   
   @Test
@@ -635,7 +649,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     queue.doSort(pm);
     assertEquals(Arrays.asList(user1, user2, user3, user4), queue.queue);
 
-    assertTrue(spectator.voteQueue(pm, user4, "twitch4"));
+    assertTrue(spectator.voteQueue(pm, user4, "osu:123"));
     queue.doSort(pm);
     assertEquals(Arrays.asList(user1, user4, user2, user3), queue.queue);
   }

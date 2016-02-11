@@ -5,14 +5,15 @@ import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
 import static me.reddev.osucelebrity.core.QVote.vote;
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
+import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
 import static me.reddev.osucelebrity.util.ExecutorServiceHelper.detachAndSchedule;
 
-import com.google.common.base.Objects;
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.JdoQueryUtil;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.api.CurrentPlayerService;
@@ -27,7 +28,10 @@ import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.Twitch;
+import me.reddev.osucelebrity.twitch.TwitchUser;
 import org.slf4j.Logger;
+
+import com.google.common.base.Objects;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -495,16 +499,40 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     return true;
   }
   
-  boolean voteQueue(PersistenceManager pm, QueuedPlayer player, @Nonnull String twitchUser) {
-    try (JDOQuery<QueueVote> query =
-        new JDOQuery<>(pm).select(queueVote).from(queueVote)
-            .where(queueVote.reference.eq(player), queueVote.twitchUser.eq(twitchUser))) {
-      if (query.fetchOne() != null) {
-        return false;
-      }
-      pm.makePersistent(new QueueVote(player, twitchUser));
-      return true;
+  boolean voteQueue(PersistenceManager pm, QueuedPlayer player, @Nonnull String voter) {
+    if (hasVoted(pm, player, voter)) {
+      return false;
     }
+    if (voter.startsWith(QueueVote.TWITCH)) {
+      Optional<TwitchUser> twitchUserObj =
+          JdoQueryUtil.getUnique(pm, twitchUser,
+              twitchUser.user.name.eq(voter.substring(QueueVote.TWITCH.length())));
+      if (twitchUserObj.isPresent()) {
+        OsuUser osuUser = twitchUserObj.get().getOsuUser();
+        if (osuUser != null) {
+          if (hasVoted(pm, player, QueueVote.OSU + osuUser.getUserId())) {
+            return false;
+          }
+        }
+      }
+    }
+    if (voter.startsWith(QueueVote.OSU)) {
+      Optional<TwitchUser> twitchUserObj =
+          JdoQueryUtil.getUnique(pm, twitchUser, twitchUser.osuUser.userId.eq(Integer.valueOf(voter
+              .substring(QueueVote.OSU.length()))));
+      if (twitchUserObj.isPresent()) {
+        if (hasVoted(pm, player, QueueVote.TWITCH + twitchUserObj.get().getUser().getName())) {
+          return false;
+        }
+      }
+    }
+    pm.makePersistent(new QueueVote(player, voter));
+    return true;
+  }
+
+  private boolean hasVoted(PersistenceManager pm, QueuedPlayer player, String voter) {
+    return JdoQueryUtil.getUnique(pm, queueVote, queueVote.reference.eq(player),
+        queueVote.twitchUser.eq(voter)).isPresent();
   }
 
   @Override

@@ -50,6 +50,8 @@ public abstract class AbstractJDOTest {
   
   protected OsuUser osuUser3;
   
+  protected TwitchUser linkedTwitchUser;
+  
   @Mock
   protected ExecutorService exec;
 
@@ -67,6 +69,15 @@ public abstract class AbstractJDOTest {
     osuUser = osuApi.getUser("defaultUser", pm, 0);
     osuUser2 = osuApi.getUser("defaultUser2", pm, 0);
     osuUser3 = osuApi.getUser("defaultUser3", pm, 0);
+    
+    TwitchApiUser twitchApiUser = new TwitchApiUser();
+    twitchApiUser.setName("linkedtwitchuser");
+    twitchApiUser.setDisplayName("linkedTwitchUser");
+    twitchApiUser.setId(657832);
+    
+    linkedTwitchUser = new TwitchUser(twitchApiUser);
+    linkedTwitchUser.setOsuUser(osuApi.getUser("linkedOsuUser", pm, 0L));
+    pm.makePersistent(linkedTwitchUser);
   }
   @BeforeClass
   public static void createDatastore() {
