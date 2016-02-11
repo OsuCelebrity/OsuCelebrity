@@ -119,6 +119,9 @@ public class OsuRobot {
 
       robot.mousePress(InputEvent.BUTTON1_MASK);
       robot.mouseRelease(InputEvent.BUTTON1_MASK);
+
+      Thread.sleep(100);
+      robot.mouseMove(clickX + 100, clickY + 100);
       return true;
     } catch (RuntimeException e) {
       throw e;
