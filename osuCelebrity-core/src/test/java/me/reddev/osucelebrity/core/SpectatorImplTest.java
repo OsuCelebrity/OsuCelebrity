@@ -74,7 +74,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
   @Test
   public void testEnqueue() throws Exception {
-    assertFalse(spectator.advance(pm, PlayerQueue.loadQueue(pm, clock)));
+    assertNull(spectator.advance(pm, PlayerQueue.loadQueue(pm, clock)));
 
     QueuedPlayer user = getUser(pm, "someplayer");
     assertEquals(EnqueueResult.SUCCESS, spectator.enqueue(pm, user, false, "twitchuser", true));

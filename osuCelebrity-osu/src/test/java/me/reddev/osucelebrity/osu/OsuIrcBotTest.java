@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
+import me.reddev.osucelebrity.twitch.Twitch;
+
 import org.junit.After;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.twitch.QTwitchUser;
@@ -73,6 +75,8 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   OutputIRC ourputIrc;
   @Mock
   Osu osu;
+  @Mock
+  Twitch twitch;
   
   OsuIrcBot ircBot;
   
@@ -96,7 +100,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     
     when(pircBotX.sendIRC()).thenReturn(ourputIrc);
 
-    ircBot = new OsuIrcBot(osu, osuApi, settings, pmf, spectator, clock, new Pinger() {
+    ircBot = new OsuIrcBot(osu, osuApi, settings, pmf, spectator, clock, twitch, new Pinger() {
       @Override
       void ping(PircBotX bot) throws IOException, InterruptedException {
         // do nothing

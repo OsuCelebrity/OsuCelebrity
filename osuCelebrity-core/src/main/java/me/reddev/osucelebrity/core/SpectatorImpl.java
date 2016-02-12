@@ -7,7 +7,6 @@ import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
 import static me.reddev.osucelebrity.util.ExecutorServiceHelper.detachAndSchedule;
-
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -46,6 +45,7 @@ import java.util.function.Consumer;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
@@ -114,24 +114,37 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       if (current.isPresent()) {
         SkipReason shouldSkip = status.shouldSkip(pm, current.get());
         if (shouldSkip != null) {
-          if (advance(pm, queue)) {
+          QueuedPlayer newPlayer = advance(pm, queue);
+          if (newPlayer != null) {
             detachAndSchedule(exec, log, pm, twitch::announceAdvance, shouldSkip, current
-                .get().getPlayer(), queue.currentlySpectating().get().getPlayer());
+                .get().getPlayer(), newPlayer.getPlayer());
           }
         } else {
           if (queue.spectatingUntil() <= time) {
             if (next.isPresent()) {
-              advance(pm, queue);
+              QueuedPlayer newPlayer = advance(pm, queue);
+              if (newPlayer != null) {
+                detachAndSchedule(exec, log, pm, twitch::announceAdvance, shouldSkip, current
+                    .get().getPlayer(), newPlayer.getPlayer());
+              }
             } else {
               if (queue.spectatingUntil() <= time
                   - (settings.getAutoSpecTime() - settings.getDefaultSpecDuration())) {
-                advance(pm, queue);
+                QueuedPlayer newPlayer = advance(pm, queue);
+                if (newPlayer != null) {
+                  detachAndSchedule(exec, log, pm, twitch::announceAdvance, shouldSkip, current
+                      .get().getPlayer(), newPlayer.getPlayer());
+                }
               }
             }
           }
         }
       } else {
-        advance(pm, queue);
+        QueuedPlayer newPlayer = advance(pm, queue);
+        if (newPlayer != null) {
+          detachAndSchedule(exec, log, pm, twitch::announceAdvance, null, null,
+              newPlayer.getPlayer());
+        }
       }
       
       updateRemainingTime(pm, queue);
@@ -375,7 +388,14 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     if (!queue.isCurrent(expectedUser)) {
       return false;
     }
-    return advance(pm, queue);
+    OsuUser oldPlayer = queue.currentlySpectating().get().getPlayer();
+    QueuedPlayer newPlayer = advance(pm, queue);
+    if (newPlayer != null) {
+      detachAndSchedule(exec, log, pm, twitch::announceAdvance, null, oldPlayer,
+          newPlayer.getPlayer());
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -429,7 +449,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     return true;
   }
 
-  boolean advance(PersistenceManager pm, PlayerQueue queue) {
+  @CheckForNull
+  QueuedPlayer advance(PersistenceManager pm, PlayerQueue queue) {
     Optional<QueuedPlayer> current = queue.currentlySpectating();
     Optional<QueuedPlayer> next = queue.spectatingNext();
     if (!next.isPresent()) {
@@ -442,10 +463,10 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       }
     }
     if (!next.isPresent()) {
-      return false;
+      return null;
     }
     startSpectating(pm, queue, next.get());
-    return true;
+    return next.get();
   }
   
   private synchronized void startSpectating(PersistenceManager pm, 
@@ -611,21 +632,23 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   }
 
   @Override
-  public synchronized void removeFromQueue(PersistenceManager pm, OsuUser player) {
+  public synchronized QueuedPlayer removeFromQueue(PersistenceManager pm, OsuUser player) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
-    doRemoveFromQueue(pm, player, queue);
+    return doRemoveFromQueue(pm, player, queue);
   }
 
-  private void doRemoveFromQueue(PersistenceManager pm, OsuUser player, PlayerQueue queue) {
+  @CheckForNull
+  private QueuedPlayer doRemoveFromQueue(PersistenceManager pm, OsuUser player, PlayerQueue queue) {
     Optional<QueuedPlayer> current = queue.currentlySpectating();
+    QueuedPlayer newPlayer = null;
     if (current.isPresent()) {
       if (current.get().getPlayer().equals(player)) {
-        advance(pm, queue);
-        return;
+        newPlayer = advance(pm, queue);
       }
     }
     queue.stream().filter(x -> x.getPlayer().equals(player))
         .forEach(x -> x.setState(QueuedPlayer.CANCELLED));
+    return newPlayer;
   }
 
   @Override
@@ -690,7 +713,11 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       // Just remove them from the queue. We can refine this behaviour later.
       queue = PlayerQueue.loadQueue(pm, clock);
       log.debug("{} is offline. removing from queue", status.getUser().getUserName());
-      removeFromQueue(pm, status.getUser());
+      QueuedPlayer newPlayer = removeFromQueue(pm, status.getUser());
+      if (newPlayer != null) {
+        detachAndSchedule(exec, log, pm, twitch::announceAdvance, SkipReason.OFFLINE,
+            status.getUser(), newPlayer.getPlayer());
+      }
     }
     if (queue == null) {
       queue = PlayerQueue.loadQueue(pm, clock);
@@ -767,9 +794,10 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     if (current.isPresent() && status.lastStatus != null
         && status.lastStatus.getType() == Type.PLAYING
         && status.lastStatus.getDetail().startsWith(startsWith)) {
-      if (advance(pm, queue)) {
-        twitch.announceAdvance(SkipReason.BANNED_MAP, current.get().getPlayer(), queue
-            .currentlySpectating().get().getPlayer());
+      QueuedPlayer newPlayer = advance(pm, queue);
+      if (newPlayer != null) {
+        detachAndSchedule(exec, log, pm, twitch::announceAdvance, SkipReason.BANNED_MAP, current
+            .get().getPlayer(), newPlayer.getPlayer());
       }
     }
   }

@@ -1,7 +1,5 @@
 package me.reddev.osucelebrity.osu;
 
-import me.reddev.osucelebrity.core.QueueVote;
-
 import static me.reddev.osucelebrity.Commands.FORCESKIP;
 import static me.reddev.osucelebrity.Commands.FORCESPEC;
 import static me.reddev.osucelebrity.Commands.GAME_MODE;
@@ -15,8 +13,6 @@ import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
 import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +24,14 @@ import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.Clock;
 import me.reddev.osucelebrity.core.EnqueueResult;
+import me.reddev.osucelebrity.core.QueueVote;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.OsuApi;
+import me.reddev.osucelebrity.twitch.Twitch;
 import me.reddev.osucelebrity.twitch.TwitchUser;
 import org.pircbotx.Configuration;
 import org.pircbotx.Configuration.Builder;
@@ -47,6 +45,8 @@ import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.ServerResponseEvent;
 import org.pircbotx.hooks.events.UnknownEvent;
 import org.tillerino.osuApiModel.GameModes;
+
+import com.google.common.collect.ImmutableList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -91,6 +91,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   private final PersistenceManagerFactory pmf;
   private final Spectator spectator;
   private final Clock clock;
+  private final Twitch twitch;
   
   private final Pinger pinger;
 
@@ -351,7 +352,11 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     if (message.equalsIgnoreCase(OPTOUT)) {
       user.setAllowsSpectating(false);
       log.debug("{} opted out. removing from queue", user.getUserName());
-      spectator.removeFromQueue(pm, user);
+      QueuedPlayer oldPlayer = spectator.getCurrentPlayer(pm);
+      QueuedPlayer newPlayer = spectator.removeFromQueue(pm, user);
+      if (oldPlayer != null && newPlayer != null) {
+        twitch.announceAdvance(null, oldPlayer.getPlayer(), newPlayer.getPlayer());
+      }
       respond(event, String.format(OsuResponses.OPTOUT));
       return true;
     }
