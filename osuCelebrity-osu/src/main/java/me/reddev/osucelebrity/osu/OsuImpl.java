@@ -108,6 +108,15 @@ public class OsuImpl implements Osu {
     app.killOsu();
     
     Thread.sleep(5000);
+    respecCurrentPlayer();
+    /*
+     * wait and send the command a second time. it seems like the osu client ignores the first time.
+     */
+    Thread.sleep(5000);
+    respecCurrentPlayer();
+  }
+
+  private void respecCurrentPlayer() {
     PersistenceManager pm = pmf.getPersistenceManager();
     try {
       QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
