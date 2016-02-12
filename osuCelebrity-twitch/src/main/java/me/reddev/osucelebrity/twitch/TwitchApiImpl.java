@@ -24,7 +24,6 @@ import org.mapstruct.Mappings;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -33,8 +32,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import javax.annotation.CheckForNull;
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
@@ -59,37 +56,6 @@ public class TwitchApiImpl implements TwitchApi {
   private final TwitchIrcSettings ircSettings;
   private final Clock clock;
   private final StatusWindow statusWindow;
-
-  /**
-   * Sends a request to the Twitch API server with POST queries.
-   * 
-   * @param uri The URL, relative to the API base
-   * @param queries The POST queries
-   * @return A JSON response by the server
-   */
-  private String postRequest(String uri, String... queries) {
-    try {
-      // Connects queries into POST string
-      URL url = new URL(settings.getTwitchApiRoot() + uri);
-      URLConnection conn = url.openConnection();
-
-      // Add API headers
-      conn.setRequestProperty("Client-ID", settings.getTwitchClientId());
-      conn.setRequestProperty("Accept", "application/vnd.twitchtv.v2+json");
-      conn.setRequestProperty("Authorization", "OAuth: " + settings.getTwitchToken());
-      conn.setDoOutput(true);
-
-      try (OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream(), "UTF-8")) {
-        String urlParameters = Stream.of(queries).collect(Collectors.joining("&"));
-        writer.write(urlParameters);
-      }
-
-      return readString(conn.getInputStream());
-    } catch (IOException ex) {
-      log.error(String.format("Twitch API raised %s", ex.getMessage()));
-      return "";
-    }
-  }
 
   private String readString(InputStream is) throws IOException, UnsupportedEncodingException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();

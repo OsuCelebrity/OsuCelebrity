@@ -36,33 +36,32 @@ public class OsuImpl implements Osu {
 
   @Override
   public void message(OsuUser user, String message) {
-    // TODO Auto-generated method stub
-
+    bot.messagePlayer(user, message);
   }
 
   @Override
   public void notifyStarting(OsuUser player) {
-    bot.messagePlayer(player, String.format(OsuResponses.SPECTATING_NOW));
+    message(player, String.format(OsuResponses.SPECTATING_NOW));
   }
   
   @Override
   public void notifyNext(OsuUser player) {
-    bot.messagePlayer(player, String.format(OsuResponses.SPECTATING_NEXT));
+    message(player, String.format(OsuResponses.SPECTATING_NEXT));
   }
   
   @Override
   public void notifyDone(OsuUser player) {
-    bot.messagePlayer(player, String.format(OsuResponses.DONE_SPECTATING));
+    message(player, String.format(OsuResponses.DONE_SPECTATING));
   }
   
   @Override
   public void notifyQueued(OsuUser player, int queuePosition) {
-    bot.messagePlayer(player, String.format(OsuResponses.QUEUED, queuePosition));
+    message(player, String.format(OsuResponses.QUEUED, queuePosition));
   }
   
   @Override
   public void notifyStatistics(OsuUser player, long danks, long skips) {
-    bot.messagePlayer(player, String.format(OsuResponses.STATISTICS, danks, skips));
+    message(player, String.format(OsuResponses.STATISTICS, danks, skips));
   }
 
   @Override

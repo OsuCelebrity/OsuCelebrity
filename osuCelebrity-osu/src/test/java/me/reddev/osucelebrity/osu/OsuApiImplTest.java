@@ -43,8 +43,8 @@ public class OsuApiImplTest extends AbstractJDOTest {
   public void testCaching() throws Exception {
 
     assertNotNull(osuApi.getUser("Tillerino", pm, 0));
-    assertNotNull(osuApi.getUser(2070907, pm, 0));
-    assertNotNull(osuApi.getUserData(2070907, 0, pm, 0));
+    assertNotNull(osuApi.getUser(2070907, pm, 1));
+    assertNotNull(osuApi.getUserData(2070907, 0, pm, 1));
 
     verify(downloader, only()).getUser("Tillerino", 0, OsuApiUser.class);
   }
@@ -61,5 +61,28 @@ public class OsuApiImplTest extends AbstractJDOTest {
     assertEquals(2, fresh.getDownloaded());
     assertEquals("Tillerino2", fresh.getUserName());
     assertNull(osuApi.getUser("Tillerino", pm, 0));
+  }
+  
+  @Test
+  public void testGetIrcUser() throws Exception {
+    assertNotNull(osuApi.getIrcUser("Tillerino", pm, 0L).getUser());
+  
+    when(downloader.getUser(anyString(), anyInt(), any())).thenReturn(null);
+    
+    clock.sleepUntil(1000);
+
+    assertNotNull(osuApi.getIrcUser("Tillerino", pm, 0L).getUser());
+    
+    // now update
+    assertNull(osuApi.getIrcUser("Tillerino", pm, 1L).getUser());
+  }
+  
+  @Test
+  public void testUserData() throws Exception {
+    osuApi.getUserData(2070907, 0, pm, 0L);
+    
+    clock.sleepUntil(1000L);
+    
+    osuApi.getUserData(2070907, 0, pm, 1L);
   }
 }

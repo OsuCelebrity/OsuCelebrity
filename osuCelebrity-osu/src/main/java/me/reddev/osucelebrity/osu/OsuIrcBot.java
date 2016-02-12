@@ -122,22 +122,26 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
    */
   public void run() {
     try {
-      Builder<PircBotX> configBuilder =
-          new Configuration.Builder<PircBotX>()
-              .setName(ircSettings.getOsuIrcUsername())
-              .setLogin(ircSettings.getOsuIrcUsername())
-              .addListener(this)
-              .setServer(ircSettings.getOsuIrcHost(), ircSettings.getOsuIrcPort(),
-                  ircSettings.getOsuIrcPassword()).setAutoReconnect(true).setMessageDelay(500);
-      Stream.of(ircSettings.getOsuIrcAutoJoin().split(",")).forEach(
-          configBuilder::addAutoJoinChannel);
-      Configuration<PircBotX> config = configBuilder.buildConfiguration();
-      bot = new PircBotX(config);
+      createBot();
 
       bot.startBot();
     } catch (Exception e) {
       log.error("Exception", e);
     }
+  }
+
+  void createBot() {
+    Builder<PircBotX> configBuilder =
+        new Configuration.Builder<PircBotX>()
+            .setName(ircSettings.getOsuIrcUsername())
+            .setLogin(ircSettings.getOsuIrcUsername())
+            .addListener(this)
+            .setServer(ircSettings.getOsuIrcHost(), ircSettings.getOsuIrcPort(),
+                ircSettings.getOsuIrcPassword()).setAutoReconnect(true).setMessageDelay(500);
+    Stream.of(ircSettings.getOsuIrcAutoJoin().split(",")).forEach(
+        configBuilder::addAutoJoinChannel);
+    Configuration<PircBotX> config = configBuilder.buildConfiguration();
+    bot = new PircBotX(config);
   }
 
   /**
@@ -310,8 +314,8 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
         spectator.enqueue(pm, queueRequest, true, QueueVote.OSU + user.getUserId(), true);
     if (result == EnqueueResult.SUCCESS) {
       respond(event, Responses.SELF_QUEUE_SUCCESSFUL);
-    } else if (result == EnqueueResult.FAILURE) {
-      respond(event, Responses.SELF_QUEUE_UNSUCCESSFU);
+    } else {
+      respond(event, result.formatResponse(user.getUserName()));
     }
   }
 

@@ -13,7 +13,6 @@ public class Responses {
   public static final String CURRENT_PLAYER = "Current Player: %s";
 
   public static final String SELF_QUEUE_SUCCESSFUL = "You've been added to the queue!";
-  public static final String SELF_QUEUE_UNSUCCESSFU = "You could not be added to the queue!";
 
   public static final String QUEUE_SUCCESSFUL = "%s was added to the queue.";
   public static final String QUEUE_UNSUCCESSFUL = "%s could not be added to the queue.";

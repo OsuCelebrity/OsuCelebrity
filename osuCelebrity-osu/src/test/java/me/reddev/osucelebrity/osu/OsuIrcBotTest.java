@@ -1,7 +1,7 @@
 package me.reddev.osucelebrity.osu;
 
+import org.junit.After;
 import me.reddev.osucelebrity.OsuResponses;
-
 import me.reddev.osucelebrity.twitch.QTwitchUser;
 import me.reddev.osucelebrity.JdoQueryUtil;
 import me.reddev.osucelebrity.twitch.TwitchUser;
@@ -20,6 +20,7 @@ import org.pircbotx.snapshot.UserSnapshot;
 import org.pircbotx.snapshot.UserChannelDaoSnapshot;
 import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.JoinEvent;
+
 import com.google.common.collect.ImmutableList;
 
 import java.io.IOException;
@@ -87,6 +88,10 @@ public class OsuIrcBotTest extends AbstractJDOTest {
 
     when(settings.getOsuIrcCommand()).thenReturn("!");
     when(settings.getOsuCommandUser()).thenReturn("BanchoBot");
+    when(settings.getOsuIrcUsername()).thenReturn("OsuCeleb");
+    when(settings.getOsuIrcHost()).thenReturn("server.address");
+    when(settings.getOsuIrcPort()).thenReturn(420);
+    when(settings.getOsuIrcAutoJoin()).thenReturn("#somechannel");
     when(user.send()).thenReturn(outputUser);
     
     when(pircBotX.sendIRC()).thenReturn(ourputIrc);
@@ -99,6 +104,18 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     });
     
     ircBot.bot = pircBotX;
+    
+    ircBot.onConnect(null);
+  }
+  
+  @After
+  public void disconnect() throws Exception {
+    ircBot.onDisconnect(null);
+  }
+  
+  @Test
+  public void testConfigure() throws Exception {
+    ircBot.createBot();
   }
 
   @Test
@@ -117,6 +134,19 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     assertEquals(true, request.isNotify());
 
     verify(outputUser, only()).message(Responses.SELF_QUEUE_SUCCESSFUL);
+  }
+
+  @Test
+  public void testSelfQueueFail() throws Exception {
+    when(spectator.enqueue(any(), any(), eq(true), any(), eq(true))).thenReturn(
+        EnqueueResult.FAILURE);
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!spec"));
+
+    verify(spectator, only()).enqueue(any(), any(), eq(true),
+        eq("osu:" + osuApi.getUser("osuIrcUser", pm, 0L).getUserId()), eq(true));
+
+    verify(outputUser, only()).message(EnqueueResult.FAILURE.formatResponse("osuIrcUser"));
   }
 
   @Test
@@ -429,5 +459,45 @@ public class OsuIrcBotTest extends AbstractJDOTest {
         "!link <LINKSTRING>"));
 
     verify(outputUser).message(OsuResponses.ALREADY_LINKED);
+  }
+  
+  @Test
+  public void testPosition() throws Exception {
+    when(spectator.getQueuePosition(any(), eq(osuUser))).thenReturn(69);
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!position " + osuUser.getUserName()));
+   
+    verify(outputUser).message(String.format(OsuResponses.POSITION, "defaultUser", 69));
+  }
+  
+  @Test
+  public void testPositionNotInQueue() throws Exception {
+    when(spectator.getQueuePosition(any(), eq(osuUser))).thenReturn(-1);
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!position " + osuUser.getUserName()));
+   
+    verify(outputUser).message(String.format(OsuResponses.NOT_IN_QUEUE, "defaultUser"));
+  }
+  
+  @Test
+  public void testSelfPosition() throws Exception {
+    when(spectator.getQueuePosition(any(), eq(osuApi.getUser("osuIrcUser", pm, 0L)))).thenReturn(420);
+    
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!position"));
+   
+    verify(outputUser).message(String.format(OsuResponses.POSITION, "osuIrcUser", 420));
+  }
+  
+  @Test
+  public void testSelfPositionNotInQueue() throws Exception {
+    when(spectator.getQueuePosition(any(), eq(osuApi.getUser("osuIrcUser", pm, 0L)))).thenReturn(-1);
+    
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user,
+        "!position"));
+   
+    verify(outputUser).message(String.format(OsuResponses.NOT_IN_QUEUE, "osuIrcUser"));
   }
 }

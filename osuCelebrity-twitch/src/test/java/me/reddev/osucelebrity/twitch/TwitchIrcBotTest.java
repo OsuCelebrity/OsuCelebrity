@@ -1,7 +1,9 @@
 package me.reddev.osucelebrity.twitch;
 
+import org.junit.After;
+import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.TwitchResponses;
-
 import org.mockito.Spy;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.Trust;
@@ -90,15 +92,36 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
         getUser(pmf.getPersistenceManagerProxy(), "testplayer"));
 
     when(settings.getTwitchIrcCommand()).thenReturn("!");
-
+    when(settings.getTwitchIrcUsername()).thenReturn("OsuCeleb");
+    when(settings.getTwitchIrcHost()).thenReturn("irc.host");
+    when(settings.getTwitchIrcPort()).thenReturn(420);
+    when(settings.getTwitchIrcChannel()).thenReturn("channer");
+    
     ircBot =
         new TwitchIrcBot(settings, osuApi, twitchApi, osu, pmf, spectator, clock,
-            whisperBot, trust, twitch);
+            whisperBot, trust, twitch) {
+      @Override
+      public void sendMessage(String message) {
+        System.out.println(message);
+      }
+    };
+    
+    ircBot.onConnect(null);
+  }
+  
+  @After
+  public void disconnect() throws Exception {
+    ircBot.onDisconnect(null);
   }
 
   QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
     OsuUser user = osuApi.getUser(playerName, pm, 0);
     return new QueuedPlayer(user, null, clock.getTime());
+  }
+  
+  @Test
+  public void testCreateBot() throws Exception {
+    ircBot.createBot();
   }
 
   @Test
@@ -166,6 +189,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testForceSkip() throws Exception {
+    when(spectator.advanceConditional(any(), any())).thenReturn(true);
     when(twitchApi.isModerator(user.getNick())).thenReturn(true);
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forceskip x"));
 
@@ -181,6 +205,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testForceSpec() throws Exception {
+    when(spectator.promote(any(), any())).thenReturn(true);
     when(twitchApi.isModerator(user.getNick())).thenReturn(true);
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!forcespec x"));
 
@@ -321,5 +346,25 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
     // verify that no link string has been set
     assertNull(userObject.getLinkString());
+  }
+  
+  @Test
+  public void testPosition() throws Exception {
+    when(spectator.getQueuePosition(any(), eq(osuUser))).thenReturn(420);
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!position "
+        + osuUser.getUserName()));
+
+    verify(outputChannel).message(String.format(OsuResponses.POSITION, osuUser.getUserName(), 420));
+  }
+  
+  @Test
+  public void testPositionNotInQueue() throws Exception {
+    when(spectator.getQueuePosition(any(), eq(osuUser))).thenReturn(-1);
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!position "
+        + osuUser.getUserName()));
+
+    verify(whisperBot).whisper("twitchIrcUser", String.format(OsuResponses.NOT_IN_QUEUE, osuUser.getUserName()));
   }
 }

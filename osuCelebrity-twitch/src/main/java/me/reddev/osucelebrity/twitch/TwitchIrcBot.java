@@ -110,15 +110,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   @Override
   public void run() {
     try {
-      Configuration<PircBotX> config =
-          new Configuration.Builder<PircBotX>()
-              .setName(settings.getTwitchIrcUsername())
-              .setLogin(settings.getTwitchIrcUsername())
-              .addListener(this)
-              .setServer(settings.getTwitchIrcHost(), settings.getTwitchIrcPort(),
-                  settings.getTwitchToken()).setAutoReconnect(true)
-              .addAutoJoinChannel(settings.getTwitchIrcChannel()).buildConfiguration();
-      bot = new PircBotX(config);
+      createBot();
 
       bot.startBot();
     } catch (Exception e) {
@@ -126,13 +118,16 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     }
   }
 
-  /**
-   * Disconnects from the IRC server.
-   */
-  public void stop() {
-    if (bot.isConnected()) {
-      bot.stopBotReconnect();
-    }
+  void createBot() {
+    Configuration<PircBotX> config =
+        new Configuration.Builder<PircBotX>()
+            .setName(settings.getTwitchIrcUsername())
+            .setLogin(settings.getTwitchIrcUsername())
+            .addListener(this)
+            .setServer(settings.getTwitchIrcHost(), settings.getTwitchIrcPort(),
+                settings.getTwitchToken()).setAutoReconnect(true)
+            .addAutoJoinChannel(settings.getTwitchIrcChannel()).buildConfiguration();
+    bot = new PircBotX(config);
   }
 
   /**
@@ -366,24 +361,6 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     
     whisperBot.whisper(twitchUserName,
         String.format(TwitchResponses.LINK_INSTRUCTIONS, user.getLinkString()));
-  }
-
-  @Override 
-  public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
-    String message = event.getMessage();
-    Pattern specialUserRegex = Pattern.compile("SPECIALUSER ([^ ]+) (subscriber|turbo)");
-    Matcher matches = specialUserRegex.matcher(message);
-
-    // Nothing important - no special messages
-    if (!matches.matches()) {
-      return;
-    }
-
-    if (matches.group(2).equalsIgnoreCase("subscriber")) {
-      subscribers.add(matches.group(1).toLowerCase());
-    } else {
-      // TODO: Add a special case for turbo users
-    }
   }
 
   @Override
