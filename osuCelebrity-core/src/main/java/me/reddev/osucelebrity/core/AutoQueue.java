@@ -78,7 +78,8 @@ public class AutoQueue {
     TreeMap<Double, ApiUser> distribution = new TreeMap<>();
     try (JDOQuery<ApiUser> query = new JDOQuery<>(pm).select(apiUser).from(apiUser)) {
       List<ApiUser> users =
-          query.where(apiUser.gameMode.eq(GameModes.OSU), apiUser.rank.loe(1000)).fetch();
+          query.where(apiUser.gameMode.eq(GameModes.OSU), apiUser.rank.loe(1000),
+              apiUser.rank.goe(1)).fetch();
       for (ApiUser user : users) {
         double prob = probability.applyAsDouble(user);
         distribution.put(sum, user);
