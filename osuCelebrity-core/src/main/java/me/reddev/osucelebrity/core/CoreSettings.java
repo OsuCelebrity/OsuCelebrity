@@ -28,4 +28,6 @@ public interface CoreSettings {
   int getShortQueueLength();
   
   long getTwitchTrustAccountAge();
+  
+  int getAutoQueueMaxSize();
 }

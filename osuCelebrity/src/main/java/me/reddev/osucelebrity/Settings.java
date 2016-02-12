@@ -58,6 +58,7 @@ public class Settings implements SettingsMBean {
   private long maxLastActivity;
   private int shortQueueLength;
   private long twitchTrustAccountAge;
+  private int autoQueueMaxSize;
 
   private int osuClientXOffset;
   private int osuClientYOffset;

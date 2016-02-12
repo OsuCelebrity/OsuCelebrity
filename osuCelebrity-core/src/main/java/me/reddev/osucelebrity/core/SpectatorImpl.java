@@ -239,8 +239,12 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
 
     long drain = time - current.getLastRemainingTimeUpdate();
     
-    if (queue.queue.size() <= settings.getShortQueueLength()) {
-      drain *= .5 * (1D + (queue.queue.size() - 1D) / (settings.getShortQueueLength() - 1D));
+    int queueSize =
+        (int) queue.queue.stream()
+            .filter(queuedPlayer -> queuedPlayer.getQueueSource() != QueueSource.AUTO).count();
+    queueSize = Math.max(1, queueSize);
+    if (queueSize <= settings.getShortQueueLength()) {
+      drain *= .5 * (1D + (queueSize - 1D) / (settings.getShortQueueLength() - 1D));
     }
     
     final long adjustedDrain;
@@ -667,7 +671,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   public List<DisplayQueuePlayer> getCurrentQueue(PersistenceManager pm) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     queue.ensureSorted(pm);
-    Map<QueuedPlayer, Long> votes = queue.getVotes(pm);
+    Map<QueuedPlayer, Double> votes = queue.getVotes(pm);
     List<DisplayQueuePlayer> result = new ArrayList<>();
     for (QueuedPlayer player : queue.queue) {
       if (player.getState() < QueuedPlayer.QUEUED) {
@@ -676,7 +680,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       long timeInQueue = clock.getTime() - player.getQueuedAt();
       String timeString = CurrentPlayerService.formatDuration(timeInQueue);
       String votesString =
-          player.getBoost() > 0 ? "∞" : String.valueOf(votes.getOrDefault(player, 0L).intValue());
+          player.getBoost() > 0 ? "∞" : String.valueOf(votes.getOrDefault(player, 0D).intValue());
       result.add(new DisplayQueuePlayer(player.getPlayer().getUserId(),
           player.getPlayer().getUserName(), timeString, votesString));
     }

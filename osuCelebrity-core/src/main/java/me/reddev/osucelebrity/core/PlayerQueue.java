@@ -2,10 +2,8 @@ package me.reddev.osucelebrity.core;
 
 import static me.reddev.osucelebrity.core.QQueueVote.queueVote;
 import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
-
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
@@ -41,16 +39,16 @@ public class PlayerQueue {
     if (queue.isEmpty()) {
       return;
     }
-    Map<QueuedPlayer, Long> votes = getVotes(pm);
+    Map<QueuedPlayer, Double> votes = getVotes(pm);
     long firstQueued = queue.stream().mapToLong(QueuedPlayer::getQueuedAt).min().getAsLong();
     double maxVotes =
-        Math.max(1, votes.values().stream().mapToLong(Long::longValue).max().orElse(0L));
+        Math.max(1, votes.values().stream().mapToDouble(Double::doubleValue).max().orElse(0D));
     
     long time = clock.getTime();
     double maxQueueTime = Math.max(time - firstQueued, 1);
     
     Function<QueuedPlayer, Double> queueTimePlusVotes =
-        player -> votes.getOrDefault(player, 0L) / maxVotes + (time - player.getQueuedAt())
+        player -> votes.getOrDefault(player, .5) / maxVotes + (time - player.getQueuedAt())
         / maxQueueTime;
         
     Collections.sort(
@@ -61,14 +59,14 @@ public class PlayerQueue {
             .thenComparing(QueuedPlayer::getQueuedAt));
   }
 
-  Map<QueuedPlayer, Long> getVotes(PersistenceManager pm) {
-    Map<QueuedPlayer, Long> votes;
+  Map<QueuedPlayer, Double> getVotes(PersistenceManager pm) {
+    Map<QueuedPlayer, Double> votes;
     try (JDOQuery<Tuple> query =
         new JDOQuery<>(pm).select(queueVote.reference, queueVote.count()).from(queueVote)
             .where(queueVote.reference.state.goe(QueuedPlayer.NEXT)).groupBy(queueVote.reference)) {
       votes = new HashMap<>();
       query.fetch().forEach(
-          tuple -> votes.put(tuple.get(0, QueuedPlayer.class), tuple.get(1, Long.class)));
+          tuple -> votes.put(tuple.get(0, QueuedPlayer.class), tuple.get(1, Long.class).doubleValue()));
       
     }
     return votes;

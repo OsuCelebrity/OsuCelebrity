@@ -41,11 +41,11 @@ public class SpectatorImplTest extends AbstractJDOTest {
   @Mock
   private Twitch twitch;
   @Mock
-  private Osu osu;
+  protected Osu osu;
   @Mock
   private CoreSettings settings;
   
-  private SpectatorImpl spectator;
+  protected SpectatorImpl spectator;
 
   @Before
   public void initMocks() throws IOException {

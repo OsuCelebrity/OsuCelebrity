@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity;
 
+import me.reddev.osucelebrity.core.AutoQueue;
+
 import com.google.inject.Guice;
 
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,7 @@ public class OsuCelebrity {
   final TwitchApiImpl twitchApi;
   final Settings settings;
   final StatusWindow statusWindow;
+  final AutoQueue autoQueue;
   
   void start() throws Exception {
     MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
@@ -61,6 +64,7 @@ public class OsuCelebrity {
     exec.scheduleAtFixedRate(osuApp::updateWindowTitle, 0, 100, TimeUnit.MILLISECONDS);
     exec.scheduleWithFixedDelay(osuActivityUpdater::update, 0, 5, TimeUnit.SECONDS);
     exec.scheduleWithFixedDelay(twitchApi::updateChatters, 0, 5, TimeUnit.SECONDS);
+    exec.scheduleWithFixedDelay(autoQueue::loop, 0, 1, TimeUnit.SECONDS);
 
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(coreSettings.getApiPort()).build();
 

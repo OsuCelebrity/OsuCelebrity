@@ -120,8 +120,11 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
 
   @Override
   public void setQueue(List<QueuedPlayer> queue) {
-    this.queue.setText(queue.stream().map(entry -> entry.getPlayer().getUserName())
-        .collect(Collectors.joining("\n")));
+    this.queue.setText(queue
+        .stream()
+        .map(
+            entry -> String.format("%s (%s)", entry.getPlayer().getUserName(),
+                entry.getQueueSource())).collect(Collectors.joining("\n")));
   }
 
   @Override

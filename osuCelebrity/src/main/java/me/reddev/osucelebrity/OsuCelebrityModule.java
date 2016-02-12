@@ -1,6 +1,8 @@
 package me.reddev.osucelebrity;
 
 
+import me.reddev.osucelebrity.core.AutoQueue;
+
 import com.google.inject.AbstractModule;
 
 import me.reddev.osucelebrity.core.Clock;
@@ -81,6 +83,7 @@ public class OsuCelebrityModule extends AbstractModule {
     bind(TwitchIrcBot.class).in(Singleton.class);
     bind(TwitchWhisperBot.class).in(Singleton.class);
     bind(OsuApplication.class).in(Singleton.class);
+    bind(AutoQueue.class).in(Singleton.class);
     
     bind(Spectator.class).to(SpectatorImpl.class);
 
