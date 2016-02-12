@@ -55,7 +55,7 @@ public class OsuApplication {
    * @throws IOException Unable to run spectate command
    */
   public void spectate(OsuUser osuUser) throws IOException {
-    log.debug("spectating {}" + osuUser);
+    log.debug("spectating {}", osuUser);
     ProcessBuilder builder = new ProcessBuilder(getSpecCommand(6854947));
     builder.inheritIO();
     builder.start();

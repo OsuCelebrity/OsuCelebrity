@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.function.Consumer;
 
+import javax.annotation.CheckForNull;
+
 /**
  * These exceptions are caused by user input. The message will be passed on to the user.
  * 
@@ -29,12 +31,18 @@ public class UserException extends Exception {
    * @param ex the exception that occurred
    * @param messager how to reach the user
    */
-  public static void handleException(Logger log, Exception ex, Consumer<String> messager) {
+  public static void handleException(Logger log, Exception ex,
+      @CheckForNull Consumer<String> messager) {
     try {
       throw ex;
     } catch (UserException e) {
-      // no need to log this
-      messager.accept(e.getMessage());
+      if (messager != null) {
+        // no need to log this. send to user.
+        messager.accept(e.getMessage());
+      } else {
+        // wherever there can be a userexception, we expect a user
+        log.error("unexpected UserException", e);
+      }
     } catch (SocketTimeoutException e) {
       log.debug("API timeout.", e);
       messager.accept(Responses.EXCEPTION_TIMEOUT);

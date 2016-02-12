@@ -252,7 +252,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
           try {
             consumer.accept(pm, status.get());
           } catch (Exception e) {
-            log.error("error while handling status", e);
+            UserException.handleException(log, e, null);
           }
         }
       }
