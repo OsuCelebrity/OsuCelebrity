@@ -26,6 +26,7 @@ import me.reddev.osucelebrity.osu.PlayerStatus;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
+import me.reddev.osucelebrity.twitch.SceneSwitcher;
 import me.reddev.osucelebrity.twitch.Twitch;
 import me.reddev.osucelebrity.twitch.TwitchUser;
 import org.slf4j.Logger;
@@ -76,6 +77,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   final ExecutorService exec;
   
   final StatusWindow statusWindow;
+  
+  final SceneSwitcher sceneSwitcher;
   
   /**
    * Perform one loop iteration.
@@ -158,6 +161,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   }
 
   class Status {
+    long playerStarted = -1;
     long lastStatusChange = -1;
     OsuStatus lastStatus = null;
     PlayerStatus ingameStatus = null;
@@ -166,13 +170,15 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     @SuppressFBWarnings(value = "NP",
         justification = "lastStatus = currentStatus raises a weird bug")
     SkipReason shouldSkip(PersistenceManager pm, QueuedPlayer player) {
+      if (playerStarted < 0) {
+        playerStarted = clock.getTime();
+      }
+      
       OsuStatus currentStatus = osu.getClientStatus();
       try {
         if (lastStatusChange == -1 || !Objects.equal(currentStatus, lastStatus)) {
           lastStatusChange = clock.getTime();
-          if (currentStatus != null) {
-            statusWindow.setStatus(currentStatus.getType());
-          }
+          handleScenes(currentStatus != null ? currentStatus.getType() : null);
           if (currentStatus != null && currentStatus.getType() == Type.PLAYING) {
             for (BannedFilter filter : pm.getExtent(BannedFilter.class)) {
               if (currentStatus.getDetail().startsWith(filter.getStartsWith())) {
@@ -208,6 +214,19 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
         return null;
       } finally {
         lastStatus = currentStatus;
+      }
+    }
+
+    void handleScenes(Type type) {
+      statusWindow.setStatus(type);
+      try {
+        if (type == Type.PLAYING) {
+          sceneSwitcher.changeScene("Osu Client");
+        } else if (playerStarted > clock.getTime() - 10000L) {
+          sceneSwitcher.changeScene("Idle");
+        }
+      } catch (Exception e) {
+        log.error("Exception while changing scenes", e);
       }
     }
   }

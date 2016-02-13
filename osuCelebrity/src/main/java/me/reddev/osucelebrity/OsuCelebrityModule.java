@@ -23,6 +23,8 @@ import me.reddev.osucelebrity.osu.OsuIrcBot;
 import me.reddev.osucelebrity.osu.OsuIrcSettings;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.osuapi.OsuApiSettings;
+import me.reddev.osucelebrity.twitch.ObsRemote;
+import me.reddev.osucelebrity.twitch.SceneSwitcher;
 import me.reddev.osucelebrity.twitch.Twitch;
 import me.reddev.osucelebrity.twitch.TwitchApiImpl;
 import me.reddev.osucelebrity.twitch.TwitchImpl;
@@ -78,12 +80,14 @@ public class OsuCelebrityModule extends AbstractModule {
     bind(Twitch.class).to(TwitchImpl.class).in(Singleton.class);
     bind(TwitchApi.class).to(TwitchApiImpl.class).in(Singleton.class);
     bind(Trust.class).to(TrustImpl.class).in(Singleton.class);
+    bind(SceneSwitcher.class).to(ObsRemote.class);
 
     bind(OsuIrcBot.class).in(Singleton.class);
     bind(TwitchIrcBot.class).in(Singleton.class);
     bind(TwitchWhisperBot.class).in(Singleton.class);
     bind(OsuApplication.class).in(Singleton.class);
     bind(AutoQueue.class).in(Singleton.class);
+    bind(ObsRemote.class).in(Singleton.class);
     
     bind(Spectator.class).to(SpectatorImpl.class);
 

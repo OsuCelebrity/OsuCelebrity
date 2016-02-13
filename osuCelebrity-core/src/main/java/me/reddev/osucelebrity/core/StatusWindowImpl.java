@@ -3,20 +3,14 @@ package me.reddev.osucelebrity.core;
 import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.osu.OsuStatus;
 
-import java.awt.Button;
 import java.awt.FlowLayout;
 import java.awt.Label;
 import java.awt.TextArea;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 
 @RequiredArgsConstructor
 public class StatusWindowImpl extends JFrame implements StatusWindow {
@@ -40,28 +34,6 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
 
   {
     setLayout(new FlowLayout());
-    try {
-      BufferedImage markerImage =
-          ImageIO.read(ClassLoader.getSystemResourceAsStream("statusWindowMarker.png"));
-      add(new JLabel(new ImageIcon(markerImage)));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    {
-      Button setNewPlayer = new Button("DEBUG OBS: Set title to " + NEW_PLAYER);
-      setNewPlayer.addActionListener(e -> setTitle(NEW_PLAYER));
-      add(setNewPlayer);
-    }
-    {
-      Button setPlaying = new Button("DEBUG OBS: Set title to " + PLAYING);
-      setPlaying.addActionListener(e -> setTitle(PLAYING));
-      add(setPlaying);
-    }
-    {
-      Button setIdle = new Button("DEBUG OBS: Set title to " + IDLE);
-      setIdle.addActionListener(e -> setTitle(IDLE));
-      add(setIdle);
-    }
     add(new Label("Raw Approval: "));
     add(rawApproval = new Label("?"));
     add(new Label("Adjusted Approval: "));
@@ -130,7 +102,6 @@ public class StatusWindowImpl extends JFrame implements StatusWindow {
   @Override
   public void setTitle(String title) {
     super.setTitle(title);
-    requestFocus();
   }
 
   @Override

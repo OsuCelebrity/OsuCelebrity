@@ -13,6 +13,7 @@ import me.reddev.osucelebrity.core.api.CoreApiApplication;
 import me.reddev.osucelebrity.osu.OsuActivityUpdater;
 import me.reddev.osucelebrity.osu.OsuApplication;
 import me.reddev.osucelebrity.osu.OsuIrcBot;
+import me.reddev.osucelebrity.twitch.ObsRemote;
 import me.reddev.osucelebrity.twitch.TwitchApiImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchWhisperBot;
@@ -47,6 +48,7 @@ public class OsuCelebrity {
   final Settings settings;
   final StatusWindow statusWindow;
   final AutoQueue autoQueue;
+  final ObsRemote obsRemote;
   
   void start() throws Exception {
     MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
@@ -56,7 +58,10 @@ public class OsuCelebrity {
         new ObjectName("osuCeleb:type=Spectator"));
 
     twitchWhisper.findServer();
-
+    
+    exec.scheduleWithFixedDelay(obsRemote::connect, 0, 1, TimeUnit.SECONDS);
+    obsRemote.awaitConnect();
+    
     exec.scheduleAtFixedRate(spectator::loop, 0, 100, TimeUnit.MILLISECONDS);
     exec.submit(osuBot);
     exec.submit(twitchBot);

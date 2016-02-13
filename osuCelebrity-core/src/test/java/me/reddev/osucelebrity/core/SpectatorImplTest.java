@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.core;
 
+import me.reddev.osucelebrity.twitch.SceneSwitcher;
+
 import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
 import org.mockito.ArgumentCaptor;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
@@ -44,6 +46,8 @@ public class SpectatorImplTest extends AbstractJDOTest {
   protected Osu osu;
   @Mock
   private CoreSettings settings;
+  @Mock
+  private SceneSwitcher sceneSwitcher;
   
   protected SpectatorImpl spectator;
 
@@ -64,7 +68,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     
     spectator =
         new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec,
-            new StatusWindow.DummyStatusWindow());
+            new StatusWindow.DummyStatusWindow(), sceneSwitcher);
   }
 
   QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
@@ -472,7 +476,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   void testAutoQueueDistribution() throws Exception {
     List<ApiUser> recentlyActive = new ArrayList<>();
     Map<Integer, Long> lastQueueTime = new HashMap<>();
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec, null) {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec, null, sceneSwitcher) {
       @Override
       List<ApiUser> getRecentlyActive(PersistenceManager pm) {
         return recentlyActive;

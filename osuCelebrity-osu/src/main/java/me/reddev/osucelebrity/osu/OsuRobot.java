@@ -38,7 +38,6 @@ public class OsuRobot {
   private IplImage downloadButton2;
   private IplImage downloadButton3;
   private IplImage redownloadButton;
-  private IplImage statusWindowMarker;
   private Robot robot;
 
   private final OsuApplicationSettings settings;
@@ -56,9 +55,6 @@ public class OsuRobot {
           convertAndKeepInMemory(toGrayScale(ImageIO.read(new File("download3.png"))));
       redownloadButton =
           convertAndKeepInMemory(toGrayScale(ImageIO.read(new File("redownload.png"))));
-      statusWindowMarker =
-          convertAndKeepInMemory(toGrayScale(ImageIO.read(ClassLoader
-              .getSystemResourceAsStream("statusWindowMarker.png"))));
       robot = new Robot();
       robot.setAutoDelay(0);
       loaded = true;
@@ -144,7 +140,7 @@ public class OsuRobot {
       IplImage screenshot = getScreenshot(region);
 
       for (IplImage needle : new IplImage[] {downloadButton, downloadButton2, downloadButton3,
-          redownloadButton, statusWindowMarker}) {
+          redownloadButton }) {
         if (findAndClick(screenshot, needle)) {
           Thread.sleep(1000);
           screenshot = getScreenshot(region);
