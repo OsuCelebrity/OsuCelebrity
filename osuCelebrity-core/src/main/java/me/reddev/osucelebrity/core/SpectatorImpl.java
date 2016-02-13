@@ -340,17 +340,19 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     /*
      * This method is NOT synchronized, we can do expensive calls.
      */
-    ApiUser userData =
-        osuApi.getUserData(user.getPlayer().getUserId(), user.getPlayer().getGameMode(), pm, 0L);
-    if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
-      log.debug("{}'s playcount is too low", user.getPlayer().getUserName());
-      return EnqueueResult.FAILURE;
-    }
-    PlayerActivity activity = osuApi.getPlayerActivity(userData, pm, 1L);
-    if (settings.getMaxLastActivity() > 0 && !selfqueue
-        && activity.getLastActivity() < clock.getTime() - settings.getMaxLastActivity()) {
-      log.debug("{} has not been active", user.getPlayer().getUserName());
-      return EnqueueResult.FAILURE;
+    if (settings.getMinPlayCount() > 0 || settings.getMaxLastActivity() > 0) {
+      ApiUser userData =
+          osuApi.getUserData(user.getPlayer().getUserId(), user.getPlayer().getGameMode(), pm, 0L);
+      if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
+        log.debug("{}'s playcount is too low", user.getPlayer().getUserName());
+        return EnqueueResult.FAILURE;
+      }
+      PlayerActivity activity = osuApi.getPlayerActivity(userData, pm, 1L);
+      if (settings.getMaxLastActivity() > 0 && !selfqueue
+          && activity.getLastActivity() < clock.getTime() - settings.getMaxLastActivity()) {
+        log.debug("{} has not been active", user.getPlayer().getUserName());
+        return EnqueueResult.FAILURE;
+      }
     }
     return doEnqueue(pm, user, selfqueue, twitchUser, online);
   }
