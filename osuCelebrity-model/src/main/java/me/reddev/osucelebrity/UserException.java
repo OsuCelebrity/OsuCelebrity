@@ -45,13 +45,19 @@ public class UserException extends Exception {
       }
     } catch (SocketTimeoutException e) {
       log.debug("API timeout.", e);
-      messager.accept(Responses.EXCEPTION_TIMEOUT);
+      if (messager != null) {
+        messager.accept(Responses.EXCEPTION_TIMEOUT);
+      }
     } catch (IOException e) {
       log.error("API exception.", e);
-      messager.accept(Responses.EXCEPTION_IO);
+      if (messager != null) {
+        messager.accept(Responses.EXCEPTION_IO);
+      }
     } catch (Exception e) {
       log.error("exception", e);
-      messager.accept(Responses.EXCEPTION_INTERNAL);
+      if (messager != null) {
+        messager.accept(Responses.EXCEPTION_INTERNAL);
+      }
     }
   }
 }
