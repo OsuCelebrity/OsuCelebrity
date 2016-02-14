@@ -205,10 +205,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   boolean handleVote(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
     VoteType type = null;
-    if (message.equalsIgnoreCase(UPVOTE)) {
+    if (Commands.detect(message, UPVOTE) != null) {
       type = VoteType.UP;
     }
-    if (message.equalsIgnoreCase(DOWNVOTE)) {
+    if (Commands.detect(message, DOWNVOTE) != null) {
       type = VoteType.DOWN;
     }
     if (type == null) {
