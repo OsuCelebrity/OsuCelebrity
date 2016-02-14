@@ -152,7 +152,7 @@ public class OsuApplication {
    */
   public void killOsu() throws IOException {
     Runtime rt = Runtime.getRuntime();
-    String command = "taskkill /F /FI \"WINDOWTITLE eq osu!*\"";
+    String command = "taskkill /F /IM osu!.exe";
     log.debug("killing osu: " + command);
     rt.exec(command);
   }
