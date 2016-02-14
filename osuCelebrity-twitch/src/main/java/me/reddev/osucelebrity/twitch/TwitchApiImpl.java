@@ -57,7 +57,7 @@ public class TwitchApiImpl implements TwitchApi {
   
   private static final String USER = "https://api.twitch.tv/kraken/users/%s";
   
-  private static final String BROADCASTS = "https://api.twitch.tv/kraken/channels/%s/videos?broadcasts=true";
+  private static final String BROADCASTS = "https://api.twitch.tv/kraken/channels/%s/videos?broadcasts=true&limit=1000";
 
   private final TwitchApiSettings settings;
   private final TwitchIrcSettings ircSettings;
