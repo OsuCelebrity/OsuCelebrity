@@ -1,9 +1,10 @@
 package me.reddev.osucelebrity.twitch;
 
-import me.reddev.osucelebrity.core.QueueVote;
-
 import static me.reddev.osucelebrity.Commands.DOWNVOTE;
 import static me.reddev.osucelebrity.Commands.UPVOTE;
+import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
+
+import com.querydsl.jdo.JDOQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.Commands;
@@ -12,6 +13,7 @@ import me.reddev.osucelebrity.Responses;
 import me.reddev.osucelebrity.TwitchResponses;
 import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.Clock;
+import me.reddev.osucelebrity.core.QueueVote;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
@@ -30,16 +32,14 @@ import org.pircbotx.hooks.events.ConnectEvent;
 import org.pircbotx.hooks.events.DisconnectEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.MessageEvent;
-import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -92,6 +92,8 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     handlers.add(this::handleVote);
     handlers.add(createHandler(false, this::handlePosition, Commands.POSITION));
     handlers.add(createHandler(false, this::handleNowPlaying, Commands.NOW_PLAYING));
+    handlers.add(createHandler(false, this::handleReplaySpecific, Commands.REPLAY));
+    handlers.add(createHandler(false, this::handleReplayCurrent, Commands.REPLAY_CURRENT));
     handlers.add(createHandler(false, this::handleLink, Commands.START_LINK));
     
     // MOD COMMANDS
@@ -361,6 +363,56 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     
     whisperBot.whisper(twitchUserName,
         String.format(TwitchResponses.LINK_INSTRUCTIONS, user.getLinkString()));
+  }
+
+  void handleReplayCurrent(MessageEvent<PircBotX> event, String message,
+      String twitchUserName, PersistenceManager pm) throws UserException, IOException {
+    QueuedPlayer currentPlayer = spectator.getCurrentPlayer(pm);
+    if (currentPlayer == null) {
+      return;
+    }
+    
+    URL replayLink = twitchApi.getReplayLink(currentPlayer);
+    if (replayLink == null) {
+      throw new UserException(String.format(Responses.REPLAY_NOT_FOUND, currentPlayer.getPlayer()
+          .getUserName()));
+    }
+    
+    event
+        .getChannel()
+        .send()
+        .message(
+            String.format(TwitchResponses.REPLAY, currentPlayer.getPlayer().getUserName(),
+                replayLink.toString()));
+  }
+
+  void handleReplaySpecific(MessageEvent<PircBotX> event, String targetPlayer,
+      String twitchUserName, PersistenceManager pm) throws UserException, IOException {
+    QueuedPlayer player;
+    try (JDOQuery<QueuedPlayer> query = new JDOQuery<>(pm).select(queuedPlayer).from(queuedPlayer)) {
+      player =
+          query
+              .where(
+                  queuedPlayer.player.userName.toLowerCase().eq(targetPlayer.trim().toLowerCase()),
+                  queuedPlayer.state.loe(QueuedPlayer.SPECTATING)).orderBy(queuedPlayer.id.desc())
+              .fetchFirst();
+    }
+    
+    if (player == null) {
+      throw new UserException(String.format(Responses.REPLAY_NOT_FOUND, targetPlayer));
+    }
+    
+    URL replayLink = twitchApi.getReplayLink(player);
+    if (replayLink == null) {
+      throw new UserException(String.format(Responses.REPLAY_NOT_FOUND, player.getPlayer().getUserName()));
+    }
+    
+    event
+        .getChannel()
+        .send()
+        .message(
+            String.format(TwitchResponses.REPLAY, player.getPlayer().getUserName(),
+                replayLink.toString()));
   }
 
   @Override

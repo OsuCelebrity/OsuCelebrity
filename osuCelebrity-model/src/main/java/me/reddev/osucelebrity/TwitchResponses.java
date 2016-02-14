@@ -34,4 +34,6 @@ public class TwitchResponses extends Responses {
   public static final String NEW_SPECTATEE = "NOW SPECTATING: %s";
   
   public static final String OLD_SPECTATEE = " | Thanks for playing, %s!";
+
+  public static final String REPLAY = "Here's the replay of %s's latest performance: %s";
 }

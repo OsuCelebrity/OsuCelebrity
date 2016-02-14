@@ -27,6 +27,8 @@ public class Responses {
   
   public static final String BOOSTED = "%s was boosted.";
   
+  public static final String REPLAY_NOT_FOUND = "No replay found for %s.";
+  
   /*
    * EXCEPTIONS
    */

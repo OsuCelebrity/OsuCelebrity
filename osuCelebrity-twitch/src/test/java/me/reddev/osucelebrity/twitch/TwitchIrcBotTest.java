@@ -13,6 +13,7 @@ import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
+import java.net.URL;
 
 import javax.jdo.PersistenceManager;
 
@@ -366,5 +367,32 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
         + osuUser.getUserName()));
 
     verify(whisperBot).whisper("twitchIrcUser", String.format(OsuResponses.NOT_IN_QUEUE, osuUser.getUserName()));
+  }
+  
+  @Test
+  public void testReplayCurrent() throws Exception {
+    QueuedPlayer currentPlayer = getUser(pm, "currentPlayer");
+    
+    when(spectator.getCurrentPlayer(any())).thenReturn(currentPlayer);
+    when(twitchApi.getReplayLink(currentPlayer)).thenReturn(new URL("http://rightthere"));
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!replay"));
+
+    verify(outputChannel).message(contains("rightthere"));
+    verify(outputChannel).message(contains("currentPlayer"));
+  }
+  
+  @Test
+  public void testReplaySpecific() throws Exception {
+    QueuedPlayer specificPlayer = getUser(pm, "specificPlayer");
+    specificPlayer.setState(-1);
+    pm.makePersistent(specificPlayer);
+    
+    when(twitchApi.getReplayLink(specificPlayer)).thenReturn(new URL("http://rightthere"));
+    
+    ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!replay specificPlayer"));
+
+    verify(outputChannel).message(contains("rightthere"));
+    verify(outputChannel).message(contains("specificPlayer"));
   }
 }

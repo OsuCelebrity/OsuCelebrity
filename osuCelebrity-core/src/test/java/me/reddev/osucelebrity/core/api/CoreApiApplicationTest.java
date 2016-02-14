@@ -1,7 +1,8 @@
 package me.reddev.osucelebrity.core.api;
 
-import me.reddev.osucelebrity.twitch.SceneSwitcher;
+import me.reddev.osucelebrity.twitchapi.TwitchApi;
 
+import me.reddev.osucelebrity.twitch.SceneSwitcher;
 import me.reddev.osucelebrity.core.StatusWindow;
 import me.reddev.osucelebrity.core.VoteType;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
@@ -53,6 +54,8 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
   Osu osu;
   @Mock
   private SceneSwitcher sceneSwitcher;
+  @Mock
+  private TwitchApi twitchApi;
 
   @Before
   public void initMocks() throws IOException {
@@ -122,7 +125,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(0).build();
     SpectatorImpl spectatorImpl =
         new SpectatorImpl(null, clock, osu, settings, pmf, osuApi, exec,
-            new StatusWindow.DummyStatusWindow(), sceneSwitcher);
+            new StatusWindow.DummyStatusWindow(), sceneSwitcher, twitchApi);
     
     QueuedPlayer player = getUser(pm, "some player");
     

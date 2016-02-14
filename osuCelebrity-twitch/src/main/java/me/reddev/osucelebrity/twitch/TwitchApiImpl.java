@@ -11,10 +11,13 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.core.Clock;
+import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.StatusWindow;
+import me.reddev.osucelebrity.twitch.TwitchApiImpl.Broadcasts.Video;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import me.reddev.osucelebrity.twitchapi.TwitchApiSettings;
 import me.reddev.osucelebrity.twitchapi.TwitchApiUser;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -25,13 +28,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
 import javax.annotation.CheckForNull;
 import javax.inject.Inject;
 import javax.jdo.PersistenceManager;
@@ -51,6 +56,8 @@ public class TwitchApiImpl implements TwitchApi {
   private static final String CHATTERS = "group/user/%s/chatters?_=%d";
   
   private static final String USER = "https://api.twitch.tv/kraken/users/%s";
+  
+  private static final String BROADCASTS = "https://api.twitch.tv/kraken/channels/%s/videos?broadcasts=true";
 
   private final TwitchApiSettings settings;
   private final TwitchIrcSettings ircSettings;
@@ -143,6 +150,29 @@ public class TwitchApiImpl implements TwitchApi {
       }
     }
   }
+  
+  @Data
+  public static class Broadcasts {
+    List<Video> videos;
+    
+    @Data
+    public static class Video {
+      @SerializedName("_id")
+      String id;
+      @SerializedName("broadcast_id")
+      long broadcastId;
+      String title;
+      double length;
+      String url;
+      String status;
+      @SerializedName("recorded_at")
+      Date recordedAt;
+      @SerializedName("created_at")
+      Date createdAt;
+      @SerializedName("delete_at")
+      Date deleteAt;
+    }
+  }
 
   @Override
   public List<String> getOnlineMods() {
@@ -183,11 +213,55 @@ public class TwitchApiImpl implements TwitchApi {
     }
   }
 
-  private TwitchApiUser downloadUser(String username) throws IOException,
-      UnsupportedEncodingException, MalformedURLException {
+  private TwitchApiUser downloadUser(String username) throws IOException {
     TwitchApiUser user =
         gson.fromJson(readString(new URL(String.format(USER, username))), TwitchApiUser.class);
     user.setDownloaded(clock.getTime());
     return user;
+  }
+  
+  List<Video> getBroadcasts() throws IOException {
+    Broadcasts broadcasts =
+        gson.fromJson(
+            readString(new URL(String.format(BROADCASTS, ircSettings.getTwitchIrcUsername()
+                .toLowerCase()))), Broadcasts.class);
+
+    return broadcasts.getVideos();
+  }
+  
+  @Override
+  public URL getReplayLink(QueuedPlayer play) throws IOException {
+    Optional<Video> match = getBroadcasts()
+        .stream()
+        .filter(video -> video.getRecordedAt().getTime() < play.getStartedAt())
+        .filter(
+            video -> video.getRecordedAt().getTime() + video.getLength() * 1000 > play
+                .getStartedAt() || video.getStatus().equals("recording")).findFirst();
+    
+    if (!match.isPresent()) {
+      return null;
+    }
+    
+    String offset = getOffset(play.getStartedAt() - match.get().getRecordedAt().getTime());
+    return new URL(match.get().getUrl() + "?t=" + offset);
+  }
+  
+  String getOffset(long timeInMillis) {
+    timeInMillis /= 1000;
+    String offset = StringUtils.leftPad(String.valueOf(timeInMillis % 60), 2, '0') + "s";
+
+    timeInMillis /= 60;
+    if (timeInMillis <= 0) {
+      return offset;
+    }
+    offset = StringUtils.leftPad(String.valueOf(timeInMillis % 60), 2, '0') + "m" + offset;
+
+    timeInMillis /= 60;
+    if (timeInMillis <= 0) {
+      return offset;
+    }
+    offset = StringUtils.leftPad(String.valueOf(timeInMillis % 24), 2, '0') + "h" + offset;
+
+    return offset;
   }
 }

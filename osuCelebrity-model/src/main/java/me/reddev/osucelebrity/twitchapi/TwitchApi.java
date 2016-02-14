@@ -1,11 +1,14 @@
 package me.reddev.osucelebrity.twitchapi;
 
 import me.reddev.osucelebrity.PassAndReturnNonnull;
+import me.reddev.osucelebrity.core.QueuedPlayer;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map.Entry;
 
+import javax.annotation.CheckForNull;
 import javax.jdo.PersistenceManager;
 
 @PassAndReturnNonnull
@@ -35,4 +38,14 @@ public interface TwitchApi {
    * @return the user object.
    */
   TwitchApiUser getUser(PersistenceManager pm, String username, long maxAge) throws IOException;
+  
+  /**
+   * Retrieves the link to the past broadcast that a play occurred in at the exact time when the
+   * play started.
+   * 
+   * @param play any play.
+   * @return the full URL. if no matching past broadcast can be found, null.
+   */
+  @CheckForNull
+  URL getReplayLink(QueuedPlayer play) throws IOException;
 }

@@ -1,7 +1,7 @@
 package me.reddev.osucelebrity.core;
 
+import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import me.reddev.osucelebrity.twitch.SceneSwitcher;
-
 import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
 import org.mockito.ArgumentCaptor;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
@@ -26,6 +26,7 @@ import org.mockito.MockitoAnnotations;
 import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,6 +49,8 @@ public class SpectatorImplTest extends AbstractJDOTest {
   private CoreSettings settings;
   @Mock
   private SceneSwitcher sceneSwitcher;
+  @Mock
+  private TwitchApi twitchApi;
   
   protected SpectatorImpl spectator;
 
@@ -68,7 +71,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     
     spectator =
         new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec,
-            new StatusWindow.DummyStatusWindow(), sceneSwitcher);
+            new StatusWindow.DummyStatusWindow(), sceneSwitcher, twitchApi);
   }
 
   QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
@@ -476,7 +479,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
   void testAutoQueueDistribution() throws Exception {
     List<ApiUser> recentlyActive = new ArrayList<>();
     Map<Integer, Long> lastQueueTime = new HashMap<>();
-    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec, null, sceneSwitcher) {
+    SpectatorImpl spectator = new SpectatorImpl(twitch, clock, osu, settings, pmf, osuApi, exec, null, sceneSwitcher, twitchApi) {
       @Override
       List<ApiUser> getRecentlyActive(PersistenceManager pm) {
         return recentlyActive;
@@ -661,12 +664,14 @@ public class SpectatorImplTest extends AbstractJDOTest {
   }
   
   @Test
-  public void testEndStatistic() throws Exception {
+  public void testEndStatisticAndReplay() throws Exception {
     OsuUser user = osuApi.getUser("someplayer", pm, 0);
     QueuedPlayer player = new QueuedPlayer(user, null, clock.getTime());
     spectator.enqueue(pm, player, false);
     spectator.enqueue(pm, new QueuedPlayer(osuApi.getUser("someplayer2", pm, 0), 
         null, clock.getTime()), false);
+    
+    when(twitchApi.getReplayLink(player)).thenReturn(new URL("http://hereisthereplay"));
 
     spectator.loop(pm);
 
@@ -677,6 +682,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.advance(pm, PlayerQueue.loadQueue(pm, clock));
 
     verify(osu).notifyStatistics(player.getPlayer(), 2, 1);
+    verify(osu).message(eq(user), contains("hereisthereplay"));
   }
   
   @Test

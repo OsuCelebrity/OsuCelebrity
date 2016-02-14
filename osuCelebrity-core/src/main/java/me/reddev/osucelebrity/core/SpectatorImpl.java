@@ -7,6 +7,8 @@ import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
 import static me.reddev.osucelebrity.util.ExecutorServiceHelper.detachAndSchedule;
+
+import com.google.common.base.Objects;
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -14,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.JdoQueryUtil;
 import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.api.CurrentPlayerService;
 import me.reddev.osucelebrity.core.api.DisplayQueuePlayer;
@@ -29,11 +32,11 @@ import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.SceneSwitcher;
 import me.reddev.osucelebrity.twitch.Twitch;
 import me.reddev.osucelebrity.twitch.TwitchUser;
+import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import org.slf4j.Logger;
 
-import com.google.common.base.Objects;
-
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,6 +82,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   final StatusWindow statusWindow;
   
   final SceneSwitcher sceneSwitcher;
+  
+  final TwitchApi twitchApi;
   
   /**
    * Perform one loop iteration.
@@ -127,7 +132,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
             if (next.isPresent()) {
               QueuedPlayer newPlayer = advance(pm, queue);
               if (newPlayer != null) {
-                detachAndSchedule(exec, log, pm, twitch::announceAdvance, shouldSkip, current
+                detachAndSchedule(exec, log, pm, twitch::announceAdvance, null, current
                     .get().getPlayer(), newPlayer.getPlayer());
               }
             } else {
@@ -135,7 +140,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
                   - (settings.getAutoSpecTime() - settings.getDefaultSpecDuration())) {
                 QueuedPlayer newPlayer = advance(pm, queue);
                 if (newPlayer != null) {
-                  detachAndSchedule(exec, log, pm, twitch::announceAdvance, shouldSkip, current
+                  detachAndSchedule(exec, log, pm, twitch::announceAdvance, null, current
                       .get().getPlayer(), newPlayer.getPlayer());
                 }
               }
@@ -504,6 +509,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       if (spectating.get().isNotify()) {
         detachAndSchedule(exec, log, pm, osu::notifyDone, spectating.get().getPlayer());
         sendEndStatistics(pm, spectating.get());
+        detachAndSchedule(exec, log, pm, this::sendReplayLink, spectating.get());
       }
     }
     long time = clock.getTime();
@@ -519,6 +525,19 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     detachAndSchedule(exec, log, pm, osu::startSpectate, user);
     status = new Status();
     statusWindow.newPlayer();
+  }
+
+  private void sendReplayLink(QueuedPlayer queuedPlayer) {
+    try {
+      URL replayLink = twitchApi.getReplayLink(queuedPlayer);
+      if (replayLink == null) {
+        return;
+      }
+      osu.message(queuedPlayer.getPlayer(),
+          String.format(OsuResponses.REPLAY, replayLink));
+    } catch (Exception e) {
+      UserException.handleException(log, e, null);
+    }
   }
 
   @Override

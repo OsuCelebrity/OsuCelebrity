@@ -73,4 +73,5 @@ public class OsuResponses extends Responses {
   public static final String ALREADY_LINKED = "Your osu! account is already linked"
       + " to a twitch account.";
   public static final String UNKNOWN_LINK = "Link string not found.";
+  public static final String REPLAY = "Here's an [%s instant replay] of your performance.";
 }
