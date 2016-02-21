@@ -1,15 +1,24 @@
 package me.reddev.osucelebrity.osu;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+
+import com.github.omkelderman.osudbparser.OsuBeatmapInfo;
+import com.github.omkelderman.osudbparser.OsuDbFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
 import javax.inject.Inject;
@@ -28,6 +37,8 @@ public class OsuApplication {
     int getOsuClientWidth();
     
     int getOsuClientHeight();
+    
+    String getOsuDbPath();
   }
 
   private final OsuApplicationSettings settings;
@@ -73,6 +84,7 @@ public class OsuApplication {
 
   @CheckForNull
   String windowTitle = null;
+  volatile Multimap<String, OsuBeatmapInfo> beatmaps = Multimaps.forMap(Collections.emptyMap());
 
   /**
    * updates the osu client window title. logs exceptions.
@@ -84,6 +96,24 @@ public class OsuApplication {
       return;
     } catch (Exception e) {
       log.error("exception while updating window title", e);
+    }
+  }
+  
+  /**
+   * Parses the current osu database.
+   */
+  public void updateOsuDb() {
+    try {
+      OsuDbFile db = OsuDbFile.parse(settings.getOsuDbPath());
+      Multimap<String, OsuBeatmapInfo> beatmaps =
+          Multimaps.newListMultimap(new HashMap<>(), ArrayList::new);
+      Stream.of(db.getBeatmaps()).forEach(
+          map -> beatmaps.put(
+              String.format("%s - %s [%s]", map.getArtistName(), map.getSongTitle(),
+                  map.getDifficulty()), map));
+      this.beatmaps = beatmaps;
+    } catch (Exception e) {
+      log.error("error while reading osu db", e);
     }
   }
 

@@ -76,6 +76,7 @@ public class OsuCelebrity {
     exec.scheduleWithFixedDelay(osuActivityUpdater::update, 0, 5, TimeUnit.SECONDS);
     exec.scheduleWithFixedDelay(twitchApi::updateChatters, 0, 5, TimeUnit.SECONDS);
     exec.scheduleWithFixedDelay(autoQueue::loop, 0, 1, TimeUnit.SECONDS);
+    exec.scheduleWithFixedDelay(osuApp::updateOsuDb, 0, 10, TimeUnit.MINUTES);
 
     URI baseUri = UriBuilder.fromUri("http://localhost/").port(coreSettings.getApiPort()).build();
 

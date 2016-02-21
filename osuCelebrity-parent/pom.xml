@@ -296,6 +296,11 @@
 				<artifactId>log4j-http-appender</artifactId>
 				<version>0.2</version>
 			</dependency>
+			<dependency>
+				<groupId>com.github.omkelderman</groupId>
+				<artifactId>osu-db-parser</artifactId>
+				<version>0.0.1</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	<dependencies>

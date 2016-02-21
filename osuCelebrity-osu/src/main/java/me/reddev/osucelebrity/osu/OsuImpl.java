@@ -2,6 +2,7 @@ package me.reddev.osucelebrity.osu;
 
 import static me.reddev.osucelebrity.osu.QPlayerActivity.playerActivity;
 
+import com.github.omkelderman.osudbparser.OsuBeatmapInfo;
 import com.querydsl.jdo.JDOQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import me.reddev.osucelebrity.core.Spectator;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -126,5 +128,14 @@ public class OsuImpl implements Osu {
     } finally {
       pm.close();
     }
+  }
+
+  @Override
+  public Integer getBeatmapId(String formattedName) {
+    Collection<OsuBeatmapInfo> beatmaps = app.beatmaps.get(formattedName);
+    if (beatmaps.size() != 1) {
+      return null;
+    }
+    return (int) beatmaps.stream().findFirst().get().getBeatmapId();
   }
 }

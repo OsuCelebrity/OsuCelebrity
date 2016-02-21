@@ -4,8 +4,8 @@ import lombok.Getter;
 import lombok.ToString;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.Properties;
 
@@ -64,6 +64,8 @@ public class Settings implements SettingsMBean {
   private int osuClientYOffset;
   private int osuClientWidth;
   private int osuClientHeight;
+  private String osuDbPath;
+  
   /**
    * Loads settings from a given property list.
    * @param properties An imported java property list

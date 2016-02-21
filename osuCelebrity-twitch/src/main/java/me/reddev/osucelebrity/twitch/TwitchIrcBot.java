@@ -273,8 +273,14 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     
     OsuStatus status = osu.getClientStatus();
     if (player != null && status != null && status.getType() == Type.PLAYING) {
-      event.getChannel().send().message(String.format(OsuResponses.NOW_PLAYING, 
-          player.getPlayer().getUserName(), status.getDetail()));
+      String formatted =
+          String.format(OsuResponses.NOW_PLAYING, player.getPlayer().getUserName(),
+              status.getDetail());
+      Integer beatmapId = osu.getBeatmapId(status.getDetail());
+      if (beatmapId != null) {
+        formatted += " https://osu.ppy.sh/b/" + beatmapId; 
+      }
+      event.getChannel().send().message(formatted);
     }
   }
   

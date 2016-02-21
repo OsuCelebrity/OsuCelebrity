@@ -67,6 +67,10 @@
 			<groupId>org.bytedeco</groupId>
 			<artifactId>javacv</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.github.omkelderman</groupId>
+			<artifactId>osu-db-parser</artifactId>
+		</dependency>
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>tv.rdbk.osuCelebrity</groupId>
