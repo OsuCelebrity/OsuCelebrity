@@ -3,7 +3,10 @@ jdk:
   - oraclejdk8
 
 before_install:
-  - cd osuCelebrity-parent
+  - git clone https://github.com/omkelderman/osuDbParser.git
+  - cd osuDbParser
+  - mvn install
+  - cd ../osuCelebrity-parent
 
 # we're not installing anything
 install: true
