@@ -75,4 +75,5 @@ public class OsuResponses extends Responses {
   public static final String UNKNOWN_LINK = "Link string not found.";
   public static final String REPLAY = "Here's an [%s instant replay] of your performance.";
   public static final String UNAUTHORIZED = "You are not authorized for this command.";
+  public static final String TIMED_OUT_CURRENTLY = "You are currently not allowed to use the bot.";
 }

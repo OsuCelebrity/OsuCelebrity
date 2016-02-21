@@ -13,6 +13,7 @@ import static me.reddev.osucelebrity.Commands.RESTART_CLIENT;
 import static me.reddev.osucelebrity.Commands.SELFPOSITION;
 import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
+import static me.reddev.osucelebrity.OsuResponses.TIMED_OUT_CURRENTLY;
 import static me.reddev.osucelebrity.OsuResponses.UNAUTHORIZED;
 import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
 
@@ -200,14 +201,19 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     try {
 
       OsuIrcUser ircUser = osuApi.getIrcUser(event.getUser().getNick(), pm, 0);
-      if (ircUser == null || ircUser.getUser() == null) {
+      OsuUser osuUser = ircUser != null ? ircUser.getUser() : null;
+      if (osuUser == null) {
         throw new UserException("unrecognized user name");
+      }
+      
+      if (osuUser.getTimeOutUntil() > clock.getTime()) {
+        throw new UserException(TIMED_OUT_CURRENTLY);
       }
       
       String message = event.getMessage().substring(ircSettings.getOsuIrcCommand().length());
 
       for (CommandHandler commandHandler : handlers) {
-        if (commandHandler.handle(event, message, ircUser.getUser(), pm)) {
+        if (commandHandler.handle(event, message, osuUser, pm)) {
           break;
         }
       }

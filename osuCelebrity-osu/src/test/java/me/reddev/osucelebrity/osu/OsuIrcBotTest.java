@@ -520,4 +520,13 @@ public class OsuIrcBotTest extends AbstractJDOTest {
    
     verify(outputUser).message(String.format(OsuResponses.NOT_IN_QUEUE, "osuIrcUser"));
   }
+  
+  @Test
+  public void testTimedOut() throws Exception {
+    osuApi.getUser("osuIrcUser", pm, 0L).setTimeOutUntil(1L);
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!position"));
+
+    verify(outputUser).message(OsuResponses.TIMED_OUT_CURRENTLY);
+  }
 }
