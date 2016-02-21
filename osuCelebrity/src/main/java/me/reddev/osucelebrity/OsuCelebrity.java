@@ -1,10 +1,9 @@
 package me.reddev.osucelebrity;
 
-import me.reddev.osucelebrity.core.AutoQueue;
-
 import com.google.inject.Guice;
 
 import lombok.RequiredArgsConstructor;
+import me.reddev.osucelebrity.core.AutoQueue;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.SpectatorImpl;
 import me.reddev.osucelebrity.core.StatusWindow;
@@ -17,6 +16,7 @@ import me.reddev.osucelebrity.twitch.ObsRemote;
 import me.reddev.osucelebrity.twitch.TwitchApiImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchWhisperBot;
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -50,6 +50,8 @@ public class OsuCelebrity {
   final AutoQueue autoQueue;
   final ObsRemote obsRemote;
   
+  boolean startFrozen;
+  
   void start() throws Exception {
     MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
     jmxServer.registerMBean(settings,
@@ -61,6 +63,10 @@ public class OsuCelebrity {
     
     exec.scheduleWithFixedDelay(obsRemote::connect, 0, 1, TimeUnit.SECONDS);
     obsRemote.awaitConnect();
+    
+    if (startFrozen) {
+      spectator.setFrozen(true);
+    }
     
     exec.scheduleAtFixedRate(spectator::loop, 0, 100, TimeUnit.MILLISECONDS);
     exec.submit(osuBot);
@@ -100,6 +106,10 @@ public class OsuCelebrity {
   public static void main(String[] args) throws Exception {
     OsuCelebrity osuCelebrity =
         Guice.createInjector(new OsuCelebrityModule()).getInstance(OsuCelebrity.class);
+    if (ArrayUtils.contains(args, "-freeze")) {
+      osuCelebrity.startFrozen = true;
+    }
+
     osuCelebrity.start();
   }
 }
