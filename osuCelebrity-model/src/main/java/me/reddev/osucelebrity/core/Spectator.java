@@ -154,8 +154,8 @@ public interface Spectator {
    * @param replyNegative negative responses are sent here
    */
   void performEnqueue(PersistenceManager persistenceManager, QueuedPlayer queueRequest,
-      String requestingUser, Logger log, Consumer<String> reply, Consumer<String> replyNegative)
-      throws IOException;
+      @CheckForNull String requestingUser, Logger log, Consumer<String> reply,
+      Consumer<String> replyNegative) throws IOException;
   
   /**
    * Adds a filter for banned maps. If the current player plays a map which matches this filter,

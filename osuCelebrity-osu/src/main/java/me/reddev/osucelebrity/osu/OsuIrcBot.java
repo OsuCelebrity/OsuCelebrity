@@ -8,11 +8,15 @@ import static me.reddev.osucelebrity.Commands.OPTIN;
 import static me.reddev.osucelebrity.Commands.OPTOUT;
 import static me.reddev.osucelebrity.Commands.POSITION;
 import static me.reddev.osucelebrity.Commands.QUEUE;
+import static me.reddev.osucelebrity.Commands.QUEUE_SILENT;
+import static me.reddev.osucelebrity.Commands.RESTART_CLIENT;
 import static me.reddev.osucelebrity.Commands.SELFPOSITION;
 import static me.reddev.osucelebrity.Commands.SELFQUEUE;
 import static me.reddev.osucelebrity.Commands.UNMUTE;
+import static me.reddev.osucelebrity.OsuResponses.UNAUTHORIZED;
 import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
 
+import com.google.common.collect.ImmutableList;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,8 +49,6 @@ import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.ServerResponseEvent;
 import org.pircbotx.hooks.events.UnknownEvent;
 import org.tillerino.osuApiModel.GameModes;
-
-import com.google.common.collect.ImmutableList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -106,6 +108,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   {
     handlers.add(createHandler(this::handlePosition, POSITION));
     handlers.add(createHandler(this::handleSelfPosition, SELFPOSITION));
+    handlers.add(createHandler(this::handleQueueSilent, QUEUE_SILENT));
     handlers.add(createHandler(this::handleQueue, QUEUE));
     handlers.add(createHandler(this::handleSelfQueue, SELFQUEUE));
     handlers.add(createHandler(this::handleSkip, FORCESKIP));
@@ -113,7 +116,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     handlers.add(this::handleOpt);
     handlers.add(createHandler(this::handleSpec, FORCESPEC));
     handlers.add(createHandler(this::handleGameMode, GAME_MODE));
-    handlers.add(createHandler(this::handleRestartClient, Commands.RESTART_CLIENT));
+    handlers.add(createHandler(this::handleRestartClient, RESTART_CLIENT));
     handlers.add(createHandler(this::handleMod, Commands.MOD));
     handlers.add(createHandler(this::handleLink, Commands.FINISH_LINK));
   }
@@ -294,10 +297,26 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
         msg -> respond(event, msg), msg -> respond(event, msg));
   }
 
+  void handleQueueSilent(PrivateMessageEvent<PircBotX> event, String queueTarget, OsuUser user,
+      PersistenceManager pm) throws IOException, UserException {
+    if (!user.getPrivilege().canSkip) {
+      throw new UserException(UNAUTHORIZED);
+    }
+    
+    OsuUser requestedUser = osuApi.getUser(queueTarget, pm, 60 * 60 * 1000);
+    if (requestedUser == null) {
+      throw new UserException(String.format(OsuResponses.INVALID_USER, queueTarget));
+    }
+    
+    QueuedPlayer queueRequest = new QueuedPlayer(requestedUser, QueueSource.AUTO, clock.getTime());
+    spectator.performEnqueue(pm, queueRequest, null, log, msg -> respond(event, msg),
+        msg -> respond(event, msg));
+  }
+
   void handleSpec(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
     if (!user.getPrivilege().canSkip) {
-      throw new UserException("not allowed");
+      throw new UserException(UNAUTHORIZED);
     }
     
     OsuUser target = osuApi.getUser(message, pm, 0);
@@ -323,7 +342,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   void handleSkip(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException {
     if (!user.getPrivilege().canSkip) {
-      throw new UserException("Unauthorized to skip.");
+      throw new UserException(UNAUTHORIZED);
     }
     if (spectator.advanceConditional(pm, message)) {
       respond(event, "Skipped.");
@@ -417,7 +436,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   void handleRestartClient(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException, InterruptedException {
     if (!user.getPrivilege().canRestartClient) {
-      throw new UserException("not allowed");
+      throw new UserException(UNAUTHORIZED);
     }
     
     osu.restartClient();
@@ -426,7 +445,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   void handleMod(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
       PersistenceManager pm) throws UserException, IOException, InterruptedException {
     if (!user.getPrivilege().canMod) {
-      throw new UserException("not allowed");
+      throw new UserException(UNAUTHORIZED);
     }
     
     OsuUser target = osuApi.getUser(message, pm, 0);

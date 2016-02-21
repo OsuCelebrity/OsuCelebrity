@@ -74,4 +74,5 @@ public class OsuResponses extends Responses {
       + " to a twitch account.";
   public static final String UNKNOWN_LINK = "Link string not found.";
   public static final String REPLAY = "Here's an [%s instant replay] of your performance.";
+  public static final String UNAUTHORIZED = "You are not authorized for this command.";
 }

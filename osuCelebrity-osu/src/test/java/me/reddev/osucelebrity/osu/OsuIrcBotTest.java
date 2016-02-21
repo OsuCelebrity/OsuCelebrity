@@ -98,6 +98,11 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     when(settings.getOsuIrcAutoJoin()).thenReturn("#somechannel");
     when(user.send()).thenReturn(outputUser);
     
+    doAnswer(x -> {
+      System.out.println(x.getArgumentAt(0, String.class));
+      return null;
+    }).when(outputUser).message(anyString());
+    
     when(pircBotX.sendIRC()).thenReturn(ourputIrc);
 
     ircBot = new OsuIrcBot(osu, osuApi, settings, pmf, spectator, clock, twitch, new Pinger() {
@@ -163,6 +168,17 @@ public class OsuIrcBotTest extends AbstractJDOTest {
         eq("x"));
 
     verify(outputUser, only()).message(any());
+  }
+
+  @Test
+  public void testSpecSilent() throws Exception {
+    osuApi.getUser("osuIrcUser", pm, 0).setPrivilege(Privilege.MOD);
+
+    ircBot.onPrivateMessage(new PrivateMessageEvent<PircBotX>(bot, user, "!specsilent x"));
+
+    verify(spectator, only()).performEnqueue(any(),
+        eq(new QueuedPlayer(osuApi.getUser("x", pm, 0L), QueueSource.AUTO, 0L)), eq(null), any(),
+        any(), any());
   }
 
   @Test

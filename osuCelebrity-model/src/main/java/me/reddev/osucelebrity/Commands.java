@@ -6,6 +6,7 @@ public class Commands {
   public static final String FORCESKIP = "forceskip ";
   public static final String[] QUEUE = { "spec ", "vote ", "give ", "spectate " };
   public static final String SELFQUEUE = "spec";
+  public static final String QUEUE_SILENT = "specsilent ";
   public static final String OPTIN = "optin";
   public static final String OPTOUT = "optout";
   public static final String UNMUTE = "unmute";
