@@ -1,4 +1,4 @@
-OsuCelebrity
+OsuCelebrity [Build Status](https://travis-ci.org/OsuCelebrity/OsuCelebrity.svg)
 ============
 
 A view into the world of osu! pros
