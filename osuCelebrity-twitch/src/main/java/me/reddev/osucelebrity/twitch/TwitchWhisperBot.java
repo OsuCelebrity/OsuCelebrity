@@ -42,10 +42,12 @@ public class TwitchWhisperBot extends ListenerAdapter<PircBotX> implements Runna
   @Override
   public void run() {
     try {
+      findServer();
+      
       Configuration<PircBotX> config =
           new Configuration.Builder<PircBotX>().setName(settings.getTwitchIrcUsername())
               .setLogin(settings.getTwitchIrcUsername()).addListener(this)
-              .setServer(server, 6667, settings.getTwitchToken()).setAutoReconnect(true)
+              .setServer(server, 6667, settings.getTwitchToken()).setAutoReconnect(false)
               .addAutoJoinChannel("#" + room.getKey()).buildConfiguration();
       bot = new PircBotX(config);
 

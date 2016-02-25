@@ -59,8 +59,6 @@ public class OsuCelebrity {
     jmxServer.registerMBean(spectator,
         new ObjectName("osuCeleb:type=Spectator"));
 
-    twitchWhisper.findServer();
-    
     exec.scheduleWithFixedDelay(obsRemote::connect, 0, 1, TimeUnit.SECONDS);
     obsRemote.awaitConnect();
     
@@ -71,7 +69,7 @@ public class OsuCelebrity {
     exec.scheduleAtFixedRate(spectator::loop, 0, 100, TimeUnit.MILLISECONDS);
     exec.submit(osuBot);
     exec.submit(twitchBot);
-    exec.submit(twitchWhisper);
+    exec.scheduleWithFixedDelay(twitchWhisper, 0, 5, TimeUnit.SECONDS);
     exec.scheduleAtFixedRate(osuApp::updateWindowTitle, 0, 100, TimeUnit.MILLISECONDS);
     exec.scheduleWithFixedDelay(osuActivityUpdater::update, 0, 5, TimeUnit.SECONDS);
     exec.scheduleWithFixedDelay(twitchApi::updateChatters, 0, 5, TimeUnit.SECONDS);
