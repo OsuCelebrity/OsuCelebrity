@@ -1,7 +1,7 @@
 package me.reddev.osucelebrity.core;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Matchers.anyBoolean;
@@ -22,7 +22,12 @@ import org.junit.Before;
 import org.mockito.MockitoAnnotations;
 import me.reddev.osucelebrity.AbstractJDOTest;
 
+import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import javax.jdo.PersistenceManager;
 
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import static org.junit.Assert.*;
@@ -49,9 +54,38 @@ public class AutoQueueTest extends AbstractJDOTest {
 
     autoQueue = new AutoQueue(osu, spectator, clock, pmf, settings);
   }
+  
+  public static void main(String[] args) throws Exception {
+    AbstractJDOTest.createDatastore();
+    AutoQueueTest test = new AutoQueueTest();
+    test.initMocksOnAbstractJDOTest();
+    test.init();
+    test.measureDistribution();
+  }
+  
+  public void measureDistribution() throws Exception {
+    autoQueue = new AutoQueue(osu, spectator, clock, pmf, settings) {
+      @Override
+      List<ApiUser> getTopPlayers(PersistenceManager pm) {
+        return IntStream.range(1, 1001).mapToObj(rank -> {
+          ApiUser apiUser = new ApiUser(rank, 0);
+          apiUser.setRank(rank);
+          return apiUser;
+        }).collect(Collectors.toList());
+      }
+    };
+    int[] counts = new int[1001];
+    for (int i = 1; i <= 1000000; i++) {
+      counts[autoQueue.drawUserId(pm)]++;
+    }
+    double sum = IntStream.of(counts).sum();
+    for (int i = 0, incSum = 0; i < counts.length; i++) {
+      System.out.println(String.format("%d %f %f", i, counts[i] / sum, (incSum += counts[i]) / sum));
+    }
+  }
 
-  void fillUsers() throws Exception {
-    for (int i = 1; i <= 100; i++) {
+  void fillUsers(int ranks) throws Exception {
+    for (int i = 1; i <= ranks; i++) {
       ApiUser apiUser =
           osuApi.getUserData(osuApi.getUser("rank" + i, pm, 0L).getUserId(), GameModes.OSU, pm, 0L);
       apiUser.setRank(i);
@@ -74,10 +108,10 @@ public class AutoQueueTest extends AbstractJDOTest {
       return EnqueueResult.SUCCESS;
     });
     when(spectator.getQueueSize(any())).thenAnswer(x -> qSize[0]);
-    fillUsers();
+    fillUsers(100);
 
     for (int i = 0; i < 10; i++) {
-      autoQueue.loop();
+      autoQueue.loop(pm);
     }
 
     verify(spectator, times(5)).enqueue(eq(pm), any(), eq(false), eq(null), eq(true));
@@ -92,9 +126,9 @@ public class AutoQueueTest extends AbstractJDOTest {
       consumer.accept(pm, status);
       return null;
     }).when(osu).pollIngameStatus(any(), any());
-    fillUsers();
+    fillUsers(100);
 
-    autoQueue.loop();
+    autoQueue.loop(pm);
 
     verify(spectator, never()).enqueue(eq(pm), any(), eq(false), eq(null), eq(true));
   }

@@ -2,7 +2,6 @@ package me.reddev.osucelebrity.core;
 
 import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osuapi.QApiUser.apiUser;
-
 import com.querydsl.jdo.JDOQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +16,12 @@ import me.reddev.osucelebrity.osuapi.ApiUser;
 import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +40,7 @@ public class AutoQueue {
   final PersistenceManagerFactory pmf;
   final CoreSettings settings;
 
-  static ToDoubleFunction<ApiUser> probability = user -> Math.pow(1 - 1E-2, user.getRank() + 50);
+  static ToDoubleFunction<ApiUser> probability = user -> Math.pow(1 - 5E-3, user.getRank() + 50);
 
   Semaphore semaphore = new Semaphore(1);
 
@@ -73,18 +76,20 @@ public class AutoQueue {
     pollStatus(user);
   }
 
-  private int drawUserId(PersistenceManager pm) {
+  final LinkedList<Integer> lastDraws = new LinkedList<>();
+  final Set<Integer> lastDrawsAsSet = new HashSet<>();
+
+  int drawUserId(PersistenceManager pm) {
     double sum = 0d;
     TreeMap<Double, ApiUser> distribution = new TreeMap<>();
-    try (JDOQuery<ApiUser> query = new JDOQuery<>(pm).select(apiUser).from(apiUser)) {
-      List<ApiUser> users =
-          query.where(apiUser.gameMode.eq(GameModes.OSU), apiUser.rank.loe(1000),
-              apiUser.rank.goe(1)).fetch();
-      for (ApiUser user : users) {
-        double prob = probability.applyAsDouble(user);
-        distribution.put(sum, user);
-        sum += prob;
+    List<ApiUser> users = getTopPlayers(pm);
+    for (ApiUser user : users) {
+      if (lastDrawsAsSet.contains(user.getUserId())) {
+        continue;
       }
+      double prob = probability.applyAsDouble(user);
+      distribution.put(sum, user);
+      sum += prob;
     }
     double rnd = Math.random() * sum;
     Entry<Double, ApiUser> floorEntry = distribution.floorEntry(rnd);
@@ -92,7 +97,19 @@ public class AutoQueue {
       throw new RuntimeException(rnd + " in " + sum);
     }
     int userId = floorEntry.getValue().getUserId();
+    if (lastDraws.size() >= 100) {
+      lastDrawsAsSet.remove(lastDraws.removeFirst());
+    }
+    lastDraws.add(userId);
+    lastDrawsAsSet.add(userId);
     return userId;
+  }
+
+  List<ApiUser> getTopPlayers(PersistenceManager pm) {
+    try (JDOQuery<ApiUser> query = new JDOQuery<>(pm).select(apiUser).from(apiUser)) {
+      return new ArrayList<>(query.where(apiUser.gameMode.eq(GameModes.OSU), apiUser.rank.loe(1000),
+              apiUser.rank.goe(1)).fetch());
+    }
   }
 
   private void pollStatus(OsuUser user) {
