@@ -2,9 +2,6 @@ package me.reddev.osucelebrity;
 
 
 import me.reddev.osucelebrity.core.AutoQueue;
-
-import com.google.inject.AbstractModule;
-
 import me.reddev.osucelebrity.core.Clock;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.Spectator;
@@ -35,12 +32,13 @@ import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import me.reddev.osucelebrity.twitchapi.TwitchApiSettings;
 import org.tillerino.osuApiModel.Downloader;
 
+import com.google.inject.AbstractModule;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import javax.inject.Singleton;
 import javax.jdo.JDOHelper;
@@ -94,9 +92,7 @@ public class OsuCelebrityModule extends AbstractModule {
     bind(SpectatorImpl.class).in(Singleton.class);
     bind(TwitchApiImpl.class).in(Singleton.class);
     
-    ScheduledExecutorService executor = Executors.newScheduledThreadPool(16);
-    bind(ExecutorService.class).toInstance(executor);
-    bind(ScheduledExecutorService.class).toInstance(executor);
+    bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool());
     
     StatusWindow statusWindow = new StatusWindow.DummyStatusWindow();
     try {

@@ -25,6 +25,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 
 import java.lang.management.ManagementFactory;
 import java.net.URI;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +43,7 @@ public class OsuCelebrity {
   final CoreApiApplication apiServerApp;
   final CoreSettings coreSettings;
   final OsuApplication osuApp;
-  final ScheduledExecutorService exec;
+  final ScheduledExecutorService exec = Executors.newScheduledThreadPool(16);
   final OsuActivityUpdater osuActivityUpdater;
   final TwitchApiImpl twitchApi;
   final Settings settings;
