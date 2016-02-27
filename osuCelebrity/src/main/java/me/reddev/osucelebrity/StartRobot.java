@@ -1,11 +1,11 @@
 package me.reddev.osucelebrity;
 
-import com.google.inject.Guice;
-
 import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.osu.OsuRobot;
 
-import java.util.concurrent.ScheduledExecutorService;
+import com.google.inject.Guice;
+
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
@@ -13,10 +13,10 @@ import javax.inject.Inject;
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class StartRobot {
   final OsuRobot osuRobot;
-  final ScheduledExecutorService exec;
 
   void main() {
-    exec.scheduleWithFixedDelay(osuRobot::findImages, 0, 1, TimeUnit.SECONDS);
+    Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(osuRobot::findImages, 0, 1,
+        TimeUnit.SECONDS);
   }
 
   /**
