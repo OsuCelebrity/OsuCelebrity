@@ -12,7 +12,7 @@ public class Commands {
   public static final String UNMUTE = "unmute";
   public static final String MUTE = "mute";
   public static final String DOWNVOTE = "skip";
-  public static final String[] UPVOTE = { "dank", "spank" };
+  public static final String[] UPVOTE = { "dank", "spank", "drank" };
   public static final String FORCESPEC = "forcespec ";
   public static final String POSITION = "position ";
   public static final String SELFPOSITION = "position";
