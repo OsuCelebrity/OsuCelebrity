@@ -217,7 +217,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
 
     checkTrust(pm, twitchUserName);
 
-    spectator.vote(pm, twitchUserName, type);
+    spectator.vote(pm, twitchUserName, type, event.getMessage());
     return true;
   }
   

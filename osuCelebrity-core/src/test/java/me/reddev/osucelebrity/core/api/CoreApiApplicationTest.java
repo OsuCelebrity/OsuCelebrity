@@ -1,24 +1,33 @@
 package me.reddev.osucelebrity.core.api;
 
-import me.reddev.osucelebrity.twitchapi.TwitchApi;
-
-import me.reddev.osucelebrity.twitch.SceneSwitcher;
-import me.reddev.osucelebrity.core.StatusWindow;
-import me.reddev.osucelebrity.core.VoteType;
-import me.reddev.osucelebrity.osu.OsuStatus.Type;
-import me.reddev.osucelebrity.osu.OsuUser;
-import me.reddev.osucelebrity.osu.OsuStatus;
-import org.mockito.internal.matchers.Contains;
-import org.tillerino.osuApiModel.GameModes;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.any;
+
+import me.reddev.osucelebrity.AbstractJDOTest;
+import me.reddev.osucelebrity.core.CoreSettings;
+import me.reddev.osucelebrity.core.QueuedPlayer;
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
+import me.reddev.osucelebrity.core.SpectatorImpl;
+import me.reddev.osucelebrity.core.StatusWindow;
+import me.reddev.osucelebrity.core.VoteType;
+import me.reddev.osucelebrity.osu.Osu;
+import me.reddev.osucelebrity.osu.OsuStatus;
+import me.reddev.osucelebrity.osu.OsuStatus.Type;
+import me.reddev.osucelebrity.osu.OsuUser;
+import me.reddev.osucelebrity.twitch.SceneSwitcher;
+import me.reddev.osucelebrity.twitchapi.TwitchApi;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.Before;
 import org.junit.Test;
-import org.eclipse.jetty.server.ServerConnector;
+import org.mockito.Mock;
+import org.mockito.internal.matchers.Contains;
+import org.tillerino.osuApiModel.GameModes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,17 +41,6 @@ import java.util.concurrent.Executors;
 
 import javax.jdo.PersistenceManager;
 import javax.ws.rs.core.UriBuilder;
-
-import me.reddev.osucelebrity.AbstractJDOTest;
-import me.reddev.osucelebrity.core.CoreSettings;
-import me.reddev.osucelebrity.core.QueuedPlayer;
-import me.reddev.osucelebrity.core.SpectatorImpl;
-import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
-import me.reddev.osucelebrity.osu.Osu;
-import org.eclipse.jetty.server.Server;
-import org.glassfish.jersey.jetty.JettyHttpContainerFactory;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.mockito.Mock;
 
 
 public class CoreApiApplicationTest extends AbstractJDOTest {
@@ -135,11 +133,11 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
     
     when(settings.getVoteWindow()).thenReturn(10L);
     
-    spectatorImpl.vote(pm, "redback", VoteType.DOWN);
+    spectatorImpl.vote(pm, "redback", VoteType.DOWN, "!skip");
     clock.sleepUntil(1);
-    spectatorImpl.vote(pm, "tillerino", VoteType.UP);
+    spectatorImpl.vote(pm, "tillerino", VoteType.UP, "!dankerino");
     clock.sleepUntil(2);
-    spectatorImpl.vote(pm, "redback", VoteType.UP);
+    spectatorImpl.vote(pm, "redback", VoteType.UP, "!nowdank");
     
     spectatorImpl.loop();
 
@@ -157,13 +155,16 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
 
     apiServer.start();
     int port = ((ServerConnector) apiServer.getConnectors()[0]).getLocalPort();
+    System.out.println(port);
     
     String result = readUrl(new URL("http://localhost:" + port + "/votes"));
     
     assertFalse(result.contains("\"voteType\":\"DOWN\""));
-    assertTrue(result.contains("\"voteType\":\"UP\""));
-    assertTrue(result.contains("\"twitchUser\":\"redback\""));
-    assertTrue(result.contains("\"twitchUser\":\"tillerino\""));
+    assertThat(result, new Contains("\"voteType\":\"UP\""));
+    assertThat(result, new Contains("\"twitchUser\":\"redback\""));
+    assertThat(result, new Contains("\"twitchUser\":\"tillerino\""));
+    assertThat(result, new Contains("\"command\":\"!dankerino\""));
+    assertThat(result, new Contains("\"command\":\"!nowdank\""));
     
     apiServer.stop();
   }

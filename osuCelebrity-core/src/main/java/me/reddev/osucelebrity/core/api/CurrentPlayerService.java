@@ -8,6 +8,7 @@ import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
+import me.reddev.osucelebrity.core.Vote;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
@@ -15,15 +16,19 @@ import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osuapi.ApiUser;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import org.apache.commons.lang3.StringUtils;
+import org.mapstruct.Mapper;
 import org.tillerino.osuApiModel.types.GameMode;
 import org.tillerino.osuApiModel.types.UserId;
 
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,6 +44,11 @@ import javax.ws.rs.core.MediaType;
 @Path("/current")
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class CurrentPlayerService {
+  @Mapper
+  public interface VoteMapper {
+    public DisplayVote voteToDisplayVote(Vote vote);
+  }
+  
   @Data
   public static class CurrentPlayer {
     String name;
@@ -73,6 +83,8 @@ public class CurrentPlayerService {
     String source;
     
     int queueSize;
+    
+    List<DisplayVote> votes;
   }
 
   private final PersistenceManagerFactory pmf;
@@ -119,6 +131,11 @@ public class CurrentPlayerService {
           response.country = apiUser.getCountry();
           response.gameMode = apiUser.getGameMode();
         }
+        
+        response.setVotes(spectator.getVotes(pm, queued).stream()
+            .map(new VoteMapperImpl()::voteToDisplayVote)
+            .sorted(Comparator.comparing(DisplayVote::getVoteTime))
+            .collect(Collectors.toList()));
       }
       OsuStatus clientStatus = osu.getClientStatus();
       if (clientStatus != null && clientStatus.getType() == Type.PLAYING) {

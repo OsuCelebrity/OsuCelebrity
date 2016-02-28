@@ -169,7 +169,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   public void testDank() throws Exception {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!dank"));
 
-    verify(spectator).vote(any(), eq("twitchIrcUser"), eq(VoteType.UP));
+    verify(spectator).vote(any(), eq("twitchIrcUser"), eq(VoteType.UP), eq("!dank"));
   }
 
   @Test
@@ -185,7 +185,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   public void testSkip() throws Exception {
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!skip"));
 
-    verify(spectator).vote(any(), eq("twitchIrcUser"), eq(VoteType.DOWN));
+    verify(spectator).vote(any(), eq("twitchIrcUser"), eq(VoteType.DOWN), eq("!skip"));
   }
 
   @Test

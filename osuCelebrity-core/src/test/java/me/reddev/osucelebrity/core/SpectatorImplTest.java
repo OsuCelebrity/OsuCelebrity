@@ -217,13 +217,13 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     spectator.loop(pm);
 
-    spectator.vote(pm, "spammer", VoteType.UP);
-    spectator.vote(pm, "spammer", VoteType.UP);
-    spectator.vote(pm, "spammer", VoteType.UP);
-    spectator.vote(pm, "spammer", VoteType.UP);
-    spectator.vote(pm, "spammer", VoteType.UP);
+    spectator.vote(pm, "spammer", VoteType.UP, "");
+    spectator.vote(pm, "spammer", VoteType.UP, "");
+    spectator.vote(pm, "spammer", VoteType.UP, "");
+    spectator.vote(pm, "spammer", VoteType.UP, "");
+    spectator.vote(pm, "spammer", VoteType.UP, "");
 
-    spectator.vote(pm, "bummer", VoteType.DOWN);
+    spectator.vote(pm, "bummer", VoteType.DOWN, "");
 
     assertEquals(.5, spectator.getApproval(pm, spectator.getCurrentPlayer(pm)), 0d);
   }
@@ -235,9 +235,9 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     spectator.loop(pm);
 
-    spectator.vote(pm, "flipflopper", VoteType.UP);
+    spectator.vote(pm, "flipflopper", VoteType.UP, "");
     clock.sleepUntil(1);
-    spectator.vote(pm, "flipflopper", VoteType.DOWN);
+    spectator.vote(pm, "flipflopper", VoteType.DOWN, "");
 
     assertEquals(0, spectator.getApproval(pm, spectator.getCurrentPlayer(pm)), 0d);
   }
@@ -263,11 +263,11 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     spectator.loop(pm);
 
-    assertFalse(spectator.vote(pm, "me", VoteType.UP));
+    assertFalse(spectator.vote(pm, "me", VoteType.UP, ""));
     
     clock.sleepUntil(settings.getStreamDelay());
 
-    assertTrue(spectator.vote(pm, "me", VoteType.UP));
+    assertTrue(spectator.vote(pm, "me", VoteType.UP, ""));
   }
 
   @Test
@@ -286,7 +286,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     clock.sleepUntil(10000);
     spectator.loop(pm);
     assertEquals(30000, spectator.getCurrentPlayer(pm).getStoppingAt());
-    spectator.vote(pm, "me", VoteType.UP);
+    spectator.vote(pm, "me", VoteType.UP, "");
 
     clock.sleepUntil(20000);
     spectator.loop(pm);
@@ -335,7 +335,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     
     assertEquals(30000, queued.getStoppingAt());
     
-    spectator.vote(pm, "negativeNancy", VoteType.DOWN);
+    spectator.vote(pm, "negativeNancy", VoteType.DOWN, "");
     
     clock.sleepUntil(10000);
     spectator.loop(pm);
@@ -359,8 +359,8 @@ public class SpectatorImplTest extends AbstractJDOTest {
     clock.sleepUntil(10000);
     spectator.loop(pm);
     // remaining time is now 20s
-    spectator.vote(pm, "me", VoteType.UP);
-    spectator.vote(pm, "someotherguy", VoteType.DOWN);
+    spectator.vote(pm, "me", VoteType.UP, "");
+    spectator.vote(pm, "someotherguy", VoteType.DOWN, "");
 
   }
 
@@ -675,9 +675,9 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     spectator.loop(pm);
 
-    spectator.vote(pm, "flipflopper", VoteType.UP);
-    spectator.vote(pm, "flipflopper", VoteType.UP);
-    spectator.vote(pm, "flipflopper", VoteType.DOWN);
+    spectator.vote(pm, "flipflopper", VoteType.UP, "");
+    spectator.vote(pm, "flipflopper", VoteType.UP, "");
+    spectator.vote(pm, "flipflopper", VoteType.DOWN, "");
     
     spectator.advance(pm, PlayerQueue.loadQueue(pm, clock));
 
@@ -695,9 +695,9 @@ public class SpectatorImplTest extends AbstractJDOTest {
 
     spectator.loop(pm);
 
-    spectator.vote(pm, "flipflopper", VoteType.UP);
-    spectator.vote(pm, "flipflopper", VoteType.DOWN);
-    spectator.vote(pm, "flipflopper", VoteType.DOWN);
+    spectator.vote(pm, "flipflopper", VoteType.UP, "");
+    spectator.vote(pm, "flipflopper", VoteType.DOWN, "");
+    spectator.vote(pm, "flipflopper", VoteType.DOWN, "");
     
     spectator.advance(pm, PlayerQueue.loadQueue(pm, clock));
 

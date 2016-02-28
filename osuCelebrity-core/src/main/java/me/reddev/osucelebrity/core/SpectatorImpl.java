@@ -9,6 +9,7 @@ import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
 import static me.reddev.osucelebrity.util.ExecutorServiceHelper.detachAndSchedule;
 
 import com.google.common.base.Objects;
+
 import com.querydsl.core.Tuple;
 import com.querydsl.jdo.JDOQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -546,7 +547,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
   }
 
   @Override
-  public synchronized boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType) {
+  public synchronized boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType,
+      String command) {
     PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     Optional<QueuedPlayer> currentlySpectating = queue.currentlySpectating();
     if (!currentlySpectating.isPresent()) {
@@ -560,6 +562,7 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     vote.setVoteType(voteType);
     vote.setVoteTime(clock.getTime());
     vote.setTwitchUser(twitchIrcNick);
+    vote.setCommand(command);
     pm.makePersistent(vote);
     return true;
   }

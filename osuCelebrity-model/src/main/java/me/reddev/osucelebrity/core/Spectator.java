@@ -91,9 +91,10 @@ public interface Spectator {
    * @param pm the current request's persistence manager
    * @param twitchIrcNick the voting player's twitch irc nickname
    * @param voteType up/down
+   * @param command the invoked command. will be displayed in the frontend.
    * @return true if the vote will count, false otherwise.
    */
-  boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType);
+  boolean vote(PersistenceManager pm, String twitchIrcNick, VoteType voteType, String command);
   
   /**
    * Removes the given player from the queue.

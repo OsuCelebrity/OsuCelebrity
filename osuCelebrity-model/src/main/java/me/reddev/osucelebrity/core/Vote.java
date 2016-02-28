@@ -2,6 +2,7 @@ package me.reddev.osucelebrity.core;
 
 import lombok.Data;
 
+import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.Index;
 import javax.jdo.annotations.PersistenceCapable;
@@ -23,4 +24,7 @@ public class Vote {
   String twitchUser;
 
   VoteType voteType;
+
+  @Column(defaultValue = "")
+  String command;
 }
