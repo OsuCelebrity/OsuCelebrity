@@ -187,12 +187,12 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   @Override
   public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
-    log.debug("received message from {}: {}", event.getUser().getNick(), event.getMessage());
-
     if (event.getUser().getNick().equals(ircSettings.getOsuCommandUser())) {
       handleBanchoBotResponse(event.getMessage());
       return;
     }
+
+    log.debug("received message from {}: {}", event.getUser().getNick(), event.getMessage());
     
     if (!event.getMessage().startsWith(ircSettings.getOsuIrcCommand())) {
       return;
@@ -249,24 +249,26 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   void handleBanchoBotResponse(String message) {
     PersistenceManager pm = pmf.getPersistenceManager();
     try {
-      Optional<PlayerStatus> status = parseStatus(pm, message);
-      if (!status.isPresent()) {
+      Optional<PlayerStatus> statusMaybe = parseStatus(pm, message);
+      if (!statusMaybe.isPresent()) {
         return;
       }
+      PlayerStatus status = statusMaybe.get();
+      log.debug("status for {}: {}", status.getUser().getUserName(), status.getType());
       boolean handled = false;
-      Queue<PollStatusConsumer> consumers = statusConsumers.get(status.get().getUser().getUserId());
+      Queue<PollStatusConsumer> consumers = statusConsumers.get(status.getUser().getUserId());
       if (consumers != null) {
         for (PollStatusConsumer consumer; (consumer = consumers.poll()) != null; ) {
           handled = true;
           try {
-            consumer.accept(pm, status.get());
+            consumer.accept(pm, status);
           } catch (Exception e) {
             UserException.handleException(log, e, null);
           }
         }
       }
       if (!handled) {
-        spectator.reportStatus(pm, status.get());
+        spectator.reportStatus(pm, status);
       }
     } catch (Exception e) {
       log.error("error while handling bancho response", e);

@@ -1,7 +1,5 @@
 package me.reddev.osucelebrity.osu;
 
-import lombok.extern.slf4j.Slf4j;
-
 import org.pircbotx.PircBotX;
 import org.pircbotx.Utils;
 import org.pircbotx.hooks.events.UnknownEvent;
@@ -11,7 +9,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@Slf4j
 public class Pinger {
   volatile String pingMessage = null;
   volatile CountDownLatch pingLatch = null;
@@ -30,7 +27,6 @@ public class Pinger {
     }
 
     Utils.sendRawLineToServer(bot, "PING " + pingMessage);
-    log.debug("PING");
     
     if (!pingLatch.await(10, TimeUnit.SECONDS)) {
       throw new IOException("ping timed out");
@@ -45,7 +41,6 @@ public class Pinger {
 
       boolean contains = event.getLine().contains(" PONG ");
       boolean endsWith = event.getLine().endsWith(pingMessage);
-      log.debug("     PONG");
       if (contains && endsWith) {
         pingLatch.countDown();
       }

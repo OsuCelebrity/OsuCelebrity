@@ -107,7 +107,11 @@ public class TwitchApiImpl implements TwitchApi {
       statusWindow.setTwitchMods(channelChatters.getChatters().getModerators());
     } catch (IOException e) {
       // we are expecting these regularly, so no need to put them in the error log
-      log.warn("Exception while updating chatters", e);
+      if (e.getMessage().contains("HTTP response code: 502")) {
+        log.warn(e.getMessage());
+      } else {
+        log.warn("Exception while updating chatters", e);
+      }
     } catch (Exception e) {
       log.error("Exception while updating chatters", e);
     }

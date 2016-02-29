@@ -159,9 +159,9 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   @Override
   public void onMessage(MessageEvent<PircBotX> event) {
     String message = event.getMessage();
-    log.debug("Received Twitch message: " + message);
     // Search through for command calls
     if (!message.startsWith(settings.getTwitchIrcCommand())) {
+      log.debug("Received Twitch message from {}: {}", event.getUser().getNick(), message);
       return;
     }
 
@@ -171,9 +171,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     try {
       for (CommandHandler commandHandler : handlers) {
         if (commandHandler.handle(event, message, event.getUser().getNick(), pm)) {
-          break;
+          return;
         }
       }
+      log.debug("Received unknown twitch command from {}: {}", event.getUser().getNick(), message);
     } catch (Exception e) {
       Consumer<String> messager =
           x -> whisperBot.whisper(event.getUser().getNick(), x);
@@ -214,6 +215,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
     if (type == null) {
       return false;
     }
+    log.debug("{} votes {}", twitchUserName, type);
 
     checkTrust(pm, twitchUserName);
 
@@ -449,7 +451,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       if (requiresMod) {
         requireMod(event);
       }
-      log.debug("{} invokes {}", twitchUserName, message);
+      log.debug("{} invokes {}{}", twitchUserName, settings.getTwitchIrcCommand(), message);
       handler.handle(event, remainingMessage, twitchUserName, pm);
       return true;
     };
