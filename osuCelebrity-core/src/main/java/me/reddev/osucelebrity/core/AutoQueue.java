@@ -40,7 +40,8 @@ public class AutoQueue {
   final PersistenceManagerFactory pmf;
   final CoreSettings settings;
 
-  static ToDoubleFunction<ApiUser> probability = user -> Math.pow(1 - 5E-3, user.getRank() + 50);
+  static ToDoubleFunction<ApiUser> probability = user -> Math.pow(1 - 5E-3, user.getRank() + 50)
+      * (user.getGameMode() == GameModes.OSU ? 1 : 1 / 9d);
 
   Semaphore semaphore = new Semaphore(1);
 
@@ -107,8 +108,7 @@ public class AutoQueue {
 
   List<ApiUser> getTopPlayers(PersistenceManager pm) {
     try (JDOQuery<ApiUser> query = new JDOQuery<>(pm).select(apiUser).from(apiUser)) {
-      return new ArrayList<>(query.where(apiUser.gameMode.eq(GameModes.OSU), apiUser.rank.loe(1000),
-              apiUser.rank.goe(1)).fetch());
+      return new ArrayList<>(query.where(apiUser.rank.loe(1000), apiUser.rank.goe(1)).fetch());
     }
   }
 
