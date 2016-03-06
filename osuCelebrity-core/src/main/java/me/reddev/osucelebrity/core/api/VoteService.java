@@ -4,9 +4,13 @@ import lombok.RequiredArgsConstructor;
 import me.reddev.osucelebrity.core.QueuedPlayer;
 import me.reddev.osucelebrity.core.Spectator;
 import me.reddev.osucelebrity.core.Vote;
+import org.mapstruct.Mapper;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.jdo.PersistenceManager;
@@ -20,6 +24,11 @@ import javax.ws.rs.core.MediaType;
 @Path("/votes")
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class VoteService {
+  @Mapper
+  public interface VoteMapper {
+    public DisplayVote voteToDisplayVote(Vote vote);
+  }
+
   private final PersistenceManagerFactory pmf;
 
   private final Spectator spectator;
@@ -30,7 +39,7 @@ public class VoteService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<Vote> votes() {
+  public List<DisplayVote> votes() {
     PersistenceManager pm = pmf.getPersistenceManager();
     
     try {
@@ -39,7 +48,10 @@ public class VoteService {
         return Collections.emptyList();
       }
       
-      return spectator.getVotes(pm, queued);
+      List<DisplayVote> votes =
+          spectator.getVotes(pm, queued).stream().map(new VoteMapperImpl()::voteToDisplayVote)
+              .sorted(Comparator.comparing(DisplayVote::getVoteTime)).collect(Collectors.toList());
+      return votes;
     } finally {
       pm.close();
     }
