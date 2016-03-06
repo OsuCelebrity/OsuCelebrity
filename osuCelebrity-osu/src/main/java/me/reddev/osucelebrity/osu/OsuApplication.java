@@ -26,8 +26,9 @@ import javax.inject.Inject;
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class OsuApplication {
-  static Pattern playingPattern = Pattern.compile("osu!  - (.*)");
-  static Pattern watchingPattern = Pattern.compile("osu!  -  \\(watching (.*)\\)");
+  private static final String OSU = "osu!(?:cuttingedge \\S+)?\\s*";
+  static Pattern playingPattern = Pattern.compile(OSU + "- (.*)");
+  static Pattern watchingPattern = Pattern.compile(OSU + "-  \\(watching (.*)\\)");
 
   public interface OsuApplicationSettings {
     int getOsuClientXOffset();

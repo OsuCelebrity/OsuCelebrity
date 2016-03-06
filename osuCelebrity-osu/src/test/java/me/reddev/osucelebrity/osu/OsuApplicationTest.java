@@ -23,6 +23,12 @@ public class OsuApplicationTest {
   };
 
   @Test
+  public void testWindowTitleWatchingEdge() throws Exception {
+    windowTitle = "osu!cuttingedge b20160304 -  (watching Angelsim)";
+    assertEquals(new OsuStatus(Type.WATCHING, "Angelsim"), fakeWindowTitle.getStatus());
+  }
+
+  @Test
   public void testWindowTitleWatching() throws Exception {
     windowTitle = "osu!  -  (watching hvick225)";
     assertEquals(new OsuStatus(Type.WATCHING, "hvick225"), fakeWindowTitle.getStatus());
