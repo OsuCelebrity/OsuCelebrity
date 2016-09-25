@@ -19,6 +19,12 @@
 		<datanucleus.api.jdo>4.1.1</datanucleus.api.jdo>
 		<mapstruct.version>1.0.0.CR2</mapstruct.version>
 	</properties>
+	<repositories>
+		<repository>
+			<id>omk2-releases</id>
+			<url>http://repo.omkserver.nl/content/repositories/releases/</url>
+		</repository>
+	</repositories>
 	<build>
 		<plugins>
 			<plugin>
@@ -299,7 +305,7 @@
 			<dependency>
 				<groupId>com.github.omkelderman</groupId>
 				<artifactId>osu-db-parser</artifactId>
-				<version>0.0.1</version>
+				<version>1.2.1</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
