@@ -55,9 +55,9 @@ public class TwitchApiImpl implements TwitchApi {
 
   private static final String CHATTERS = "group/user/%s/chatters?_=%d";
   
-  private static final String USER = "https://api.twitch.tv/kraken/users/%s";
+  private static final String USER = "https://api.twitch.tv/kraken/users/%s?client_id=%s";
   
-  private static final String BROADCASTS = "https://api.twitch.tv/kraken/channels/%s/videos?broadcasts=true&limit=1000";
+  private static final String BROADCASTS = "https://api.twitch.tv/kraken/channels/%s/videos?broadcasts=true&limit=1000&client_id=%s";
 
   private final TwitchApiSettings settings;
   private final TwitchIrcSettings ircSettings;
@@ -219,7 +219,9 @@ public class TwitchApiImpl implements TwitchApi {
 
   private TwitchApiUser downloadUser(String username) throws IOException {
     TwitchApiUser user =
-        gson.fromJson(readString(new URL(String.format(USER, username))), TwitchApiUser.class);
+        gson.fromJson(
+            readString(new URL(String.format(USER, username, settings.getTwitchClientId()))),
+            TwitchApiUser.class);
     user.setDownloaded(clock.getTime());
     return user;
   }
@@ -228,7 +230,7 @@ public class TwitchApiImpl implements TwitchApi {
     Broadcasts broadcasts =
         gson.fromJson(
             readString(new URL(String.format(BROADCASTS, ircSettings.getTwitchIrcUsername()
-                .toLowerCase()))), Broadcasts.class);
+                .toLowerCase(), settings.getTwitchClientId()))), Broadcasts.class);
 
     return broadcasts.getVideos();
   }
