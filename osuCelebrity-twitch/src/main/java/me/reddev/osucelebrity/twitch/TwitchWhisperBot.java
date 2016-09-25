@@ -3,6 +3,8 @@ package me.reddev.osucelebrity.twitch;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.hooks.ListenerAdapter;
@@ -61,15 +63,17 @@ public class TwitchWhisperBot extends ListenerAdapter<PircBotX> implements Runna
    * Find a group chat server.
    */
   public void findServer() throws IOException {
-    room =
-        api.getRoomMemberships().stream().findFirst()
-            .orElseThrow(() -> new RuntimeException("No group chat."));
+    room = Pair.<String, List<String>>of("jtv", null);
+    // api.getRoomMemberships().stream().findFirst()
+    // .orElseThrow(() -> new RuntimeException("No group chat."));
 
-    server =
-        room.getValue().stream().filter(serv -> serv.startsWith("199."))
-            .filter(serv -> serv.endsWith(":6667"))
-            .map(serv -> serv.substring(0, serv.length() - ":6667".length())).findAny()
-            .orElseThrow(() -> new RuntimeException("No group chat server."));
+    // server =
+    // room.getValue().stream().filter(serv -> serv.startsWith("199."))
+    // .filter(serv -> serv.endsWith(":6667"))
+    // .map(serv -> serv.substring(0, serv.length() - ":6667".length())).findAny()
+    // .orElseThrow(() -> new RuntimeException("No group chat server."));
+
+    server = "irc.chat.twitch.tv";
   }
 
   // Listeners
