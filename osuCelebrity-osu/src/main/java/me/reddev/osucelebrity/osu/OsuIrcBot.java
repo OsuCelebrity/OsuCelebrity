@@ -18,9 +18,11 @@ import static me.reddev.osucelebrity.OsuResponses.UNAUTHORIZED;
 import static me.reddev.osucelebrity.twitch.QTwitchUser.twitchUser;
 
 import com.google.common.collect.ImmutableList;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.AbstractIrcBot;
 import me.reddev.osucelebrity.Commands;
 import me.reddev.osucelebrity.JdoQueryUtil;
 import me.reddev.osucelebrity.OsuResponses;
@@ -41,14 +43,12 @@ import me.reddev.osucelebrity.twitch.TwitchUser;
 import org.pircbotx.Configuration;
 import org.pircbotx.Configuration.Builder;
 import org.pircbotx.PircBotX;
-import org.pircbotx.hooks.ListenerAdapter;
-import org.pircbotx.hooks.events.ConnectEvent;
-import org.pircbotx.hooks.events.DisconnectEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.ServerResponseEvent;
 import org.pircbotx.hooks.events.UnknownEvent;
+import org.slf4j.Logger;
 import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
@@ -72,7 +72,7 @@ import javax.jdo.PersistenceManagerFactory;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
-public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
+public class OsuIrcBot extends AbstractIrcBot {
   @FunctionalInterface
   interface CommandHandler {
     boolean handle(PrivateMessageEvent<PircBotX> event, String message, OsuUser user,
@@ -98,8 +98,6 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   
   private final Pinger pinger;
 
-  PircBotX bot;
-
   private Set<String> onlineUsers = new ConcurrentSkipListSet<>();
 
   final List<CommandHandler> handlers = new ArrayList<>();
@@ -121,21 +119,9 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
     handlers.add(createHandler(this::handleMod, Commands.MOD));
     handlers.add(createHandler(this::handleLink, Commands.FINISH_LINK));
   }
-
-  /**
-   * Starts the bot.
-   */
-  public void run() {
-    try {
-      createBot();
-
-      bot.startBot();
-    } catch (Exception e) {
-      log.error("Exception", e);
-    }
-  }
-
-  void createBot() {
+  
+  @Override
+  protected Configuration<PircBotX> getConfiguration() {
     Builder<PircBotX> configBuilder =
         new Configuration.Builder<PircBotX>()
             .setName(ircSettings.getOsuIrcUsername())
@@ -145,17 +131,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
                 ircSettings.getOsuIrcPassword()).setAutoReconnect(true).setMessageDelay(500);
     Stream.of(ircSettings.getOsuIrcAutoJoin().split(",")).forEach(
         configBuilder::addAutoJoinChannel);
-    Configuration<PircBotX> config = configBuilder.buildConfiguration();
-    bot = new PircBotX(config);
-  }
-
-  /**
-   * Disconnects from the IRC server.
-   */
-  public void stop() {
-    if (bot.isConnected()) {
-      bot.stopBotReconnect();
-    }
+    return configBuilder.buildConfiguration();
   }
 
   /**
@@ -165,7 +141,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
    */
   public void messagePlayer(OsuUser user, String message) {
     if (!ircSettings.isOsuIrcSilenced()) {
-      if (synchronizeThroughPinger(() -> bot.sendIRC().message(
+      if (synchronizeThroughPinger(() -> getBot().sendIRC().message(
           user.getUserName().replace(' ', '_'), message))) {
         log.debug("MESSAGED {}: {}", user.getUserName(), message);
       }
@@ -174,16 +150,6 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
 
   // Listeners
   // http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
-
-  @Override
-  public void onConnect(ConnectEvent<PircBotX> event) throws Exception {
-    log.debug("connected");
-  }
-
-  @Override
-  public void onDisconnect(DisconnectEvent<PircBotX> event) throws Exception {
-    log.debug("disconnected");
-  }
 
   @Override
   public void onPrivateMessage(PrivateMessageEvent<PircBotX> event) {
@@ -531,7 +497,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   }
 
   void pollIngameStatus(OsuUser player) {
-    if (synchronizeThroughPinger(() -> bot.sendIRC().message(ircSettings.getOsuCommandUser(),
+    if (synchronizeThroughPinger(() -> getBot().sendIRC().message(ircSettings.getOsuCommandUser(),
         "!stat " + player.getUserName()))) {
       log.debug("POLLED STATUS for: {}", player.getUserName());
     }
@@ -550,7 +516,7 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   
   synchronized boolean synchronizeThroughPinger(Runnable runnable) {
     try {
-      pinger.ping(bot);
+      pinger.ping(getBot());
       runnable.run();
       return true;
     } catch (IOException e) {
@@ -567,6 +533,9 @@ public class OsuIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
       log.debug("RESPONDED to {}: {}", event.getUser().getNick(), response);
     }
   }
-  
-  // End Listeners
+
+  @Override
+  protected Logger getLog() {
+    return log;
+  }
 }

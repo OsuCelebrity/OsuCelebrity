@@ -7,6 +7,7 @@ import static me.reddev.osucelebrity.core.QQueuedPlayer.queuedPlayer;
 import com.querydsl.jdo.JDOQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.AbstractIrcBot;
 import me.reddev.osucelebrity.Commands;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.Responses;
@@ -27,11 +28,9 @@ import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
-import org.pircbotx.hooks.ListenerAdapter;
-import org.pircbotx.hooks.events.ConnectEvent;
-import org.pircbotx.hooks.events.DisconnectEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 import org.pircbotx.hooks.events.MessageEvent;
+import org.slf4j.Logger;
 import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
@@ -48,7 +47,7 @@ import javax.jdo.PersistenceManagerFactory;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
-public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
+public class TwitchIrcBot extends AbstractIrcBot {
   @FunctionalInterface
   interface CommandHandler {
     boolean handle(MessageEvent<PircBotX> event, String message, String twitchUserName,
@@ -81,8 +80,6 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   
   private final Twitch twitch;
 
-  PircBotX bot;
-
   private final List<String> subscribers = new ArrayList<String>();
 
   private final List<CommandHandler> handlers = new ArrayList<>();
@@ -110,26 +107,14 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
   }
 
   @Override
-  public void run() {
-    try {
-      createBot();
-
-      bot.startBot();
-    } catch (Exception e) {
-      log.error("Exception", e);
-    }
-  }
-
-  void createBot() {
-    Configuration<PircBotX> config =
-        new Configuration.Builder<PircBotX>()
+  protected Configuration<PircBotX> getConfiguration() {
+    return new Configuration.Builder<PircBotX>()
             .setName(settings.getTwitchIrcUsername())
             .setLogin(settings.getTwitchIrcUsername())
             .addListener(this)
             .setServer(settings.getTwitchIrcHost(), settings.getTwitchIrcPort(),
                 settings.getTwitchToken()).setAutoReconnect(true)
             .addAutoJoinChannel(settings.getTwitchIrcChannel()).buildConfiguration();
-    bot = new PircBotX(config);
   }
 
   /**
@@ -138,22 +123,7 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
    * @param message The message to send to the channel
    */
   public void sendMessage(String message) {
-    bot.sendIRC().message(settings.getTwitchIrcChannel(), message);
-  }
-
-  
-
-  // Listeners
-  // http://site.pircbotx.googlecode.com/hg-history/2.0.1/apidocs/index.html
-
-  @Override
-  public void onConnect(ConnectEvent<PircBotX> event) throws Exception {
-    log.debug("connected");
-  }
-
-  @Override
-  public void onDisconnect(DisconnectEvent<PircBotX> event) throws Exception {
-    log.debug("disconnected");
+    getBot().sendIRC().message(settings.getTwitchIrcChannel(), message);
   }
 
   @Override
@@ -455,5 +425,10 @@ public class TwitchIrcBot extends ListenerAdapter<PircBotX> implements Runnable 
       handler.handle(event, remainingMessage, twitchUserName, pm);
       return true;
     };
+  }
+  
+  @Override
+  protected Logger getLog() {
+    return log;
   }
 }

@@ -1,38 +1,36 @@
 package me.reddev.osucelebrity.twitch;
 
-import org.junit.After;
-import me.reddev.osucelebrity.OsuResponses;
-import me.reddev.osucelebrity.Responses;
-import me.reddev.osucelebrity.TwitchResponses;
-import org.mockito.Spy;
-import me.reddev.osucelebrity.UserException;
-import me.reddev.osucelebrity.core.Trust;
-import org.tillerino.osuApiModel.GameModes;
-import static org.junit.Assert.*;
-import me.reddev.osucelebrity.twitchapi.TwitchApi;
-import static org.mockito.Mockito.*;
-
-import java.io.IOException;
-import java.net.URL;
-
-import javax.jdo.PersistenceManager;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.contains;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 import me.reddev.osucelebrity.AbstractJDOTest;
-import me.reddev.osucelebrity.core.Clock;
-import me.reddev.osucelebrity.core.EnqueueResult;
-import me.reddev.osucelebrity.core.MockClock;
+import me.reddev.osucelebrity.OsuResponses;
+import me.reddev.osucelebrity.UserException;
 import me.reddev.osucelebrity.core.QueuedPlayer;
+import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.Spectator;
+import me.reddev.osucelebrity.core.Trust;
 import me.reddev.osucelebrity.core.VoteType;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuUser;
-import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
-import me.reddev.osucelebrity.osuapi.MockOsuApi;
+import me.reddev.osucelebrity.twitchapi.TwitchApi;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.pircbotx.Channel;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -41,6 +39,12 @@ import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.managers.ListenerManager;
 import org.pircbotx.output.OutputChannel;
 import org.pircbotx.output.OutputUser;
+import org.tillerino.osuApiModel.GameModes;
+
+import java.io.IOException;
+import java.net.URL;
+
+import javax.jdo.PersistenceManager;
 
 
 public class TwitchIrcBotTest extends AbstractJDOTest {
@@ -73,7 +77,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   Twitch twitch;
 
   @Spy
-  TwitchWhisperBot whisperBot = new TwitchWhisperBot(null, null) {
+  TwitchWhisperBot whisperBot = new TwitchWhisperBot(null) {
     @Override
     public void whisper(String username, String message) {
       // do Nothing
@@ -106,13 +110,6 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
         System.out.println(message);
       }
     };
-    
-    ircBot.onConnect(null);
-  }
-  
-  @After
-  public void disconnect() throws Exception {
-    ircBot.onDisconnect(null);
   }
 
   QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {
@@ -122,7 +119,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
   
   @Test
   public void testCreateBot() throws Exception {
-    ircBot.createBot();
+    ircBot.getConfiguration();
   }
 
   @Test

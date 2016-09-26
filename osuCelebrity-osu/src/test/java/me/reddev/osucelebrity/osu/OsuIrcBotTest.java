@@ -1,7 +1,6 @@
 package me.reddev.osucelebrity.osu;
 
 import me.reddev.osucelebrity.twitch.Twitch;
-
 import org.junit.After;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.twitch.QTwitchUser;
@@ -24,6 +23,8 @@ import org.pircbotx.hooks.events.QuitEvent;
 import org.pircbotx.hooks.events.JoinEvent;
 
 import com.google.common.collect.ImmutableList;
+
+import me.reddev.osucelebrity.AbstractIrcBot.PublicSocketBot;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -70,7 +71,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
   @Mock
   OsuIrcSettings settings;
   @Mock
-  PircBotX pircBotX;
+  PublicSocketBot pircBotX;
   @Mock
   OutputIRC ourputIrc;
   @Mock
@@ -110,21 +111,17 @@ public class OsuIrcBotTest extends AbstractJDOTest {
       void ping(PircBotX bot) throws IOException, InterruptedException {
         // do nothing
       }
-    });
-    
-    ircBot.bot = pircBotX;
-    
-    ircBot.onConnect(null);
-  }
-  
-  @After
-  public void disconnect() throws Exception {
-    ircBot.onDisconnect(null);
+    }) {
+      @Override
+      public PublicSocketBot getBot() {
+        return pircBotX;
+      }
+    };
   }
   
   @Test
   public void testConfigure() throws Exception {
-    ircBot.createBot();
+    ircBot.getConfiguration();
   }
 
   @Test

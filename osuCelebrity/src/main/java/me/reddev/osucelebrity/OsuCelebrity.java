@@ -3,6 +3,7 @@ package me.reddev.osucelebrity;
 import com.google.inject.Guice;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.reddev.osucelebrity.core.AutoQueue;
 import me.reddev.osucelebrity.core.CoreSettings;
 import me.reddev.osucelebrity.core.SpectatorImpl;
@@ -34,6 +35,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.ws.rs.core.UriBuilder;
 
+@Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class OsuCelebrity {
   final SpectatorImpl spectator;
@@ -61,6 +63,8 @@ public class OsuCelebrity {
         new ObjectName("osuCeleb:type=Spectator"));
 
     exec.scheduleWithFixedDelay(obsRemote::connect, 0, 1, TimeUnit.SECONDS);
+    
+    log.debug("Connecting to OBS");
     obsRemote.awaitConnect();
     
     if (startFrozen) {
