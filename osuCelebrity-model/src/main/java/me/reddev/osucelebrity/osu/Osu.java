@@ -72,7 +72,6 @@ public interface Osu {
    * 
    * @return null if the status is unknown.
    */
-  @CheckForNull
   public OsuStatus getClientStatus();
 
   /**

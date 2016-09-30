@@ -1,5 +1,7 @@
 package me.reddev.osucelebrity.twitch;
 
+import me.reddev.osucelebrity.osu.OsuStatus.Type;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -13,7 +15,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import me.reddev.osucelebrity.AbstractJDOTest;
 import me.reddev.osucelebrity.OsuResponses;
 import me.reddev.osucelebrity.UserException;
@@ -231,7 +232,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
 
   @Test
   public void testNotNowPlaying() throws Exception {
-    when(osu.getClientStatus()).thenReturn(null);
+    when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.CLOSED, null));
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!np"));
 
     verify(outputChannel, never()).message(any());

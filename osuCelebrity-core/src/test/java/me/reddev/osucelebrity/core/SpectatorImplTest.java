@@ -372,7 +372,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     QueuedPlayer player3 = getUser(pm, "user3");
     spectator.enqueue(pm, player3, false);
 
-    when(osu.getClientStatus()).thenReturn(null);
+    when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.CLOSED, null));
     spectator.loop(pm);
 
     clock.sleepUntil(1000);
@@ -397,7 +397,7 @@ public class SpectatorImplTest extends AbstractJDOTest {
     spectator.loop(pm);
     assertEquals("user2", spectator.getCurrentPlayer(pm).getPlayer().getUserName());
 
-    when(osu.getClientStatus()).thenReturn(null);
+    when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.IDLE, null));
 
     for (; clock.getTime() < settings.getDefaultSpecDuration() + settings.getOfflineTimeout()
         + 9000; clock.sleepUntil(clock.getTime() + 1000)) {

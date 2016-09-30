@@ -27,6 +27,7 @@ import javax.inject.Inject;
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class OsuApplication {
   private static final String OSU = "osu!(?:cuttingedge \\S+)?\\s*";
+  static Pattern nothingPattern = Pattern.compile(OSU);
   static Pattern playingPattern = Pattern.compile(OSU + "- (.*)");
   static Pattern watchingPattern = Pattern.compile(OSU + "-  \\(watching (.*)\\)");
 
@@ -118,16 +119,6 @@ public class OsuApplication {
     }
   }
 
-  /**
-   * Retrieves the window title.
-   * 
-   * @return the window title or null if there is no window
-   */
-  @CheckForNull
-  public String getWindowTitle() {
-    return windowTitle;
-  }
-
   @CheckForNull
   String readWindowTitle() throws InterruptedException {
     try {
@@ -154,11 +145,10 @@ public class OsuApplication {
     }
   }
 
-  @CheckForNull
   OsuStatus getStatus() {
-    String title = getWindowTitle();
+    String title = windowTitle;
     if (title == null) {
-      return null;
+      return new OsuStatus(Type.CLOSED, null);
     }
 
     {
@@ -172,6 +162,13 @@ public class OsuApplication {
       Matcher matcher = playingPattern.matcher(title);
       if (matcher.matches()) {
         return new OsuStatus(Type.PLAYING, matcher.group(1));
+      }
+    }
+
+    {
+      Matcher matcher = nothingPattern.matcher(title);
+      if (matcher.matches()) {
+        return new OsuStatus(Type.IDLE, null);
       }
     }
 

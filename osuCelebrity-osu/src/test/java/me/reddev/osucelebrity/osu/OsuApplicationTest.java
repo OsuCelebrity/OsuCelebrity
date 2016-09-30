@@ -15,30 +15,25 @@ public class OsuApplicationTest {
   @Mock
   OsuApplicationSettings settings;
 
-  String windowTitle;
-  OsuApplication fakeWindowTitle = new OsuApplication(null) {
-    public String getWindowTitle() {
-      return OsuApplicationTest.this.windowTitle;
-    }
-  };
+  OsuApplication osuApp = new OsuApplication(null);
 
   @Test
   public void testWindowTitleWatchingEdge() throws Exception {
-    windowTitle = "osu!cuttingedge b20160304 -  (watching Angelsim)";
-    assertEquals(new OsuStatus(Type.WATCHING, "Angelsim"), fakeWindowTitle.getStatus());
+    osuApp.windowTitle = "osu!cuttingedge b20160304 -  (watching Angelsim)";
+    assertEquals(new OsuStatus(Type.WATCHING, "Angelsim"), osuApp.getStatus());
   }
 
   @Test
   public void testWindowTitleWatching() throws Exception {
-    windowTitle = "osu!  -  (watching hvick225)";
-    assertEquals(new OsuStatus(Type.WATCHING, "hvick225"), fakeWindowTitle.getStatus());
+    osuApp.windowTitle = "osu!  -  (watching hvick225)";
+    assertEquals(new OsuStatus(Type.WATCHING, "hvick225"), osuApp.getStatus());
   }
 
   @Test
   public void testWindowTitlePlaying() throws Exception {
-    windowTitle = "osu!  - Ni-Sokkususu - Shukusai no Elementalia [GAPS 'n' JUMPS!]";
+    osuApp.windowTitle = "osu!  - Ni-Sokkususu - Shukusai no Elementalia [GAPS 'n' JUMPS!]";
     assertEquals(new OsuStatus(Type.PLAYING,
-        "Ni-Sokkususu - Shukusai no Elementalia [GAPS 'n' JUMPS!]"), fakeWindowTitle.getStatus());
+        "Ni-Sokkususu - Shukusai no Elementalia [GAPS 'n' JUMPS!]"), osuApp.getStatus());
   }
 
   public static void main(String[] args) throws Exception {

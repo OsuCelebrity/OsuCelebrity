@@ -58,6 +58,7 @@ public class CoreApiApplicationTest extends AbstractJDOTest {
   @Before
   public void initMocks() throws IOException {
     when(settings.getStreamDelay()).thenReturn(0L);
+    when(osu.getClientStatus()).thenReturn(new OsuStatus(Type.CLOSED, null));
   }
   
   QueuedPlayer getUser(PersistenceManager pm, String playerName) throws IOException {

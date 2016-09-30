@@ -121,7 +121,7 @@ public class CurrentPlayerService {
         }
       }
       OsuStatus clientStatus = osu.getClientStatus();
-      if (clientStatus != null && clientStatus.getType() == Type.PLAYING) {
+      if (clientStatus.getType() == Type.PLAYING) {
         response.setBeatmap(clientStatus.getDetail());
       }
       QueuedPlayer nextPlayer = spectator.getNextPlayer(pm);

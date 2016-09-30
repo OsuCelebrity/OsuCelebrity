@@ -242,18 +242,24 @@ public class TwitchIrcBot extends AbstractIrcBot {
   void handleNowPlaying(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
     QueuedPlayer player = spectator.getCurrentPlayer(pm);
+    if (player == null) {
+      return;
+    }
     
     OsuStatus status = osu.getClientStatus();
-    if (player != null && status != null && status.getType() == Type.PLAYING) {
-      String formatted =
-          String.format(OsuResponses.NOW_PLAYING, player.getPlayer().getUserName(),
-                  player.getPlayer().getUserId(), status.getDetail());
-      Integer beatmapId = osu.getBeatmapId(status.getDetail());
-      if (beatmapId != null) {
-        formatted += " https://osu.ppy.sh/b/" + beatmapId; 
-      }
-      event.getChannel().send().message(formatted);
+    String detail = status.getDetail();
+    if (status.getType() != Type.PLAYING || detail == null) {
+      return;
     }
+    
+    String formatted =
+        String.format(OsuResponses.NOW_PLAYING, player.getPlayer().getUserName(),
+                player.getPlayer().getUserId(), detail);
+    Integer beatmapId = osu.getBeatmapId(detail);
+    if (beatmapId != null) {
+      formatted += " https://osu.ppy.sh/b/" + beatmapId; 
+    }
+    event.getChannel().send().message(formatted);
   }
   
   void handleFixClient(MessageEvent<PircBotX> event, String message, String twitchUserName,

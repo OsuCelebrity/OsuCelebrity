@@ -184,8 +184,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
       try {
         if (lastStatusChange == -1 || !Objects.equal(currentStatus, lastStatus)) {
           lastStatusChange = clock.getTime();
-          handleScenes(currentStatus != null ? currentStatus.getType() : null);
-          if (currentStatus != null && currentStatus.getType() == Type.PLAYING) {
+          handleScenes(currentStatus.getType());
+          if (currentStatus.getType() == Type.PLAYING) {
             for (BannedFilter filter : pm.getExtent(BannedFilter.class)) {
               if (currentStatus.getDetail().startsWith(filter.getStartsWith())) {
                 return SkipReason.BANNED_MAP;
@@ -194,14 +194,14 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
           }
           return null;
         }
-        if (currentStatus != null && currentStatus.getType() == Type.PLAYING) {
+        if (currentStatus.getType() == Type.PLAYING) {
           return null;
         }
         if (lastIngameStatusPoll < clock.getTime() - 1000) {
           lastIngameStatusPoll = clock.getTime();
           detachAndSchedule(exec, log, pm, osu::pollIngameStatus, player.getPlayer());
         }
-        if (currentStatus == null
+        if (currentStatus.getType() == Type.IDLE
             && lastStatusChange <= clock.getTime() - settings.getOfflineTimeout()) {
           return SkipReason.OFFLINE;
         }
@@ -839,8 +839,14 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     PlayerQueue queue = PlayerQueue.loadQueue(pm, clock);
     Optional<QueuedPlayer> current = queue.currentlySpectating();
     if (current.isPresent() && status.lastStatus != null
-        && status.lastStatus.getType() == Type.PLAYING
-        && status.lastStatus.getDetail().startsWith(startsWith)) {
+        && status.lastStatus.getType() == Type.PLAYING) {
+      String detail = status.lastStatus.getDetail();
+      if (detail == null) {
+        throw new RuntimeException("if playing a status should be present");
+      }
+      if (!detail.startsWith(startsWith)) {
+        return;
+      }
       QueuedPlayer newPlayer = advance(pm, queue);
       if (newPlayer != null) {
         detachAndSchedule(exec, log, pm, twitch::announceAdvance, SkipReason.BANNED_MAP, current
