@@ -197,8 +197,8 @@ public class TwitchApiImpl implements TwitchApi {
   Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").create();
 
   @Override
-  public TwitchApiUser getUser(PersistenceManager pm, String username, long maxAge)
-      throws IOException {
+  public TwitchApiUser getUser(PersistenceManager pm, String username, long maxAge,
+      boolean returnCachedOnIoException) throws IOException {
     try (JDOQuery<TwitchApiUser> query =
         new JDOQuery<>(pm).select(twitchApiUser).from(twitchApiUser)
             .where(twitchApiUser.name.eq(username))) {
@@ -212,7 +212,15 @@ public class TwitchApiImpl implements TwitchApi {
         return cached;
       }
       
-      new FromApiMapperImpl().update(downloadUser(username), cached);
+      try {
+        new FromApiMapperImpl().update(downloadUser(username), cached);
+      } catch (IOException e) {
+        if (returnCachedOnIoException) {
+          log.warn("API caused exception. Using cached data.", e);
+          return cached;
+        }
+        throw e;
+      }
       return cached;
     }
   }

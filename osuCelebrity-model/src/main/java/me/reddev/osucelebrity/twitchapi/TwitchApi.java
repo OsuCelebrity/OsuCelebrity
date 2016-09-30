@@ -32,12 +32,15 @@ public interface TwitchApi {
 
   /**
    * Retrieves the user from the API.
-   * 
    * @param username username (all lower case).
    * @param maxAge if > 0, cached data up to this age can be returned.
+   * @param returnCachedOnIoException if true, a cached data is used if an {@link IOException}
+   *        occurrs during an update from the api
+   * 
    * @return the user object.
    */
-  TwitchApiUser getUser(PersistenceManager pm, String username, long maxAge) throws IOException;
+  TwitchApiUser getUser(PersistenceManager pm, String username, long maxAge,
+      boolean returnCachedOnIoException) throws IOException;
   
   /**
    * Retrieves the link to the past broadcast that a play occurred in at the exact time when the

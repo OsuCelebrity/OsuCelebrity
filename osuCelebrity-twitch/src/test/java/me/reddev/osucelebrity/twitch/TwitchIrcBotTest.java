@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
@@ -323,7 +324,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     // prepare the object and make Twitch return the object
     TwitchUser userObject = new TwitchUser(null);
     assertNull(userObject.getLinkString());
-    when(twitch.getUser(any(), eq("twitchIrcUser"), anyLong())).thenReturn(userObject);
+    when(twitch.getUser(any(), eq("twitchIrcUser"), anyLong(), anyBoolean())).thenReturn(userObject);
 
     // invoke command
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!link"));
@@ -338,7 +339,7 @@ public class TwitchIrcBotTest extends AbstractJDOTest {
     // prepare the object, link it to an osu! account and make Twitch return the object
     TwitchUser userObject = new TwitchUser(null);
     userObject.setOsuUser(osuUser);
-    when(twitch.getUser(any(), eq("twitchIrcUser"), anyLong())).thenReturn(userObject);
+    when(twitch.getUser(any(), eq("twitchIrcUser"), anyLong(), anyBoolean())).thenReturn(userObject);
 
     // invoke command
     ircBot.onMessage(new MessageEvent<PircBotX>(bot, channel, user, "!link"));

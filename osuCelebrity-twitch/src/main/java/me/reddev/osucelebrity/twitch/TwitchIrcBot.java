@@ -170,7 +170,7 @@ public class TwitchIrcBot extends AbstractIrcBot {
   }
 
   void checkTrust(PersistenceManager pm, String subject) throws IOException, UserException {
-    trust.checkTrust(pm, twitch.getUser(pm, subject, 60 * 1000L));
+    trust.checkTrust(pm, twitch.getUser(pm, subject, 60 * 1000L, true));
   }
 
   boolean handleVote(MessageEvent<PircBotX> event, String message, String twitchUserName,
@@ -337,7 +337,7 @@ public class TwitchIrcBot extends AbstractIrcBot {
   
   void handleLink(MessageEvent<PircBotX> event, String message,
       String twitchUserName, PersistenceManager pm) throws UserException, IOException {
-    TwitchUser user = twitch.getUser(pm, twitchUserName, 0L);
+    TwitchUser user = twitch.getUser(pm, twitchUserName, 60 * 1000L, true);
     
     if (user.getOsuUser() != null) {
       throw new UserException("Your account is already linked.");

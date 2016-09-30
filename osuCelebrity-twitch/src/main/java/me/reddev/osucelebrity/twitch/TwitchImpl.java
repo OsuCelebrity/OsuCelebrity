@@ -56,8 +56,9 @@ public class TwitchImpl implements Twitch {
   }
 
   @Override
-  public TwitchUser getUser(PersistenceManager pm, String username, long maxAge) throws IOException {
-    TwitchApiUser apiUser = api.getUser(pm, username, maxAge);
+  public TwitchUser getUser(PersistenceManager pm, String username, long maxAge,
+      boolean returnCachedOnIoException) throws IOException {
+    TwitchApiUser apiUser = api.getUser(pm, username, maxAge, returnCachedOnIoException);
 
     try (JDOQuery<TwitchUser> query =
         new JDOQuery<TwitchUser>(pm).select(twitchUser).from(twitchUser)
