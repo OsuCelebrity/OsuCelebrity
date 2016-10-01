@@ -18,12 +18,9 @@ import javax.inject.Inject;
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class TwitchWhisperBot extends AbstractIrcBot {
+  public static final String ROOM = "#jtv";
 
   private final TwitchIrcSettings settings;
-
-  Entry<String, List<String>> room;
-
-  String server;
 
   /**
    * Sends a message to the current IRC channel.
@@ -31,27 +28,18 @@ public class TwitchWhisperBot extends AbstractIrcBot {
    * @param message The message to send to the channel
    */
   public void whisper(String username, String message) {
-    String command = String.format("PRIVMSG #" + room.getKey() + " :/w %s %s", username, message);
+    String command = String.format("PRIVMSG " + ROOM + " :/w %s %s", username, message);
     getBot().sendRaw().rawLineNow(command);
   }
 
   
   @Override
   protected Configuration<PircBotX> getConfiguration() throws Exception {
-    findServer();
-
     return new Configuration.Builder<PircBotX>().setName(settings.getTwitchIrcUsername())
             .setLogin(settings.getTwitchIrcUsername()).addListener(this)
-            .setServer(server, 6667, settings.getTwitchToken()).setAutoReconnect(false)
-            .addAutoJoinChannel("#" + room.getKey()).buildConfiguration();
-  }
-
-  /**
-   * Find a group chat server.
-   */
-  public void findServer() throws IOException {
-    room = Pair.<String, List<String>>of("jtv", null);
-    server = "irc.chat.twitch.tv";
+            .setServer(settings.getTwitchWhisperIrcHost(), settings.getTwitchWhisperIrcPort(),
+                  settings.getTwitchToken()).setAutoReconnect(false)
+            .addAutoJoinChannel(ROOM).buildConfiguration();
   }
 
   @Override

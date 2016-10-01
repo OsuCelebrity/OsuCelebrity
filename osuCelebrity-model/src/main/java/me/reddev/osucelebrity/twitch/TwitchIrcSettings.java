@@ -12,4 +12,8 @@ public interface TwitchIrcSettings {
   String getTwitchToken();
 
   String getTwitchIrcCommand();
+
+  String getTwitchWhisperIrcHost();
+
+  int getTwitchWhisperIrcPort();
 }

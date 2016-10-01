@@ -19,6 +19,8 @@ public class Settings implements SettingsMBean {
   
   private String twitchIrcHost;
   private int twitchIrcPort;
+  private String twitchWhisperIrcHost;
+  private int twitchWhisperIrcPort;
   
   private String twitchIrcCommand;
 
