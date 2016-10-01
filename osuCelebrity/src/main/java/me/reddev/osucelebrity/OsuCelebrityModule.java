@@ -28,11 +28,16 @@ import me.reddev.osucelebrity.twitch.TwitchImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchIrcSettings;
 import me.reddev.osucelebrity.twitch.TwitchWhisperBot;
+import me.reddev.osucelebrity.twitch.api.Kraken;
+import me.reddev.osucelebrity.twitch.api.Tmi;
 import me.reddev.osucelebrity.twitchapi.TwitchApi;
 import me.reddev.osucelebrity.twitchapi.TwitchApiSettings;
+import org.glassfish.jersey.client.JerseyClientBuilder;
+import org.glassfish.jersey.client.proxy.WebResourceFactory;
 import org.tillerino.osuApiModel.Downloader;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -101,5 +106,21 @@ public class OsuCelebrityModule extends AbstractModule {
       // can fail on some testing environments
     }
     bind(StatusWindow.class).toInstance(statusWindow);
+  }
+  
+  /**
+   * Creates a Jersey client proxy for the Kraken API.
+   */
+  @Provides
+  public Kraken createKraken(TwitchApiSettings settings) {
+    return WebResourceFactory.newResource(Kraken.class,
+        JerseyClientBuilder.newClient().target(settings.getTwitchApiRoot())
+            .queryParam("client_id", settings.getTwitchClientId()));
+  }
+  
+  @Provides
+  public Tmi createTmi() {
+    return WebResourceFactory.newResource(Tmi.class,
+        JerseyClientBuilder.newClient().target("http://tmi.twitch.tv"));
   }
 }
