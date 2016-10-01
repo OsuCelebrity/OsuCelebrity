@@ -12,4 +12,14 @@ public interface SceneSwitcher {
    * @param sceneName name of the new scene.
    */
   public abstract void changeScene(String sceneName) throws IOException;
+  
+  /**
+   * If necessary, keeps a connection open. May block indefinitely.
+   */
+  public void connect();
+  
+  /**
+   * Blocks until a connection is established, if that is necessary.
+   */
+  public void awaitConnect() throws InterruptedException;
 }

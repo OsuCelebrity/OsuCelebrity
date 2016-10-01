@@ -13,7 +13,7 @@ import me.reddev.osucelebrity.core.api.CoreApiApplication;
 import me.reddev.osucelebrity.osu.OsuActivityUpdater;
 import me.reddev.osucelebrity.osu.OsuApplication;
 import me.reddev.osucelebrity.osu.OsuIrcBot;
-import me.reddev.osucelebrity.twitch.ObsRemote;
+import me.reddev.osucelebrity.twitch.SceneSwitcher;
 import me.reddev.osucelebrity.twitch.TwitchApiImpl;
 import me.reddev.osucelebrity.twitch.TwitchIrcBot;
 import me.reddev.osucelebrity.twitch.TwitchWhisperBot;
@@ -51,7 +51,7 @@ public class OsuCelebrity {
   final Settings settings;
   final StatusWindow statusWindow;
   final AutoQueue autoQueue;
-  final ObsRemote obsRemote;
+  final SceneSwitcher obsRemote;
   
   boolean startFrozen;
   

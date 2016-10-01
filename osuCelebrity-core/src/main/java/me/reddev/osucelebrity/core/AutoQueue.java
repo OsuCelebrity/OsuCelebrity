@@ -66,11 +66,15 @@ public class AutoQueue {
     }
     
     if (!semaphore.tryAcquire(10, TimeUnit.SECONDS)) {
-      log.warn("");
+      log.warn("last auto q poll took too long");
       semaphore = new Semaphore(1);
       semaphore.acquire();
     }
     int userId = drawUserId(pm);
+    if (userId < 0) {
+      semaphore.release();
+      return;
+    }
     OsuUser user =
         JdoQueryUtil.getUnique(pm, osuUser, osuUser.userId.eq(userId)).orElseThrow(
             () -> new RuntimeException(userId + ""));
@@ -84,6 +88,10 @@ public class AutoQueue {
     double sum = 0d;
     TreeMap<Double, ApiUser> distribution = new TreeMap<>();
     List<ApiUser> users = getTopPlayers(pm);
+    if (users.isEmpty()) {
+      log.warn("no top players");
+      return -1;
+    }
     for (ApiUser user : users) {
       if (lastDrawsAsSet.contains(user.getUserId())) {
         continue;

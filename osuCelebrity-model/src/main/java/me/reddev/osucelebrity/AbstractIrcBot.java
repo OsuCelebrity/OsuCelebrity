@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
 
 public abstract class AbstractIrcBot extends ListenerAdapter<PircBotX> implements Runnable {
   public static class PublicSocketBot extends PircBotX {
@@ -27,6 +28,8 @@ public abstract class AbstractIrcBot extends ListenerAdapter<PircBotX> implement
   protected abstract Configuration<PircBotX> getConfiguration() throws Exception;
   
   protected abstract Logger getLog();
+  
+  private final CountDownLatch connectLatch = new CountDownLatch(1);
   
   /**
    * Creates a bot instance and connects.
@@ -65,6 +68,7 @@ public abstract class AbstractIrcBot extends ListenerAdapter<PircBotX> implement
 
   @Override
   public void onConnect(ConnectEvent<PircBotX> event) throws Exception {
+    connectLatch.countDown();
     getLog().debug("Connected to {} as {}", bot.getConfiguration().getServerHostname(),
           bot.getConfiguration().getLogin());
   }
@@ -72,5 +76,9 @@ public abstract class AbstractIrcBot extends ListenerAdapter<PircBotX> implement
   @Override
   public void onDisconnect(DisconnectEvent<PircBotX> event) throws Exception {
     getLog().debug("Disconnected from {}", bot.getConfiguration().getServerHostname());
+  }
+  
+  public void awaitConnect() throws InterruptedException {
+    connectLatch.await();
   }
 }

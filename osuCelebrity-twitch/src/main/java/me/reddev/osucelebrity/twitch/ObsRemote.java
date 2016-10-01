@@ -52,6 +52,7 @@ public class ObsRemote implements SceneSwitcher {
     connectLatch.countDown();
   }
   
+  @Override
   public void awaitConnect() throws InterruptedException {
     connectLatch.await();
   }
@@ -83,6 +84,7 @@ public class ObsRemote implements SceneSwitcher {
   /**
    * Connects to OBS Remote and blocks until the connection drops. Logs Exceptions.
    */
+  @Override
   public void connect() {
     disconnectLatch = new CountDownLatch(1);
     WebSocketClient client = new WebSocketClient();

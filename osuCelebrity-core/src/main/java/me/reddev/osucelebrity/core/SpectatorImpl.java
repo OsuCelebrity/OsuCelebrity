@@ -22,6 +22,7 @@ import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.core.api.CurrentPlayerService;
 import me.reddev.osucelebrity.core.api.DisplayQueuePlayer;
 import me.reddev.osucelebrity.osu.Osu;
+import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
 import me.reddev.osucelebrity.osu.OsuStatus;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 import me.reddev.osucelebrity.osu.OsuUser;
@@ -790,16 +791,17 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     OsuUser requestedUser = queueRequest.getPlayer();
     if (result == EnqueueResult.CHECK_ONLINE) {
       queueRequest.setPlayer(persistenceManager.detachCopy(queueRequest.getPlayer()));
-      osu.pollIngameStatus(requestedUser, (pm, status) -> {
-          if (status.getType() == PlayerStatusType.OFFLINE) {
-            replyNegative.accept(String.format(OsuResponses.OFFLINE, requestedUser.getUserName()));
-          } else {
-            queueRequest.setPlayer(pm.makePersistent(queueRequest.getPlayer()));
-            EnqueueResult retryResult = enqueue(pm, queueRequest, false, requestingUser, true);
+      PollStatusConsumer action = (pm, status) -> {
+        if (status.getType() == PlayerStatusType.OFFLINE) {
+          replyNegative.accept(String.format(OsuResponses.OFFLINE, requestedUser.getUserName()));
+        } else {
+          queueRequest.setPlayer(pm.makePersistent(queueRequest.getPlayer()));
+          EnqueueResult retryResult = enqueue(pm, queueRequest, false, requestingUser, true);
 
-            replyEnqueue(retryResult, requestedUser.getUserName(), reply, replyNegative);
-          }
-        });
+          replyEnqueue(retryResult, requestedUser.getUserName(), reply, replyNegative);
+        }
+      };
+      osu.pollIngameStatus(requestedUser, action);
     } else {
       replyEnqueue(result, requestedUser.getUserName(), reply, replyNegative);
     }
