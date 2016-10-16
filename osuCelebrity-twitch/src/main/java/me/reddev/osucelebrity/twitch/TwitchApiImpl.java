@@ -194,7 +194,7 @@ public class TwitchApiImpl implements TwitchApi {
         .map(room -> Pair.of(room.ircChannel, room.servers)).collect(Collectors.toList());
   }
   
-  Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").create();
+  Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSX").create();
 
   @Override
   public TwitchApiUser getUser(PersistenceManager pm, String username, long maxAge,
