@@ -36,7 +36,6 @@ public interface TwitchApi {
    * @param maxAge if > 0, cached data up to this age can be returned.
    * @param returnCachedOnIoException if true, a cached data is used if an {@link IOException}
    *        occurrs during an update from the api
-   * 
    * @return the user object.
    */
   TwitchApiUser getUser(PersistenceManager pm, String username, long maxAge,

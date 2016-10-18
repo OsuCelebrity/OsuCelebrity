@@ -23,7 +23,6 @@ public interface Twitch {
    * @param maxAge if > 0, cached data up to this age is allowed for the nested api user object.
    * @param returnCachedOnIoException if true, a cached data is used if an {@link IOException}
    *        occurrs during an update from the api
-   * 
    * @return the user object.
    */
   TwitchUser getUser(PersistenceManager pm, String username, long maxAge,
