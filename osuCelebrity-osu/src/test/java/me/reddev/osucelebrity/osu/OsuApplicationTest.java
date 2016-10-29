@@ -15,7 +15,7 @@ public class OsuApplicationTest {
   @Mock
   OsuApplicationSettings settings;
 
-  OsuApplication osuApp = new OsuApplication(null);
+  OsuApplication osuApp = new OsuApplication(null, null);
 
   @Test
   public void testWindowTitleWatchingEdge() throws Exception {
@@ -37,6 +37,6 @@ public class OsuApplicationTest {
   }
 
   public static void main(String[] args) throws Exception {
-    System.out.println(new OsuApplication(null).readWindowTitle());
+    System.out.println(new OsuApplication(null, null).readWindowTitle());
   }
 }

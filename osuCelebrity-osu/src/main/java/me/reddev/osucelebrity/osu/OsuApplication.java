@@ -7,6 +7,7 @@ import com.github.omkelderman.osudbparser.OsuBeatmapInfo;
 import com.github.omkelderman.osudbparser.OsuDbFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.reddev.osucelebrity.core.Clock;
 import me.reddev.osucelebrity.osu.OsuStatus.Type;
 
 import java.io.BufferedReader;
@@ -44,6 +45,9 @@ public class OsuApplication {
   }
 
   private final OsuApplicationSettings settings;
+
+  private final Clock clock;
+
   /**
    * this encoding should be fine and always available.
    */
@@ -69,17 +73,34 @@ public class OsuApplication {
    */
   public void spectate(OsuUser osuUser) throws IOException {
     log.debug("spectating {}", osuUser);
-    ProcessBuilder builder = new ProcessBuilder(getSpecCommand(6854947));
-    builder.inheritIO();
-    builder.start();
-    
+    // spectating the osu celeb user effectively cancels the current spectate session.
+    spec(6854947);
+
     try {
       Thread.sleep(250);
     } catch (InterruptedException e) {
       return;
     }
-    
-    builder = new ProcessBuilder(getSpecCommand(osuUser.getUserId()));
+
+    spec(osuUser.getUserId());
+  }
+
+  private long lastRefresh = 0L;
+
+  void refreshSpec(OsuUser osuUser) throws IOException {
+    // only refresh every five seconds to avoid piling onto osu client startup
+    if (lastRefresh > clock.getTime() - 5000) {
+      return;
+    }
+
+    lastRefresh = clock.getTime();
+
+    log.debug("retrying to spec {}", osuUser);
+    spec(osuUser.getUserId());
+  }
+
+  private void spec(int me) throws IOException {
+    ProcessBuilder builder = new ProcessBuilder(getSpecCommand(me));
     builder.inheritIO();
     builder.start();
   }

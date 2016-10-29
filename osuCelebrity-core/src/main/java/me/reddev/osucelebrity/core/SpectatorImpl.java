@@ -202,6 +202,10 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
           lastIngameStatusPoll = clock.getTime();
           detachAndSchedule(exec, log, pm, osu::pollIngameStatus, player.getPlayer());
         }
+        if (currentStatus.getType() == Type.IDLE) {
+          // make sure that the client is attempting to spectate.
+          osu.refreshSpectate(player.getPlayer());
+        }
         if (currentStatus.getType() == Type.IDLE
             && lastStatusChange <= clock.getTime() - settings.getOfflineTimeout()) {
           return SkipReason.OFFLINE;

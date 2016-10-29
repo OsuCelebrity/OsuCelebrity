@@ -37,6 +37,15 @@ public class OsuImpl implements Osu {
   }
 
   @Override
+  public void refreshSpectate(OsuUser user) {
+    try {
+      app.refreshSpec(user);
+    } catch (IOException e) {
+      log.error("error spectating", e);
+    }
+  }
+
+  @Override
   public void message(OsuUser user, String message) {
     bot.messagePlayer(user, message);
   }

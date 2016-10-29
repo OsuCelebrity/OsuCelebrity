@@ -120,4 +120,9 @@ public interface Osu {
    */
   @CheckForNull
   public Integer getBeatmapId(String formattedName);
+
+  /**
+   * Sends the plain spectate command without attempting to cancel the last spectate session.
+   */
+  void refreshSpectate(OsuUser user);
 }
