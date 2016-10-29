@@ -172,7 +172,8 @@ public class OsuApplication {
       }
     }
 
-    return null;
+    log.warn("Can't parse title \"{}\"", title);
+    return new OsuStatus(Type.UNKNOWN, null);
   }
   
   /**

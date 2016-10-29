@@ -19,6 +19,8 @@ public class OsuStatus {
     WATCHING,
     /** We're seeing gameplay. */
     PLAYING,
+    /** Status unrecognized. */
+    UNKNOWN,
   }
 
   Type type;
