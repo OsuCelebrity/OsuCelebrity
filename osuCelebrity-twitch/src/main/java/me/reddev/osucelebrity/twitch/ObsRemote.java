@@ -1,21 +1,20 @@
 package me.reddev.osucelebrity.twitch;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Websocket client to connect to the OBS plugin OBS Remote.
@@ -87,14 +86,24 @@ public class ObsRemote implements SceneSwitcher {
   public void connect() {
     disconnectLatch = new CountDownLatch(1);
     WebSocketClient client = new WebSocketClient();
+    /*
+     * This idle timeout should be working since OBS Remote spams status updates.
+     */
+    client.setMaxIdleTimeout(120000);
     ClientUpgradeRequest request = new ClientUpgradeRequest();
     request.setSubProtocols("obsapi");
     try {
       client.start();
       log.debug("Connecting to OBS Remote");
-      client.connect(this, new URI(OBS_REMOTE_ADDR), request);
+      try {
+        client.connect(this, new URI(OBS_REMOTE_ADDR), request).get(5, TimeUnit.SECONDS);
+      } catch (ExecutionException e) {
+        throw e.getCause();
+      }
       disconnectLatch.await();
-    } catch (Exception e) {
+    } catch (ConnectException e) {
+      log.error("Cannot connect to OBS Remote", e);
+    } catch (Throwable e) {
       log.error("exception in connection to OBS Remote", e);
     } finally {
       try {
@@ -103,5 +112,9 @@ public class ObsRemote implements SceneSwitcher {
         log.error("exception while closing connection to OBS Remote", e);
       }
     }
+  }
+  
+  public static void main(String[] args) {
+    new ObsRemote().connect();
   }
 }
