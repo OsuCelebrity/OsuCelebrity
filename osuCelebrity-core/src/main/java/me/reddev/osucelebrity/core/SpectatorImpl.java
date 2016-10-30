@@ -181,50 +181,55 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
         playerStarted = clock.getTime();
       }
       
-      OsuStatus currentStatus = osu.getClientStatus();
+      OsuStatus clientStatus = osu.getClientStatus();
       try {
-        if (lastStatusChange == -1 || !Objects.equal(currentStatus, lastStatus)) {
+        Type clientType = clientStatus.getType();
+        if (lastStatusChange == -1 || !Objects.equal(clientStatus, lastStatus)) {
           lastStatusChange = clock.getTime();
-          handleScenes(currentStatus.getType());
-          if (currentStatus.getType() == Type.PLAYING) {
+          handleScenes(clientType);
+          if (clientType == Type.PLAYING) {
             for (BannedFilter filter : pm.getExtent(BannedFilter.class)) {
-              if (currentStatus.getDetail().startsWith(filter.getStartsWith())) {
+              if (clientStatus.getDetail().startsWith(filter.getStartsWith())) {
                 return SkipReason.BANNED_MAP;
               }
             }
           }
           return null;
         }
-        if (currentStatus.getType() == Type.PLAYING) {
+        if (clientType == Type.PLAYING) {
           return null;
         }
         if (lastIngameStatusPoll < clock.getTime() - 1000) {
           lastIngameStatusPoll = clock.getTime();
           detachAndSchedule(exec, log, pm, osu::pollIngameStatus, player.getPlayer());
         }
-        if (currentStatus.getType() == Type.IDLE) {
+        if (clientType == Type.IDLE) {
           // make sure that the client is attempting to spectate.
           osu.refreshSpectate(player.getPlayer());
         }
-        if (currentStatus.getType() == Type.IDLE
+        if (clientType == Type.IDLE
             && lastStatusChange <= clock.getTime() - settings.getOfflineTimeout()) {
           return SkipReason.OFFLINE;
         }
+        PlayerStatusType ingameType = null;
+        if (ingameStatus != null && ingameStatus.getUser().equals(player.getPlayer())) {
+          ingameType = ingameStatus.getType();
+        }
         long idleTimeout = settings.getIdleTimeout();
-        if (ingameStatus != null && (ingameStatus.getType() == PlayerStatusType.PLAYING
-            || ingameStatus.getType() == PlayerStatusType.MULTIPLAYING)) {
+        if (ingameType == PlayerStatusType.PLAYING || ingameType == PlayerStatusType.MULTIPLAYING) {
           idleTimeout *= 2;
         }
-        if (ingameStatus != null && ingameStatus.getType() == PlayerStatusType.AFK) {
+        if (ingameType == PlayerStatusType.AFK) {
           idleTimeout /= 2;
         }
-        if (currentStatus != null && currentStatus.getType() == Type.WATCHING
+        if ((clientType == Type.WATCHING || ingameType == PlayerStatusType.AFK
+            || ingameType == PlayerStatusType.IDLE || ingameType == PlayerStatusType.MODDING)
             && lastStatusChange <= clock.getTime() - idleTimeout) {
           return SkipReason.IDLE;
         }
         return null;
       } finally {
-        lastStatus = currentStatus;
+        lastStatus = clientStatus;
       }
     }
 
