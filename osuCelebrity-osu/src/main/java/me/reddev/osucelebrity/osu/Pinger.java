@@ -13,6 +13,8 @@ public class Pinger {
   volatile String pingMessage = null;
   volatile CountDownLatch pingLatch = null;
 
+  int freeSends = 0;
+  
   /*
    * this method is synchronized externally
    */
@@ -20,6 +22,12 @@ public class Pinger {
     if (!bot.isConnected()) {
       throw new IOException("bot is no longer connected");
     }
+    
+    if (freeSends++ < 10) {
+      return;
+    }
+    
+    freeSends = 0;
 
     synchronized (this) {
       pingLatch = new CountDownLatch(1);
