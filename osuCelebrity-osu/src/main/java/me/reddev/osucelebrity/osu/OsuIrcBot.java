@@ -40,6 +40,7 @@ import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.OsuApi;
 import me.reddev.osucelebrity.twitch.Twitch;
 import me.reddev.osucelebrity.twitch.TwitchUser;
+import org.apache.commons.lang3.tuple.Pair;
 import org.pircbotx.Configuration;
 import org.pircbotx.Configuration.Builder;
 import org.pircbotx.PircBotX;
@@ -55,6 +56,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
@@ -102,7 +104,8 @@ public class OsuIrcBot extends AbstractIrcBot {
 
   final List<CommandHandler> handlers = new ArrayList<>();
   
-  Map<Integer, BlockingQueue<PollStatusConsumer>> statusConsumers = new ConcurrentHashMap<>();
+  Map<Integer, BlockingQueue<Entry<Long, PollStatusConsumer>>> statusConsumers =
+      new ConcurrentHashMap<>();
 
   {
     handlers.add(createHandler(this::handlePosition, POSITION));
@@ -222,12 +225,16 @@ public class OsuIrcBot extends AbstractIrcBot {
       PlayerStatus status = statusMaybe.get();
       log.debug("status for {}: {}", status.getUser().getUserName(), status.getType());
       boolean handled = false;
-      Queue<PollStatusConsumer> consumers = statusConsumers.get(status.getUser().getUserId());
+      Queue<Entry<Long, PollStatusConsumer>> consumers =
+          statusConsumers.get(status.getUser().getUserId());
       if (consumers != null) {
-        for (PollStatusConsumer consumer; (consumer = consumers.poll()) != null; ) {
+        for (Entry<Long, PollStatusConsumer> consumer; (consumer = consumers.poll()) != null; ) {
+          if (consumer.getKey() < clock.getTime() - 60000L) {
+            continue;
+          }
           handled = true;
           try {
-            consumer.accept(pm, status);
+            consumer.getValue().accept(pm, status);
           } catch (Exception e) {
             UserException.handleException(log, e, null);
           }
@@ -505,7 +512,7 @@ public class OsuIrcBot extends AbstractIrcBot {
 
   void pollIngameStatus(OsuUser player, PollStatusConsumer action) {
     statusConsumers.computeIfAbsent(player.getUserId(), x -> new LinkedBlockingQueue<>()).add(
-        action);
+        Pair.of(clock.getTime(), action));
     pollIngameStatus(player);
   }
 
