@@ -38,6 +38,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
@@ -95,7 +96,7 @@ public class TwitchIrcBot extends AbstractIrcBot {
     
     // MOD COMMANDS
     handlers.add(createHandler(true, this::handleAdvance, Commands.FORCESKIP));
-    handlers.add(createHandler(true, this::handleSpec, Commands.FORCESPEC));
+    handlers.add(createHandler(true, this::handleForceSpec, Commands.FORCESPEC));
     handlers.add(createHandler(true, this::handleFixClient, Commands.RESTART_CLIENT));
     handlers.add(createHandler(true, this::handleBoost, Commands.BOOST));
     handlers.add(createHandler(true, this::handleTimeout, Commands.TIMEOUT));
@@ -162,7 +163,7 @@ public class TwitchIrcBot extends AbstractIrcBot {
     // Example: !spec Tillerino: for awesomeness Keepo
     targetUser = targetUser.split(":")[0].trim();
 
-    OsuUser requestedUser = getUserOrThrow(pm, targetUser);
+    OsuUser requestedUser = getUserOrThrow(pm, targetUser, TimeUnit.DAYS.toMillis(1));
     QueuedPlayer queueRequest =
         new QueuedPlayer(requestedUser, QueueSource.TWITCH, clock.getTime());
     spectator.performEnqueue(pm, queueRequest, QueueVote.TWITCH + requesterNick, log,
@@ -207,9 +208,9 @@ public class TwitchIrcBot extends AbstractIrcBot {
     }
   }
   
-  void handleSpec(MessageEvent<PircBotX> event, String message, String twitchUserName,
+  void handleForceSpec(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    OsuUser ircUser = getUserOrThrow(pm, message);
+    OsuUser ircUser = getUserOrThrow(pm, message, TimeUnit.DAYS.toMillis(1));
     if (spectator.promote(pm, ircUser)) {
       sendMessage(String.format(TwitchResponses.SPECTATE_FORCE,
           event.getUser().getNick(), message));
@@ -217,9 +218,9 @@ public class TwitchIrcBot extends AbstractIrcBot {
   }
 
   @Nonnull
-  private OsuUser getUserOrThrow(PersistenceManager pm, String username) throws IOException,
-      UserException {
-    OsuUser ircUser = osuApi.getUser(username, pm, 0);
+  private OsuUser getUserOrThrow(PersistenceManager pm, String username, long maxAge)
+      throws IOException, UserException {
+    OsuUser ircUser = osuApi.getUser(username, pm, maxAge);
     if (ircUser == null) {
       throw new UserException(String.format(Responses.INVALID_USER, username));
     }
@@ -228,7 +229,7 @@ public class TwitchIrcBot extends AbstractIrcBot {
   
   void handlePosition(MessageEvent<PircBotX> event, String message, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    OsuUser ircUser = getUserOrThrow(pm, message);
+    OsuUser ircUser = getUserOrThrow(pm, message, 0);
     int position = spectator.getQueuePosition(pm, ircUser);
     if (position != -1) {
       event.getChannel().send().message(String.format(OsuResponses.POSITION, 
@@ -273,7 +274,7 @@ public class TwitchIrcBot extends AbstractIrcBot {
   
   void handleBoost(MessageEvent<PircBotX> event, String boostedUser, String twitchUserName,
       PersistenceManager pm) throws UserException, IOException {
-    spectator.boost(pm, getUserOrThrow(pm, boostedUser));
+    spectator.boost(pm, getUserOrThrow(pm, boostedUser, 0));
 
     event.getChannel().send()
         .message(String.format(TwitchResponses.BOOST_QUEUE, boostedUser, event.getUser().getNick()));
@@ -284,7 +285,7 @@ public class TwitchIrcBot extends AbstractIrcBot {
     String[] split = message.split(" ", 2);
     
     int minutes = Math.max(0, Integer.parseInt(split[0]));
-    OsuUser timeoutUser = getUserOrThrow(pm, split[1]);
+    OsuUser timeoutUser = getUserOrThrow(pm, split[1], 0);
     
     timeoutUser.setTimeOutUntil(clock.getTime() + 60L * 1000 * minutes);
     
@@ -303,7 +304,7 @@ public class TwitchIrcBot extends AbstractIrcBot {
       String twitchUserName, PersistenceManager pm) throws UserException, IOException {
     String[] split = message.split(" ", 2);
 
-    OsuUser user = getUserOrThrow(pm, split[1]);
+    OsuUser user = getUserOrThrow(pm, split[1], 0);
     
     if (split[0].equalsIgnoreCase("osu")) {
       user.setGameMode(GameModes.OSU);

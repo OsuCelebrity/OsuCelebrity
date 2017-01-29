@@ -1,11 +1,10 @@
 package me.reddev.osucelebrity.core;
 
-import static me.reddev.osucelebrity.osu.QOsuUser.osuUser;
 import static me.reddev.osucelebrity.osuapi.QApiUser.apiUser;
+
 import com.querydsl.jdo.JDOQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import me.reddev.osucelebrity.JdoQueryUtil;
 import me.reddev.osucelebrity.core.QueuedPlayer.QueueSource;
 import me.reddev.osucelebrity.osu.Osu;
 import me.reddev.osucelebrity.osu.Osu.PollStatusConsumer;
@@ -13,6 +12,7 @@ import me.reddev.osucelebrity.osu.OsuUser;
 import me.reddev.osucelebrity.osu.PlayerStatus;
 import me.reddev.osucelebrity.osu.PlayerStatus.PlayerStatusType;
 import me.reddev.osucelebrity.osuapi.ApiUser;
+import me.reddev.osucelebrity.osuapi.OsuApi;
 import org.tillerino.osuApiModel.GameModes;
 
 import java.io.IOException;
@@ -35,6 +35,7 @@ import javax.jdo.PersistenceManagerFactory;
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class AutoQueue {
   final Osu osu;
+  final OsuApi osuApi;
   final Spectator spectator;
   final Clock clock;
   final PersistenceManagerFactory pmf;
@@ -75,9 +76,18 @@ public class AutoQueue {
       semaphore.release();
       return;
     }
-    OsuUser user =
-        JdoQueryUtil.getUnique(pm, osuUser, osuUser.userId.eq(userId)).orElseThrow(
-            () -> new RuntimeException(userId + ""));
+    OsuUser user;
+    try {
+      user = osuApi.getUser(userId, pm, TimeUnit.DAYS.toMillis(1));
+    } catch (IOException e) {
+      semaphore.release();
+      log.warn("Osu api while refreshing user in auto queue", e);
+      return;
+    }
+    if (user == null) {
+      semaphore.release();
+      return;
+    }
     pollStatus(user);
   }
 

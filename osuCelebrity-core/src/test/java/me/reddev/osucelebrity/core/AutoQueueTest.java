@@ -52,7 +52,7 @@ public class AutoQueueTest extends AbstractJDOTest {
 
     when(settings.getAutoQueueMaxSize()).thenReturn(5);
 
-    autoQueue = new AutoQueue(osu, spectator, clock, pmf, settings);
+    autoQueue = new AutoQueue(osu, osuApi, spectator, clock, pmf, settings);
   }
   
   public static void main(String[] args) throws Exception {
@@ -64,7 +64,7 @@ public class AutoQueueTest extends AbstractJDOTest {
   }
   
   public void measureDistribution() throws Exception {
-    autoQueue = new AutoQueue(osu, spectator, clock, pmf, settings) {
+    autoQueue = new AutoQueue(osu, osuApi, spectator, clock, pmf, settings) {
       @Override
       List<ApiUser> getTopPlayers(PersistenceManager pm) {
         return IntStream.range(1, 1001).mapToObj(rank -> {
