@@ -100,6 +100,10 @@ public class AutoQueue {
       distribution.put(sum, user);
       sum += prob;
     }
+    if (sum == 0d) {
+      lastDrawsAsSet.remove(lastDraws.removeFirst());
+      return -1;
+    }
     double rnd = Math.random() * sum;
     Entry<Double, ApiUser> floorEntry = distribution.floorEntry(rnd);
     if (floorEntry == null) {
