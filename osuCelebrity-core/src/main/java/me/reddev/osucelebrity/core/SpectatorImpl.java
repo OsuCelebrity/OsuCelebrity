@@ -356,7 +356,8 @@ public class SpectatorImpl implements SpectatorImplMBean, Spectator {
     /*
      * This method is NOT synchronized, we can do expensive calls.
      */
-    if (settings.getMinPlayCount() > 0 || settings.getMaxLastActivity() > 0) {
+    if (user.getQueueSource() != QueueSource.AUTO && (settings.getMinPlayCount() > 0
+        || settings.getMaxLastActivity() > 0)) {
       ApiUser userData =
           osuApi.getUserData(user.getPlayer().getUserId(), user.getPlayer().getGameMode(), pm, 0L);
       if (userData == null || userData.getPlayCount() < settings.getMinPlayCount()) {
