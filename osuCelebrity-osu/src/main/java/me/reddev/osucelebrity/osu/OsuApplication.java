@@ -172,6 +172,10 @@ public class OsuApplication {
       return new OsuStatus(Type.CLOSED, null);
     }
 
+    if (title.equals("__wglDummyWindowFodder") || title.equals("OleMainThreadWndName")) {
+      return new OsuStatus(Type.UNKNOWN, null);
+    }
+
     {
       Matcher matcher = watchingPattern.matcher(title);
       if (matcher.matches()) {
