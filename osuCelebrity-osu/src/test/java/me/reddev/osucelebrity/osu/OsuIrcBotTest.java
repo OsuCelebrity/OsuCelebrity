@@ -408,7 +408,7 @@ public class OsuIrcBotTest extends AbstractJDOTest {
     PollStatusConsumer consumer = mock(PollStatusConsumer.class);
     ircBot.pollIngameStatus(tillerino, consumer);
     
-    assertEquals(consumer, ircBot.statusConsumers.get(tillerino.getUserId()).peek());
+    assertSame(consumer, ircBot.statusConsumers.get(tillerino.getUserId()).peek().getValue());
     
     String osuCommandUser = settings.getOsuCommandUser();
     when(user.getNick()).thenReturn(osuCommandUser);
