@@ -150,7 +150,7 @@ public class TwitchApiImpl implements TwitchApi {
     if (timeInMillis <= 0) {
       return offset;
     }
-    offset = StringUtils.leftPad(String.valueOf(timeInMillis % 24), 2, '0') + "h" + offset;
+    offset = StringUtils.leftPad(String.valueOf(timeInMillis), 2, '0') + "h" + offset;
 
     return offset;
   }
