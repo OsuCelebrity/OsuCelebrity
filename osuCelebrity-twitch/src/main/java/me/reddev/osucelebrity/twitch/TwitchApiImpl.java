@@ -89,7 +89,18 @@ public class TwitchApiImpl implements TwitchApi {
       TwitchApiUser cached = query.fetchOne();
       
       if (cached == null) {
-        return pm.makePersistent(downloadUser(username));
+        TwitchApiUser downloaded = downloadUser(username);
+        // let's look for a name change :/
+        try (JDOQuery<TwitchApiUser> queryById =
+            new JDOQuery<>(pm).select(twitchApiUser).from(twitchApiUser)
+                .where(twitchApiUser.id.eq(downloaded.getId()))) {
+          cached = queryById.fetchOne();
+          if (cached != null) {
+            new FromApiMapperImpl().update(downloaded, cached);
+            return cached;
+          }
+        }
+        return pm.makePersistent(downloaded);
       }
       
       if (maxAge <= 0 || cached.getDownloaded() > clock.getTime() - maxAge) {
