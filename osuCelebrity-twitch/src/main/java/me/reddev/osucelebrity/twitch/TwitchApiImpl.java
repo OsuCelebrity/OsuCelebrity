@@ -131,7 +131,7 @@ public class TwitchApiImpl implements TwitchApi {
     Optional<KrakenVideo> match =
         kraken
             .getChannel(ircSettings.getTwitchIrcUsername().toLowerCase())
-            .getVideos(true, 1000)
+            .getVideos(true, 100)
             .getVideos()
             .stream()
             .filter(video -> video.getRecordedAt().getTime() < play.getStartedAt())
